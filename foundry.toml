@@ -1,0 +1,16 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["node_modules", "lib"]
+build_info = true
+extra_output = ["storageLayout"]
+ffi = true
+ast = true
+optimizer = true # Enable optimizer
+optimizer_runs = 200 # Set optimizer runs to 200
+via_ir = true # Enable IR-based optimizer to handle stack too deep errors
+
+# Разрешения для файловой системы
+fs_permissions = [{ access = "read-write", path = "./" }]
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
