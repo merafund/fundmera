@@ -10,7 +10,8 @@
 pragma solidity 0.8.29;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {MultiAdminSingleHolderAccessControlUppgradable} from "./utils/MultiAdminSingleHolderAccessControlUppgradable.sol";
+import {MultiAdminSingleHolderAccessControlUppgradable} from
+    "./utils/MultiAdminSingleHolderAccessControlUppgradable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -676,7 +677,10 @@ contract MainVault is
     ///
     /// @return Whether the lock was renewed
     function _checkAndRenewWithdrawalLock() internal returns (bool) {
-        if (autoRenewWithdrawalLock && withdrawalLockedUntil != 0 && withdrawalLockedUntil - Constants.AUTO_RENEW_CHECK_PERIOD <= block.timestamp) {
+        if (
+            autoRenewWithdrawalLock && withdrawalLockedUntil != 0
+                && withdrawalLockedUntil - Constants.AUTO_RENEW_CHECK_PERIOD <= block.timestamp
+        ) {
             withdrawalLockedUntil += uint64(Constants.AUTO_RENEW_PERIOD);
 
             emit WithdrawalLockAutoRenewed(withdrawalLockedUntil);

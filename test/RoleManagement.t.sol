@@ -86,7 +86,6 @@ contract RoleManagementTest is Test {
         vault = MainVault(address(proxy));
     }
 
-
     function testInitialRoles() public view {
         assertTrue(vault.hasRole(MAIN_INVESTOR_ROLE, mainInvestor), "Main investor role not assigned");
         assertTrue(vault.hasRole(BACKUP_INVESTOR_ROLE, backupInvestor), "Backup investor role not assigned");
@@ -103,7 +102,7 @@ contract RoleManagementTest is Test {
         // Main investor can only change himself (reassign MAIN_INVESTOR_ROLE)
         vm.prank(mainInvestor);
         vault.grantRole(MAIN_INVESTOR_ROLE, alice);
-        
+
         assertTrue(vault.hasRole(MAIN_INVESTOR_ROLE, alice), "Alice should have main investor role");
         assertFalse(vault.hasRole(MAIN_INVESTOR_ROLE, mainInvestor), "Original main investor should lose role");
 
@@ -112,7 +111,7 @@ contract RoleManagementTest is Test {
         vm.expectRevert();
         vault.grantRole(BACKUP_INVESTOR_ROLE, bob);
 
-        // Main investor cannot change emergency investor role  
+        // Main investor cannot change emergency investor role
         vm.prank(alice);
         vm.expectRevert();
         vault.grantRole(EMERGENCY_INVESTOR_ROLE, charlie);
@@ -124,14 +123,14 @@ contract RoleManagementTest is Test {
         // Backup investor can change himself
         vm.prank(backupInvestor);
         vault.grantRole(BACKUP_INVESTOR_ROLE, bob);
-        
+
         assertTrue(vault.hasRole(BACKUP_INVESTOR_ROLE, bob), "Bob should have backup investor role");
         assertFalse(vault.hasRole(BACKUP_INVESTOR_ROLE, backupInvestor), "Original backup investor should lose role");
 
         // Backup investor can change main investor (admin)
         vm.prank(bob);
         vault.grantRole(MAIN_INVESTOR_ROLE, charlie);
-        
+
         assertTrue(vault.hasRole(MAIN_INVESTOR_ROLE, charlie), "Charlie should have main investor role");
         assertFalse(vault.hasRole(MAIN_INVESTOR_ROLE, mainInvestor), "Original main investor should lose role");
 
@@ -159,7 +158,9 @@ contract RoleManagementTest is Test {
         // Emergency investor can change himself
         vault.grantRole(EMERGENCY_INVESTOR_ROLE, charlie);
         assertTrue(vault.hasRole(EMERGENCY_INVESTOR_ROLE, charlie), "Charlie should have emergency investor role");
-        assertFalse(vault.hasRole(EMERGENCY_INVESTOR_ROLE, emergencyInvestor), "Original emergency investor should lose role");
+        assertFalse(
+            vault.hasRole(EMERGENCY_INVESTOR_ROLE, emergencyInvestor), "Original emergency investor should lose role"
+        );
 
         vm.stopPrank();
 
@@ -237,7 +238,7 @@ contract RoleManagementTest is Test {
         // Admin can only change himself (reassign ADMIN_ROLE)
         vm.prank(admin);
         vault.grantRole(ADMIN_ROLE, alice);
-        
+
         assertTrue(vault.hasRole(ADMIN_ROLE, alice), "Alice should have admin role");
         assertFalse(vault.hasRole(ADMIN_ROLE, admin), "Original admin should lose role");
 
@@ -246,7 +247,7 @@ contract RoleManagementTest is Test {
         vm.expectRevert();
         vault.grantRole(BACKUP_ADMIN_ROLE, bob);
 
-        // Admin cannot change emergency admin role  
+        // Admin cannot change emergency admin role
         vm.prank(alice);
         vm.expectRevert();
         vault.grantRole(EMERGENCY_ADMIN_ROLE, charlie);
@@ -265,15 +266,14 @@ contract RoleManagementTest is Test {
         vm.prank(backupAdmin);
 
         vault.grantRole(BACKUP_ADMIN_ROLE, bob);
-        
+
         assertTrue(vault.hasRole(BACKUP_ADMIN_ROLE, bob), "Bob should have backup admin role");
         assertFalse(vault.hasRole(BACKUP_ADMIN_ROLE, backupAdmin), "Original backup admin should lose role");
-
 
         // Backup admin can change admin
         vm.prank(bob);
         vault.grantRole(ADMIN_ROLE, charlie);
-        
+
         assertTrue(vault.hasRole(ADMIN_ROLE, charlie), "Charlie should have admin role");
         assertFalse(vault.hasRole(ADMIN_ROLE, admin), "Original admin should lose role");
         // Backup admin cannot change emergency admin role
@@ -322,10 +322,8 @@ contract RoleManagementTest is Test {
         vm.expectRevert();
         vault.grantRole(BACKUP_ADMIN_ROLE, alice);
 
-
         vm.expectRevert();
         vault.grantRole(EMERGENCY_ADMIN_ROLE, bob);
-
 
         // Manager cannot change admin role
         vm.expectRevert();

@@ -39,6 +39,7 @@ library DataTypes {
         UniswapV2, //0
         UniswapV3, // 1
         QuickswapV3 // 2
+
     }
 
     enum ProfitType {

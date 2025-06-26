@@ -112,4 +112,4 @@ interface IMultiAdminSingleHolderAccessControl {
      * - the caller must be `callerConfirmation`.
      */
     function renounceRole(bytes32 role, address callerConfirmation) external;
-} 
+}
