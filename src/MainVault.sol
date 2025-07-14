@@ -658,10 +658,12 @@ contract MainVault is
         }
 
         // If emergency investor equals backup admin, remove lock and disable auto-renewal
-        if (
-            (role == EMERGENCY_INVESTOR_ROLE || role == BACKUP_ADMIN_ROLE)
-                && hasRole(role == EMERGENCY_INVESTOR_ROLE ? BACKUP_ADMIN_ROLE : EMERGENCY_INVESTOR_ROLE, account)
-        ) {
+        if ((role == EMERGENCY_INVESTOR_ROLE) && hasRole(EMERGENCY_ADMIN_ROLE, account)) {
+            address backupAdmin = getRoleHolder(BACKUP_ADMIN_ROLE);
+
+            _grantRole(BACKUP_INVESTOR_ROLE, backupAdmin);
+            _grantRole(MAIN_INVESTOR_ROLE, backupAdmin);
+
             // The same address has both EMERGENCY_INVESTOR_ROLE and BACKUP_ADMIN_ROLE
             // Remove withdrawal lock and disable auto-renewal
             withdrawalLockedUntil = 0;

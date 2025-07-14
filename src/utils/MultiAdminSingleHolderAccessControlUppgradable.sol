@@ -123,8 +123,6 @@ abstract contract MultiAdminSingleHolderAccessControlUppgradable is
         _grantRole(role, account);
     }
 
-
-
     /**
      * @dev Internal function to check if caller has admin rights for the role
      */

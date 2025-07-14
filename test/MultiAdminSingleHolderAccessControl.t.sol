@@ -232,8 +232,6 @@ contract MultiAdminSingleHolderAccessControlTest is Test {
         assertTrue(accessControl.hasRole(MANAGER_ROLE, manager));
     }
 
-
-
     // Test onlyRole modifier - success
     function test_OnlyRole_Success() public {
         vm.prank(admin);

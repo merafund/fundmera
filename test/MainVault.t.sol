@@ -1656,21 +1656,7 @@ contract MainVaultTest is Test {
         assertTrue(vault.autoRenewWithdrawalLock(), "Auto-renewal should be enabled initially");
 
         vm.startPrank(emergencyInvestor);
-        vault.grantRole(vault.EMERGENCY_INVESTOR_ROLE(), backupAdmin);
-        vm.stopPrank();
-
-        assertFalse(vault.autoRenewWithdrawalLock(), "Auto-renewal should be disabled after granting role");
-    }
-
-    function testAutoRenewDisabledWhenBackupAdminEqualsEmergencyInvestor() public {
-        vm.startPrank(mainInvestor);
-        vault.setAutoRenewWithdrawalLock(true);
-        vm.stopPrank();
-
-        assertTrue(vault.autoRenewWithdrawalLock(), "Auto-renewal should be enabled initially");
-
-        vm.startPrank(emergencyAdmin);
-        vault.grantRole(vault.BACKUP_ADMIN_ROLE(), emergencyInvestor);
+        vault.grantRole(vault.EMERGENCY_INVESTOR_ROLE(), emergencyAdmin);
         vm.stopPrank();
 
         assertFalse(vault.autoRenewWithdrawalLock(), "Auto-renewal should be disabled after granting role");
@@ -1684,7 +1670,7 @@ contract MainVaultTest is Test {
         vm.recordLogs();
 
         vm.startPrank(emergencyInvestor);
-        vault.grantRole(vault.EMERGENCY_INVESTOR_ROLE(), backupAdmin);
+        vault.grantRole(vault.EMERGENCY_INVESTOR_ROLE(), emergencyAdmin);
         vm.stopPrank();
 
         Vm.Log[] memory entries = vm.getRecordedLogs();

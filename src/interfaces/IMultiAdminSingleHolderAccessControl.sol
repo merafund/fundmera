@@ -85,6 +85,4 @@ interface IMultiAdminSingleHolderAccessControl {
      * - the caller must have an admin role that can control ``role``.
      */
     function grantRole(bytes32 role, address account) external;
-
-
 }

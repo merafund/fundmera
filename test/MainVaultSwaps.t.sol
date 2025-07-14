@@ -50,12 +50,12 @@ contract MainVaultSwapsTest is Test {
         // Initialize vault with ALICE as main investor
         IMainVault.InitParams memory params = IMainVault.InitParams({
             mainInvestor: ALICE,
-            backupInvestor: address(0),
-            emergencyInvestor: address(0),
+            backupInvestor: address(233423),
+            emergencyInvestor: address(2323323),
             manager: address(0),
             admin: address(this),
             backupAdmin: address(0),
-            emergencyAdmin: address(0),
+            emergencyAdmin: address(1),
             feeWallet: address(0),
             profitWallet: address(0),
             feePercentage: 0,
@@ -161,6 +161,7 @@ contract MainVaultSwapsTest is Test {
         vault.deposit(IERC20(address(token1)), 500e18);
         vault.deposit(IERC20(address(token2)), 500e18);
         vm.stopPrank();
+        vm.warp(block.timestamp + 1 days);
     }
 
     function test_SwapExactTokensForTokensUniV2() public {
