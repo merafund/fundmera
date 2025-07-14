@@ -179,23 +179,23 @@ contract MainVaultRoleTest is Test {
     function testBackupAdminChangesThemselves() public {
         // Get the backup admin role
         bytes32 backupAdminRole = vault.BACKUP_ADMIN_ROLE();
-        
+
         // Verify initial state - backupAdmin holds the role
         assertTrue(vault.hasRole(backupAdminRole, backupAdmin), "BackupAdmin should initially have the role");
         assertFalse(vault.hasRole(backupAdminRole, emergencyAdmin), "User1 should not have the role initially");
-        
+
         // BackupAdmin grants their role to user1 (replacing themselves)
         vm.prank(backupAdmin);
         vault.grantRole(backupAdminRole, emergencyAdmin);
-        
+
         // Verify the role transfer
         assertFalse(vault.hasRole(backupAdminRole, backupAdmin), "BackupAdmin should no longer have the role");
         assertTrue(vault.hasRole(backupAdminRole, emergencyAdmin), "User1 should now have the role");
-        
+
         // Verify user1 can now use the role (grant it to someone else)
         vm.prank(emergencyAdmin);
         vault.grantRole(backupAdminRole, user2);
-        
+
         // Verify the second transfer
         assertFalse(vault.hasRole(backupAdminRole, user1), "User1 should no longer have the role");
         assertTrue(vault.hasRole(backupAdminRole, user2), "User2 should now have the role");

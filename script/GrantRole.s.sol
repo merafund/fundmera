@@ -28,8 +28,6 @@ contract SwapTokensScript is Script {
         // Get InvestmentVault instance
         IMainVault vault = IMainVault(MAIN_VAULT);
 
-
-
         vault.grantRole(vault.BACKUP_ADMIN_ROLE(), address(0x1234567890123456789012345678901234567890));
 
         vm.stopBroadcast();
