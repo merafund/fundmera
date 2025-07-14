@@ -2454,10 +2454,10 @@ contract SwapTests is Test {
         // Calculate expected lastBuyPrice
         uint256 step = 5 * 10 ** 16; // From setUp()
         uint256 expectedLastBuyPrice =
-            initialLastBuyPrice * (Constants.SHARE_DENOMINATOR - step * 2) / Constants.SHARE_DENOMINATOR;
+            initialLastBuyPrice * (Constants.SHARE_DENOMINATOR - step) / Constants.SHARE_DENOMINATOR;
 
         // Check that lastBuyPrice decreased correctly
-        assertEq(newLastBuyPrice, expectedLastBuyPrice, "LastBuyPrice should decrease by step * 2");
+        assertEq(newLastBuyPrice, expectedLastBuyPrice, "LastBuyPrice should decrease by step");
 
         vm.stopPrank();
     }

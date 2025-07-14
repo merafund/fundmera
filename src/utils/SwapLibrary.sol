@@ -259,10 +259,10 @@ library SwapLibrary {
         tokenData.mvBought += mvReceived;
 
         if (
-            tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step * 2) / Constants.SHARE_DENOMINATOR
+            tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step) / Constants.SHARE_DENOMINATOR
                 > currentPrice
         ) {
-            tokenData.lastBuyPrice = tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step * 2)
+            tokenData.lastBuyPrice = tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step)
                 / Constants.SHARE_DENOMINATOR;
         } else {
             tokenData.lastBuyPrice = currentPrice < tokenData.lastBuyPrice ? currentPrice : tokenData.lastBuyPrice; // minimum between current price and last buy price
@@ -383,10 +383,10 @@ library SwapLibrary {
         assetData.tokenBought += assetReceived;
 
         if (
-            assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step * 2) / Constants.SHARE_DENOMINATOR
+            assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step) / Constants.SHARE_DENOMINATOR
                 > currentPrice
         ) {
-            assetData.lastBuyPrice = assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step * 2)
+            assetData.lastBuyPrice = assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step)
                 / Constants.SHARE_DENOMINATOR;
         } else {
             assetData.lastBuyPrice = currentPrice < assetData.lastBuyPrice ? currentPrice : assetData.lastBuyPrice; // minimum between current price and last buy price
