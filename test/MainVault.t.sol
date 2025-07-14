@@ -1706,7 +1706,7 @@ contract MainVaultTest is Test {
         vault.deposit(token, DEPOSIT_AMOUNT);
 
         vm.expectEmit(false, false, false, true);
-        emit WithdrawalLockAutoRenewed(uint64(initialLockUntil + 365 days));
+        emit WithdrawalLockAutoRenewed(uint64(initialLockUntil + 182 days));
 
         vm.expectRevert(MainVault.WithdrawalLocked.selector);
         vault.withdraw(IERC20(address(token)), DEPOSIT_AMOUNT);
