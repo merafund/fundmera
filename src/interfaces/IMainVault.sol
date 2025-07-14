@@ -293,6 +293,11 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl, IERC5267 {
     /// @return implementation Next implementation address
     function nextFutureImplementationOfInvestorVault() external view returns (address);
 
+    /// @dev Manually triggers the withdrawal lock renewal check
+    /// @dev Can only be called by admin to force check and potentially renew the withdrawal lock
+    /// @return renewed True if the lock was renewed, false otherwise
+    function checkAndRenewWithdrawalLock() external returns (bool renewed);
+
     /// @dev Get deadline for next future implementation of investor vault
     /// @return deadline Deadline timestamp
     function nextFutureImplementationOfInvestorVaultDeadline() external view returns (uint64);

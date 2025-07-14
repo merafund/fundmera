@@ -2434,4 +2434,178 @@ contract MainVaultTest is Test {
         assertEq(vault.currentFixedProfitPercent(), secondProposedPercent, "Second update should set correct value");
         vm.stopPrank();
     }
+
+    function testCheckAndRenewWithdrawalLock_AutoRenewDisabled() public {
+        vm.startPrank(mainInvestor);
+        // Set a withdrawal lock but keep auto-renew disabled
+        vault.setWithdrawalLock(365 days);
+        vm.stopPrank();
+
+        // Move time close to expiry but not enough to trigger renewal
+        vm.warp(vault.withdrawalLockedUntil() - Constants.AUTO_RENEW_CHECK_PERIOD + 1);
+
+        vm.startPrank(admin);
+        bool renewed = vault.checkAndRenewWithdrawalLock();
+        assertFalse(renewed, "Should not renew when auto-renew is disabled");
+        vm.stopPrank();
+    }
+
+    function testCheckAndRenewWithdrawalLock_NoActiveLock() public {
+        vm.startPrank(mainInvestor);
+        // Enable auto-renew but don't set any withdrawal lock
+        vault.setAutoRenewWithdrawalLock(true);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        bool renewed = vault.checkAndRenewWithdrawalLock();
+        assertTrue(renewed, "Should renew when there's no active lock");
+        vm.stopPrank();
+    }
+
+    function testCheckAndRenewWithdrawalLock_NotNearExpiry() public {
+        vm.startPrank(mainInvestor);
+        vault.setWithdrawalLock(365 days);
+        vault.setAutoRenewWithdrawalLock(true);
+        vm.stopPrank();
+
+        // Move time but not close enough to expiry
+        vm.warp(vault.withdrawalLockedUntil() - Constants.AUTO_RENEW_CHECK_PERIOD - 1 days);
+
+        vm.startPrank(admin);
+        bool renewed = vault.checkAndRenewWithdrawalLock();
+        assertFalse(renewed, "Should not renew when not near expiry");
+        vm.stopPrank();
+    }
+
+    function testCheckAndRenewWithdrawalLock_SuccessfulRenewal() public {
+        vm.startPrank(mainInvestor);
+        vault.setWithdrawalLock(365 days);
+        vault.setAutoRenewWithdrawalLock(true);
+        vm.stopPrank();
+
+        uint64 initialLockUntil = vault.withdrawalLockedUntil();
+
+        // Move time close to expiry to trigger renewal
+        vm.warp(initialLockUntil - Constants.AUTO_RENEW_CHECK_PERIOD + 1);
+
+        vm.startPrank(admin);
+        bool renewed = vault.checkAndRenewWithdrawalLock();
+        assertTrue(renewed, "Should renew when all conditions are met");
+
+        // Check that lock was extended
+        assertEq(
+            vault.withdrawalLockedUntil(),
+            initialLockUntil + Constants.AUTO_RENEW_PERIOD,
+            "Lock should be extended by AUTO_RENEW_PERIOD"
+        );
+        vm.stopPrank();
+    }
+
+    function testCheckAndRenewWithdrawalLock_EmitsEvent() public {
+        vm.startPrank(mainInvestor);
+        vault.setWithdrawalLock(365 days);
+        vault.setAutoRenewWithdrawalLock(true);
+        vm.stopPrank();
+
+        uint64 initialLockUntil = vault.withdrawalLockedUntil();
+
+        // Move time close to expiry to trigger renewal
+        vm.warp(initialLockUntil - Constants.AUTO_RENEW_CHECK_PERIOD + 1);
+
+        vm.startPrank(admin);
+
+        vm.expectEmit(false, false, false, true);
+        emit WithdrawalLockAutoRenewed(uint64(initialLockUntil + Constants.AUTO_RENEW_PERIOD));
+
+        vault.checkAndRenewWithdrawalLock();
+        vm.stopPrank();
+    }
+
+    function testCheckAndRenewWithdrawalLock_OnlyAdminCanCall() public {
+        vm.startPrank(mainInvestor);
+        vault.setWithdrawalLock(365 days);
+        vault.setAutoRenewWithdrawalLock(true);
+        vm.stopPrank();
+
+        // Move time close to expiry
+        vm.warp(vault.withdrawalLockedUntil() - Constants.AUTO_RENEW_CHECK_PERIOD + 1);
+
+        // Test that non-admin addresses cannot call the function
+        vm.startPrank(user1);
+        vm.expectRevert();
+        vault.checkAndRenewWithdrawalLock();
+        vm.stopPrank();
+
+        vm.startPrank(mainInvestor);
+        vm.expectRevert();
+        vault.checkAndRenewWithdrawalLock();
+        vm.stopPrank();
+
+        // Admin should be able to call it
+        vm.startPrank(admin);
+        bool renewed = vault.checkAndRenewWithdrawalLock();
+        assertTrue(renewed, "Admin should be able to trigger renewal");
+        vm.stopPrank();
+    }
+
+    function testCheckAndRenewWithdrawalLock_MultipleRenewals() public {
+        vm.startPrank(mainInvestor);
+        vault.setWithdrawalLock(365 days);
+        vault.setAutoRenewWithdrawalLock(true);
+        vm.stopPrank();
+
+        uint64 firstLockUntil = vault.withdrawalLockedUntil();
+
+        // First renewal
+        vm.warp(firstLockUntil - Constants.AUTO_RENEW_CHECK_PERIOD + 1);
+
+        vm.startPrank(admin);
+        bool firstRenewal = vault.checkAndRenewWithdrawalLock();
+        assertTrue(firstRenewal, "First renewal should succeed");
+
+        uint64 secondLockUntil = vault.withdrawalLockedUntil();
+        assertEq(
+            secondLockUntil, firstLockUntil + Constants.AUTO_RENEW_PERIOD, "First renewal should extend lock correctly"
+        );
+
+        // Try calling again immediately - should not renew since not near expiry anymore
+        bool immediateRenewal = vault.checkAndRenewWithdrawalLock();
+        assertFalse(immediateRenewal, "Should not renew again immediately");
+        assertEq(vault.withdrawalLockedUntil(), secondLockUntil, "Lock time should not change on failed renewal");
+
+        // Second renewal when near expiry again
+        vm.warp(secondLockUntil - Constants.AUTO_RENEW_CHECK_PERIOD + 1);
+        bool secondRenewal = vault.checkAndRenewWithdrawalLock();
+        assertTrue(secondRenewal, "Second renewal should succeed");
+
+        assertEq(
+            vault.withdrawalLockedUntil(),
+            secondLockUntil + Constants.AUTO_RENEW_PERIOD,
+            "Second renewal should extend lock correctly"
+        );
+        vm.stopPrank();
+    }
+
+    function testCheckAndRenewWithdrawalLock_ExactBoundaryConditions() public {
+        vm.startPrank(mainInvestor);
+        vault.setWithdrawalLock(365 days);
+        vault.setAutoRenewWithdrawalLock(true);
+        vm.stopPrank();
+
+        uint64 lockUntil = vault.withdrawalLockedUntil();
+
+        vm.startPrank(admin);
+
+        // Test exactly at the boundary (should not renew)
+        vm.warp(lockUntil - Constants.AUTO_RENEW_CHECK_PERIOD - 1);
+        bool renewalAtBoundary = vault.checkAndRenewWithdrawalLock();
+        assertFalse(renewalAtBoundary, "Should not renew exactly at boundary");
+
+        // Test one second past boundary (should renew)
+        vm.warp(lockUntil - Constants.AUTO_RENEW_CHECK_PERIOD);
+        bool renewalPastBoundary = vault.checkAndRenewWithdrawalLock();
+        assertTrue(renewalPastBoundary, "Should renew one second past boundary");
+
+        vm.stopPrank();
+    }
 }

@@ -637,6 +637,11 @@ contract MainVault is
         return investorIsCanceledOracleCheck && adminIsCanceledOracleCheck;
     }
 
+    /// @inheritdoc IMainVault
+    function checkAndRenewWithdrawalLock() external onlyRole(ADMIN_ROLE) returns (bool renewed) {
+        return _checkAndRenewWithdrawalLock();
+    }
+
     /// @dev Overrides MultiAdminSingleHolderAccessControlUppgradable._grantRole to ensure only one account has each role
     /// @param role The role being assigned
     /// @param account The account receiving the role
