@@ -349,6 +349,13 @@ deploy-all-factory-base: deploy-libraries-base deploy-factory-base
 
 deploy-all-base: deploy-libraries-base deploy-base-contracts
 
+grant-role-polygon:
+	forge script script/GrantRole.s.sol:GrantRoleScript \
+		--rpc-url ${POLYGON_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		-vvv
+
 help:
 	@echo "Available commands:"
 	@echo "  make build          - Build contracts"
