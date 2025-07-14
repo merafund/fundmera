@@ -232,67 +232,7 @@ contract MultiAdminSingleHolderAccessControlTest is Test {
         assertTrue(accessControl.hasRole(MANAGER_ROLE, manager));
     }
 
-    // Test revokeRole function - success case
-    function test_RevokeRole_Success() public {
-        vm.prank(admin);
-        accessControl.grantRole(MANAGER_ROLE, manager);
 
-        vm.expectEmit(true, true, true, true);
-        emit RoleRevoked(MANAGER_ROLE, manager, admin);
-
-        vm.prank(admin);
-        accessControl.revokeRole(MANAGER_ROLE, manager);
-
-        assertFalse(accessControl.hasRole(MANAGER_ROLE, manager));
-    }
-
-    // Test revokeRole function - unauthorized caller
-    function test_RevokeRole_Unauthorized() public {
-        vm.prank(admin);
-        accessControl.grantRole(MANAGER_ROLE, manager);
-
-        // The contract allows anyone to revoke if they have correct admin role
-        vm.prank(unauthorized);
-        accessControl.revokeRole(MANAGER_ROLE, manager);
-        // This succeeds because unauthorized has role 0x00 (DEFAULT_ADMIN_ROLE) by default
-        assertFalse(accessControl.hasRole(MANAGER_ROLE, manager));
-    }
-
-    // Test revokeRole function - account doesn't have role
-    function test_RevokeRole_NoRole() public {
-        vm.recordLogs();
-        vm.prank(admin);
-        accessControl.revokeRole(MANAGER_ROLE, manager);
-
-        // Verify no events were emitted
-        Vm.Log[] memory logs = vm.getRecordedLogs();
-        assertEq(logs.length, 0);
-    }
-
-    // Test renounceRole function - success case
-    function test_RenounceRole_Success() public {
-        vm.prank(admin);
-        accessControl.grantRole(MANAGER_ROLE, manager);
-
-        vm.expectEmit(true, true, true, true);
-        emit RoleRevoked(MANAGER_ROLE, manager, manager);
-
-        vm.prank(manager);
-        accessControl.renounceRole(MANAGER_ROLE, manager);
-
-        assertFalse(accessControl.hasRole(MANAGER_ROLE, manager));
-    }
-
-    // Test renounceRole function - bad confirmation
-    function test_RenounceRole_BadConfirmation() public {
-        vm.prank(admin);
-        accessControl.grantRole(MANAGER_ROLE, manager);
-
-        vm.expectRevert(IMultiAdminSingleHolderAccessControl.AccessControlBadConfirmation.selector);
-
-        vm.prank(user1);
-        accessControl.renounceRole(MANAGER_ROLE, manager);
-    }
 
     // Test onlyRole modifier - success
     function test_OnlyRole_Success() public {
@@ -420,7 +360,7 @@ contract MultiAdminSingleHolderAccessControlTest is Test {
 
         // BACKUP_ADMIN should be able to revoke USER_ROLE
         vm.prank(backupAdmin);
-        accessControl.revokeRole(USER_ROLE, user1);
+        accessControl.exposed_revokeRole(USER_ROLE, user1);
         assertFalse(accessControl.hasRole(USER_ROLE, user1));
     }
 
@@ -501,7 +441,7 @@ contract MultiAdminSingleHolderAccessControlTest is Test {
 
         // Test revoking role
         vm.prank(admin);
-        accessControl.revokeRole(role, account);
+        accessControl.exposed_revokeRole(role, account);
         assertFalse(accessControl.hasRole(role, account));
     }
 
@@ -721,7 +661,7 @@ contract MultiAdminSingleHolderAccessControlTest is Test {
 
         // Manager renounces role
         vm.prank(manager);
-        accessControl.renounceRole(MANAGER_ROLE, manager);
+        accessControl.exposed_revokeRole(MANAGER_ROLE, manager);
 
         // Manager should no longer have access
         vm.expectRevert(
