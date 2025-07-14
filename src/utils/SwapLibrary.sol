@@ -181,6 +181,7 @@ library SwapLibrary {
         uint256 currentPrice = (mvSpent * Constants.SHARE_DENOMINATOR) / miReceived;
 
         uint256 averagePriceBefore = (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) / tokenData.mvBought;
+        tokenData.lastBuyPrice = averagePriceBefore;
 
         require(averagePriceBefore > currentPrice, NonAdvantageousPurchasePrice());
 
@@ -281,6 +282,7 @@ library SwapLibrary {
         // Average purchase price (MI per MV) before selling
         uint256 averageBuyPrice = (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) / tokenData.mvBought;
         // Calculate how many MV tokens were spent and how many MI tokens were received
+        tokenData.lastBuyPrice = averageBuyPrice;
         int256 newDeposit;
         uint256 currentSellPrice;
         {
@@ -418,7 +420,7 @@ library SwapLibrary {
         int256 newDeposit = int256(assetData.deposit) - int256(mvReceived);
         // Calculate average purchase price (MV/Asset)
         uint256 averageBuyPrice = (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) / assetData.tokenBought;
-
+        assetData.lastBuyPrice = averageBuyPrice;
         // Calculate current selling price (MV/Asset)
         uint256 currentSellPrice = (mvReceived * Constants.SHARE_DENOMINATOR) / tokenSpent;
 
