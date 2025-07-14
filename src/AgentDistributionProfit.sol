@@ -158,7 +158,7 @@ contract AgentDistributionProfit is
     }
 
     ///@inheritdoc IAgentDistributionProfit
-    function increaseAgentPercentage(uint256 _agentPercentage) external onlyRole(MAIN_AGENT_ROLE) {
+    function increaseAgentPercentage(uint256 _agentPercentage) external onlyRole(ADMIN_ROLE) {
         require(
             _agentPercentage >= MIN_AGENT_PERCENTAGE && _agentPercentage <= MAX_AGENT_PERCENTAGE,
             AgentPercentageOutOfRange()

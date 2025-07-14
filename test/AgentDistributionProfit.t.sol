@@ -184,7 +184,7 @@ contract AgentDistributionProfitTest is Test {
     }
 
     function testIncreaseAgentPercentage() public {
-        vm.startPrank(mainAgent);
+        vm.startPrank(admin);
 
         uint256 newPercentage = 2500; // 25%
         profitDistributor.increaseAgentPercentage(newPercentage);
@@ -194,8 +194,8 @@ contract AgentDistributionProfitTest is Test {
         vm.stopPrank();
     }
 
-    function testIncreaseAgentPercentage_OnlyMainAgent() public {
-        vm.startPrank(admin);
+    function testIncreaseAgentPercentage_OnlyAdmin() public {
+        vm.startPrank(mainAgent);
 
         uint256 newPercentage = 2500;
         vm.expectRevert();
@@ -205,7 +205,7 @@ contract AgentDistributionProfitTest is Test {
     }
 
     function testIncreaseAgentPercentage_MustBeIncreased() public {
-        vm.startPrank(mainAgent);
+        vm.startPrank(admin);
 
         // First set a higher percentage
         uint256 currentPercentage = 2500; // 25%
@@ -220,7 +220,7 @@ contract AgentDistributionProfitTest is Test {
     }
 
     function testIncreaseAgentPercentage_InvalidPercentage() public {
-        vm.startPrank(mainAgent);
+        vm.startPrank(admin);
 
         uint256 newPercentage = profitDistributor.MAX_AGENT_PERCENTAGE() + 100;
         vm.expectRevert(IAgentDistributionProfit.AgentPercentageOutOfRange.selector);
@@ -730,7 +730,7 @@ contract AgentDistributionProfitTest is Test {
     }
 
     function testIncreaseAgentPercentage_BelowMinimum() public {
-        vm.startPrank(mainAgent);
+        vm.startPrank(admin);
 
         uint256 belowMinimum = profitDistributor.MIN_AGENT_PERCENTAGE() - 100;
         vm.expectRevert(IAgentDistributionProfit.AgentPercentageOutOfRange.selector);
@@ -740,7 +740,7 @@ contract AgentDistributionProfitTest is Test {
     }
 
     function testIncreaseAgentPercentage_AboveMaximum() public {
-        vm.startPrank(mainAgent);
+        vm.startPrank(admin);
 
         uint256 aboveMaximum = profitDistributor.MAX_AGENT_PERCENTAGE() + 100;
         vm.expectRevert(IAgentDistributionProfit.AgentPercentageOutOfRange.selector);

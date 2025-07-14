@@ -10,7 +10,7 @@
 pragma solidity ^0.8.29;
 
 import {Script} from "forge-std/Script.sol";
-import {IInvestmentVault} from "../src/interfaces/IInvestmentVault.sol";
+import {IMainVault} from "../src/interfaces/IMainVault.sol";
 
 contract SwapTokensScript is Script {
     // Address of the deployed InvestmentVault contract
