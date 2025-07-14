@@ -30,9 +30,9 @@ import {Constants} from "./utils/Constants.sol";
 import {DataTypes} from "./utils/DataTypes.sol";
 import {MainVaultSwapLibrary} from "./utils/MainVaultSwapLibrary.sol";
 import {IMeraPriceOracle} from "./interfaces/IMeraPriceOracle.sol";
-
 /// @title MainVault
 /// @dev Main storage for tokens with UUPS upgrade support and role system
+
 contract MainVault is
     Initializable,
     UUPSUpgradeable,
@@ -209,6 +209,8 @@ contract MainVault is
         _setRoleAdmin(ADMIN_ROLE, EMERGENCY_ADMIN_ROLE);
         _setRoleAdmin(BACKUP_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE);
         _setRoleAdmin(EMERGENCY_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE);
+
+        withdrawalLockedUntil = uint64(block.timestamp);
     }
 
     /// @inheritdoc IMainVault
@@ -358,9 +360,7 @@ contract MainVault is
     function setWithdrawalLock(uint256 period) external onlyRole(MAIN_INVESTOR_ROLE) {
         require(availableLock[period], LockPeriodNotAvailable());
         _checkAndRenewWithdrawalLock();
-
         withdrawalLockedUntil = uint64(Math.max(withdrawalLockedUntil, block.timestamp + period));
-
         emit WithdrawalLockSet(period, withdrawalLockedUntil);
     }
 
@@ -372,6 +372,33 @@ contract MainVault is
             withdrawalLockedUntil += uint64(Constants.AUTO_RENEW_PERIOD);
         }
         emit AutoRenewWithdrawalLockSet(oldValue, enabled);
+    }
+
+    /// @inheritdoc IMainVault
+    function setWithdrawalLockWithAutoRenew(uint256 period, bool enabled) external onlyRole(MAIN_INVESTOR_ROLE) {
+        // Check that the lock period is available
+        require(availableLock[period], LockPeriodNotAvailable());
+
+        // Check and renew withdrawal lock if needed
+        _checkAndRenewWithdrawalLock();
+
+        // Set the withdrawal lock
+        withdrawalLockedUntil = uint64(Math.max(withdrawalLockedUntil, block.timestamp + period));
+
+        // Set auto-renewal setting
+        bool oldAutoRenewValue = autoRenewWithdrawalLock;
+        autoRenewWithdrawalLock = enabled;
+
+        // If auto-renewal is enabled and the lock is about to expire, extend it
+        if (
+            enabled && !oldAutoRenewValue && block.timestamp > withdrawalLockedUntil - Constants.AUTO_RENEW_CHECK_PERIOD
+        ) {
+            withdrawalLockedUntil += uint64(Constants.AUTO_RENEW_PERIOD);
+        }
+
+        // Emit events for both operations
+        emit WithdrawalLockSet(period, withdrawalLockedUntil);
+        emit AutoRenewWithdrawalLockSet(oldAutoRenewValue, enabled);
     }
 
     /// @dev Pauses the contract operations.

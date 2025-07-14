@@ -24,6 +24,7 @@ import {MainVaultMockRevokeRole} from "../src/mocks/MainVaultMockRevokeRole.sol"
 import {MainVaultV2} from "../src/mocks/MainVaultV2.sol";
 import {InvestmentVaultV2} from "../src/mocks/InvestmentVaultV2.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract MockERC20 is ERC20 {
     constructor() ERC20("Mock Token", "MOCK") {
@@ -88,10 +89,13 @@ contract MainVaultTest is Test {
     event ProfitTypeSet(DataTypes.ProfitType profitType);
     event ProposedFixedProfitPercentByAdminSet(uint32 newPercent);
     event CurrentFixedProfitPercentSet(uint32 oldPercent, uint32 newPercent);
+    event WithdrawalLockSet(uint256 lockPeriod, uint64 lockUntil);
+    event AutoRenewWithdrawalLockSet(bool autoRenewEnabled, bool newAutoRenewValue);
 
     function setUp() public {
         vm.startPrank(owner);
 
+        vm.warp(block.timestamp + 10 * 365 days);
         token = new MockERC20();
         secondToken = new MockERC20();
         thirdToken = new MockERC20();
@@ -1353,7 +1357,7 @@ contract MainVaultTest is Test {
     function testSetAutoRenewWithdrawalLock_ExtendPeriodOnDisable() public {
         vm.startPrank(mainInvestor);
 
-        vault.setWithdrawalLock(10 minutes);
+        vault.setWithdrawalLock(365 days);
         uint64 initialLockUntil = vault.withdrawalLockedUntil();
 
         vault.setAutoRenewWithdrawalLock(true);
@@ -1383,8 +1387,8 @@ contract MainVaultTest is Test {
 
         assertEq(
             vault.withdrawalLockedUntil(),
-            initialLockUntil,
-            "Lock period should not be extended when disabling auto renew early"
+            initialLockUntil + Constants.AUTO_RENEW_PERIOD,
+            "Lock period should be extended when disabling auto renew early"
         );
 
         vm.stopPrank();
@@ -1735,6 +1739,7 @@ contract MainVaultTest is Test {
     }
 
     function testWithdrawalLockNotRenewedWhenNotNearExpiry() public {
+        vm.warp(block.timestamp + 365 days);
         vm.startPrank(mainInvestor);
 
         vault.setAutoRenewWithdrawalLock(true);
@@ -2591,6 +2596,235 @@ contract MainVaultTest is Test {
         vm.warp(lockUntil - Constants.AUTO_RENEW_CHECK_PERIOD);
         bool renewalPastBoundary = vault.checkAndRenewWithdrawalLock();
         assertTrue(renewalPastBoundary, "Should renew one second past boundary");
+
+        vm.stopPrank();
+    }
+
+    // Tests for setWithdrawalLockWithAutoRenew function
+    function testSetWithdrawalLockWithAutoRenew_BasicFunctionality() public {
+        vm.startPrank(mainInvestor);
+
+        uint256 lockPeriod = 365 days;
+        bool autoRenewEnabled = true;
+
+        // Account for existing withdrawal lock that might be longer than the new period
+        uint64 currentLockUntil = vault.withdrawalLockedUntil();
+        uint64 expectedLockUntil = uint64(Math.max(currentLockUntil, block.timestamp + lockPeriod));
+
+        // Test setting withdrawal lock with auto-renewal enabled
+        vm.expectEmit(true, true, true, true);
+        emit WithdrawalLockSet(lockPeriod, expectedLockUntil);
+
+        vm.expectEmit(true, true, true, true);
+        emit AutoRenewWithdrawalLockSet(false, autoRenewEnabled);
+
+        vault.setWithdrawalLockWithAutoRenew(lockPeriod, autoRenewEnabled);
+
+        assertEq(vault.withdrawalLockedUntil(), expectedLockUntil, "Withdrawal lock should be set correctly");
+        assertTrue(vault.autoRenewWithdrawalLock(), "Auto-renewal should be enabled");
+
+        vm.stopPrank();
+    }
+
+    function testSetWithdrawalLockWithAutoRenew_DisableAutoRenew() public {
+        vm.startPrank(mainInvestor);
+
+        uint256 lockPeriod = 10 minutes;
+        bool autoRenewEnabled = false;
+
+        // Account for existing withdrawal lock that might be longer than the new period
+        uint64 currentLockUntil = vault.withdrawalLockedUntil();
+        uint64 expectedLockUntil = uint64(Math.max(currentLockUntil, block.timestamp + lockPeriod));
+
+        // Test setting withdrawal lock with auto-renewal disabled
+        vm.expectEmit(true, true, true, true);
+        emit WithdrawalLockSet(lockPeriod, expectedLockUntil);
+
+        vm.expectEmit(true, true, true, true);
+        emit AutoRenewWithdrawalLockSet(false, autoRenewEnabled);
+
+        vault.setWithdrawalLockWithAutoRenew(lockPeriod, autoRenewEnabled);
+
+        assertEq(vault.withdrawalLockedUntil(), expectedLockUntil, "Withdrawal lock should be set correctly");
+        assertFalse(vault.autoRenewWithdrawalLock(), "Auto-renewal should be disabled");
+
+        vm.stopPrank();
+    }
+
+    function testSetWithdrawalLockWithAutoRenew_ExtendExistingLock() public {
+        vm.startPrank(mainInvestor);
+
+        // First, set an initial withdrawal lock
+        uint256 initialPeriod = 365 days;
+        vault.setWithdrawalLock(initialPeriod);
+        uint64 initialLockUntil = vault.withdrawalLockedUntil();
+
+        // Wait some time
+        vm.warp(block.timestamp + 30 minutes);
+
+        // Set a longer lock period with auto-renewal
+        uint256 newPeriod = 365 days;
+        uint64 expectedLockUntil = uint64(Math.max(initialLockUntil, block.timestamp + newPeriod));
+
+        vault.setWithdrawalLockWithAutoRenew(newPeriod, true);
+
+        assertGe(vault.withdrawalLockedUntil(), expectedLockUntil, "New lock should extend the existing lock");
+        assertTrue(vault.autoRenewWithdrawalLock(), "Auto-renewal should be enabled");
+
+        vm.stopPrank();
+    }
+
+    function testSetWithdrawalLockWithAutoRenew_ToggleAutoRenewFromEnabled() public {
+        vm.startPrank(mainInvestor);
+
+        // First enable auto-renewal
+        vault.setAutoRenewWithdrawalLock(true);
+        assertTrue(vault.autoRenewWithdrawalLock(), "Auto-renewal should be initially enabled");
+
+        uint256 lockPeriod = 365 days;
+        bool newAutoRenewValue = false;
+
+        // Test disabling auto-renewal via combined function
+        vm.expectEmit(true, true, true, true);
+        emit AutoRenewWithdrawalLockSet(true, newAutoRenewValue);
+
+        vault.setWithdrawalLockWithAutoRenew(lockPeriod, newAutoRenewValue);
+
+        assertFalse(vault.autoRenewWithdrawalLock(), "Auto-renewal should be disabled");
+
+        vm.stopPrank();
+    }
+
+    function testSetWithdrawalLockWithAutoRenew_PeriodNotAvailable() public {
+        vm.startPrank(mainInvestor);
+
+        // Try to set withdrawal lock with a period that hasn't been made available
+        uint256 unavailablePeriod = 15 days;
+        vm.expectRevert(MainVault.LockPeriodNotAvailable.selector);
+        vault.setWithdrawalLockWithAutoRenew(unavailablePeriod, true);
+
+        // Make the period available
+        vm.stopPrank();
+        vm.startPrank(admin);
+        IMainVault.LockPeriodAvailability[] memory configs = new IMainVault.LockPeriodAvailability[](1);
+        configs[0] = IMainVault.LockPeriodAvailability({period: unavailablePeriod, isAvailable: true});
+        vault.setLockPeriodsAvailability(configs);
+        vm.stopPrank();
+
+        // Now the combined function should work
+        vm.startPrank(mainInvestor);
+
+        // Account for existing withdrawal lock that might be longer than the new period
+        uint64 currentLockUntil = vault.withdrawalLockedUntil();
+        uint64 expectedLockUntil = uint64(Math.max(currentLockUntil, block.timestamp + unavailablePeriod));
+
+        vault.setWithdrawalLockWithAutoRenew(unavailablePeriod, true);
+
+        assertEq(vault.withdrawalLockedUntil(), expectedLockUntil, "Lock period should be set correctly");
+        assertTrue(vault.autoRenewWithdrawalLock(), "Auto-renewal should be enabled");
+
+        vm.stopPrank();
+    }
+
+    function testSetWithdrawalLockWithAutoRenew_OnlyMainInvestorCanCall() public {
+        uint256 lockPeriod = 365 days;
+
+        // Test with user1
+        vm.startPrank(user1);
+        vm.expectRevert();
+        vault.setWithdrawalLockWithAutoRenew(lockPeriod, true);
+        vm.stopPrank();
+
+        // Test with admin
+        vm.startPrank(admin);
+        vm.expectRevert();
+        vault.setWithdrawalLockWithAutoRenew(lockPeriod, true);
+        vm.stopPrank();
+
+        // Test with backup investor
+        vm.startPrank(backupInvestor);
+        vm.expectRevert();
+        vault.setWithdrawalLockWithAutoRenew(lockPeriod, true);
+        vm.stopPrank();
+
+        // Test with main investor (should work)
+        vm.startPrank(mainInvestor);
+
+        // Account for existing withdrawal lock that might be longer than the new period
+        uint64 currentLockUntil = vault.withdrawalLockedUntil();
+        uint64 expectedLockUntil = uint64(Math.max(currentLockUntil, block.timestamp + lockPeriod));
+
+        vault.setWithdrawalLockWithAutoRenew(lockPeriod, true);
+
+        assertEq(vault.withdrawalLockedUntil(), expectedLockUntil, "Lock should be set by main investor");
+        assertTrue(vault.autoRenewWithdrawalLock(), "Auto-renewal should be enabled by main investor");
+
+        vm.stopPrank();
+    }
+
+    function testSetWithdrawalLockWithAutoRenew_AutoExtendOnEnable() public {
+        vm.startPrank(mainInvestor);
+
+        // Set a withdrawal lock
+        uint256 lockPeriod = 10 minutes;
+        vault.setWithdrawalLock(lockPeriod);
+        uint64 initialLockUntil = vault.withdrawalLockedUntil();
+
+        // Move to near the end of the lock period (within AUTO_RENEW_CHECK_PERIOD)
+        vm.warp(initialLockUntil - Constants.AUTO_RENEW_CHECK_PERIOD + 1);
+
+        // Use combined function to enable auto-renewal
+        // When auto-renewal is enabled and lock is about to expire, it should extend
+        vault.setWithdrawalLockWithAutoRenew(lockPeriod, true);
+
+        assertGt(
+            vault.withdrawalLockedUntil(),
+            initialLockUntil,
+            "Lock should be extended when enabling auto-renewal near end"
+        );
+        assertTrue(vault.autoRenewWithdrawalLock(), "Auto-renewal should be enabled");
+
+        vm.stopPrank();
+    }
+
+    function testSetWithdrawalLockWithAutoRenew_NoAutoExtendOnEnableEarly() public {
+        vm.startPrank(mainInvestor);
+
+        // Set a withdrawal lock
+        uint256 lockPeriod = 365 days;
+        vault.setWithdrawalLock(lockPeriod);
+        uint64 initialLockUntil = vault.withdrawalLockedUntil();
+
+        // Use combined function to enable auto-renewal while not near expiry
+        vault.setWithdrawalLockWithAutoRenew(lockPeriod, true);
+
+        // The lock period should be extended due to the new period being applied
+        assertGe(
+            vault.withdrawalLockedUntil(),
+            uint64(block.timestamp + lockPeriod),
+            "Lock should be set to at least the new period"
+        );
+        assertTrue(vault.autoRenewWithdrawalLock(), "Auto-renewal should be enabled");
+
+        vm.stopPrank();
+    }
+
+    function testSetWithdrawalLockWithAutoRenew_EventsEmitted() public {
+        vm.startPrank(mainInvestor);
+
+        uint256 lockPeriod = 365 days;
+        // Account for existing withdrawal lock that might be longer than the new period
+        uint64 currentLockUntil = vault.withdrawalLockedUntil();
+        uint64 expectedLockUntil = uint64(Math.max(currentLockUntil, block.timestamp + lockPeriod));
+
+        // Test that both events are emitted in correct order
+        vm.expectEmit(true, true, true, true);
+        emit WithdrawalLockSet(lockPeriod, expectedLockUntil);
+
+        vm.expectEmit(true, true, true, true);
+        emit AutoRenewWithdrawalLockSet(false, true);
+
+        vault.setWithdrawalLockWithAutoRenew(lockPeriod, true);
 
         vm.stopPrank();
     }

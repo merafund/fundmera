@@ -481,6 +481,15 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl, IERC5267 {
     /// @param enabled Whether auto-renewal should be enabled
     function setAutoRenewWithdrawalLock(bool enabled) external;
 
+    /// @dev Sets a withdrawal lock for a specified period and configures auto-renewal
+    /// Combines the functionality of setWithdrawalLock and setAutoRenewWithdrawalLock
+    /// Only the main investor can call this function
+    /// The period must be in the list of available lock periods
+    ///
+    /// @param period Lock period in seconds
+    /// @param enabled Whether auto-renewal should be enabled
+    function setWithdrawalLockWithAutoRenew(uint256 period, bool enabled) external;
+
     /// @dev Commits to withdraw from investment vaults after a delay
     /// Only the main investor can call this function
     /// The timestamp will be set to block.timestamp + WITHDRAW_COMMIT_MIN_DELAY
