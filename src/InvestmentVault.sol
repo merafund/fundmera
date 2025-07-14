@@ -414,7 +414,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         require(!vaultState.closed, PositionAlreadyClosed());
 
         uint256 finalBalance = tokenData.tokenMI.balanceOf(address(this));
-        require(finalBalance > tokenData.initDeposit, NoProfit());
+        require(finalBalance >= tokenData.initDeposit, NoProfit());
 
         uint256 totalProfit = finalBalance - tokenData.initDeposit
             - (profitData.earntProfitTotal - profitData.withdrawnProfitInvestor - profitData.withdrawnProfitFee);

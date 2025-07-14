@@ -514,7 +514,8 @@ library SwapLibrary {
             / (Constants.SHARE_DENOMINATOR * (Constants.SHARE_DENOMINATOR + assetData.step));
 
         // Calculate working order balance (WOB)
-        uint256 workingOrderBalance = (assetData.tokenBought * assetData.step) / (Constants.SHARE_DENOMINATOR);
+        uint256 workingOrderBalance =
+            (assetData.tokenBought * assetData.step) / (Constants.SHARE_DENOMINATOR + assetData.step);
 
         require(workingOrderBalance >= assetSpent, SoldMoreThanExpectedWOB());
         require(workingOrderDeposit < mvReceived, PriceDidNotIncreaseEnough());
