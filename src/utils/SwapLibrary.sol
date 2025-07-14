@@ -263,8 +263,8 @@ library SwapLibrary {
             tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step) / Constants.SHARE_DENOMINATOR
                 > currentPrice
         ) {
-            tokenData.lastBuyPrice = tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step)
-                / Constants.SHARE_DENOMINATOR;
+            tokenData.lastBuyPrice =
+                tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step) / Constants.SHARE_DENOMINATOR;
         } else {
             tokenData.lastBuyPrice = currentPrice < tokenData.lastBuyPrice ? currentPrice : tokenData.lastBuyPrice; // minimum between current price and last buy price
         }
@@ -388,8 +388,8 @@ library SwapLibrary {
             assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step) / Constants.SHARE_DENOMINATOR
                 > currentPrice
         ) {
-            assetData.lastBuyPrice = assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step)
-                / Constants.SHARE_DENOMINATOR;
+            assetData.lastBuyPrice =
+                assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step) / Constants.SHARE_DENOMINATOR;
         } else {
             assetData.lastBuyPrice = currentPrice < assetData.lastBuyPrice ? currentPrice : assetData.lastBuyPrice; // minimum between current price and last buy price
         }
