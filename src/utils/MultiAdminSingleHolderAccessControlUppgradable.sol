@@ -29,7 +29,7 @@ abstract contract MultiAdminSingleHolderAccessControlUppgradable is
     /// @custom:storage-location erc7201:openzeppelin.storage.AccessControl
     struct AccessControlStorage {
         mapping(bytes32 role => RoleData) _roles;
-        mapping(address account => bytes32 role) _accountRoles;
+        mapping(address account => bytes32[] roles) _accountRoles;
     }
 
     bytes32 private constant AccessControlStorageLocation =
@@ -128,17 +128,18 @@ abstract contract MultiAdminSingleHolderAccessControlUppgradable is
      */
     function _checkRoleAdmin(bytes32 role) internal view virtual {
         AccessControlStorage storage $ = _getAccessControlStorage();
-        bytes32 userRole = $._accountRoles[_msgSender()];
-
+        bytes32[] memory userRoles = $._accountRoles[_msgSender()];
         // Check if caller has DEFAULT_ADMIN_ROLE and it's set as admin for this role
-        if ($._roles[role].adminRole[userRole]) {
-            return;
+        for (uint256 i = 0; i < userRoles.length; i++) {
+            if ($._roles[role].adminRole[userRoles[i]]) {
+                return;
+            }
         }
 
         // Check all possible admin roles
         // Note: In practice, you'd need to track which roles exist to iterate them
         // For now, we assume DEFAULT_ADMIN_ROLE is the primary admin mechanism
-        revert AccessControlUnauthorizedAccount(_msgSender(), userRole);
+        revert AccessControlUnauthorizedAccount(_msgSender(), 0x00);
     }
 
     /**
@@ -183,13 +184,20 @@ abstract contract MultiAdminSingleHolderAccessControlUppgradable is
         // Revoke from current holder if exists
         if (currentHolder != address(0)) {
             $._roles[role].roleHolder = address(0);
-            $._accountRoles[currentHolder] = 0x00;
+            for (uint256 i = 0; i < $._accountRoles[currentHolder].length; i++) {
+                if ($._accountRoles[currentHolder][i] == role) {
+                    $._accountRoles[currentHolder][i] =
+                        $._accountRoles[currentHolder][$._accountRoles[currentHolder].length - 1];
+                    $._accountRoles[currentHolder].pop();
+                    break;
+                }
+            }
             emit RoleRevoked(role, currentHolder, _msgSender());
         }
 
         // Grant to new account
         $._roles[role].roleHolder = account;
-        $._accountRoles[account] = role;
+        $._accountRoles[account].push(role);
         emit RoleGranted(role, account, _msgSender());
         return true;
     }
@@ -205,7 +213,13 @@ abstract contract MultiAdminSingleHolderAccessControlUppgradable is
         AccessControlStorage storage $ = _getAccessControlStorage();
         if ($._roles[role].roleHolder == account) {
             $._roles[role].roleHolder = address(0);
-            $._accountRoles[account] = 0x00;
+            for (uint256 i = 0; i < $._accountRoles[account].length; i++) {
+                if ($._accountRoles[account][i] == role) {
+                    $._accountRoles[account][i] = $._accountRoles[account][$._accountRoles[account].length - 1];
+                    $._accountRoles[account].pop();
+                    break;
+                }
+            }
             emit RoleRevoked(role, account, _msgSender());
             return true;
         } else {
