@@ -332,9 +332,7 @@ contract MultiAdminSingleHolderAccessControlTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IMultiAdminSingleHolderAccessControl.AccessControlUnauthorizedAccount.selector,
-                backupAdmin,
-                0x00
+                IMultiAdminSingleHolderAccessControl.AccessControlUnauthorizedAccount.selector, backupAdmin, 0x00
             )
         );
 
@@ -894,59 +892,59 @@ contract MultiAdminSingleHolderAccessControlTest is Test {
         // Create additional roles for testing
         bytes32 OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
         bytes32 MODERATOR_ROLE = keccak256("MODERATOR_ROLE");
-        
+
         // Setup role admins
         vm.startPrank(admin);
         accessControl.exposed_setRoleAdmin(OPERATOR_ROLE, DEFAULT_ADMIN_ROLE);
         accessControl.exposed_setRoleAdmin(MODERATOR_ROLE, DEFAULT_ADMIN_ROLE);
         accessControl.exposed_setRoleAdmin(OPERATOR_ROLE, OPERATOR_ROLE);
         accessControl.exposed_setRoleAdmin(MODERATOR_ROLE, OPERATOR_ROLE);
-        
+
         // Grant multiple roles to user1
         accessControl.grantRole(MANAGER_ROLE, user1);
         accessControl.grantRole(OPERATOR_ROLE, user1);
         accessControl.grantRole(MODERATOR_ROLE, user1);
         vm.stopPrank();
-        
+
         // Verify user1 has all three roles
         assertTrue(accessControl.hasRole(MANAGER_ROLE, user1));
         assertTrue(accessControl.hasRole(OPERATOR_ROLE, user1));
         assertTrue(accessControl.hasRole(MODERATOR_ROLE, user1));
-        
+
         // Verify user1 is the holder of all three roles
         assertEq(accessControl.getRoleHolder(MANAGER_ROLE), user1);
         assertEq(accessControl.getRoleHolder(OPERATOR_ROLE), user1);
         assertEq(accessControl.getRoleHolder(MODERATOR_ROLE), user1);
-        
+
         // Now transfer OPERATOR_ROLE from user1 to user2
         vm.expectEmit(true, true, true, true);
         emit RoleRevoked(OPERATOR_ROLE, user1, user1);
         vm.expectEmit(true, true, true, true);
         emit RoleGranted(OPERATOR_ROLE, user2, user1);
-        
+
         vm.prank(user1);
         accessControl.grantRole(OPERATOR_ROLE, user2);
-        
+
         // Verify role transfer happened correctly
         assertFalse(accessControl.hasRole(OPERATOR_ROLE, user1)); // user1 no longer has OPERATOR_ROLE
-        assertTrue(accessControl.hasRole(OPERATOR_ROLE, user2));   // user2 now has OPERATOR_ROLE
+        assertTrue(accessControl.hasRole(OPERATOR_ROLE, user2)); // user2 now has OPERATOR_ROLE
         assertEq(accessControl.getRoleHolder(OPERATOR_ROLE), user2);
-        
+
         // Verify user1 still has the other roles
         assertTrue(accessControl.hasRole(MANAGER_ROLE, user1));
         assertTrue(accessControl.hasRole(MODERATOR_ROLE, user1));
         assertEq(accessControl.getRoleHolder(MANAGER_ROLE), user1);
         assertEq(accessControl.getRoleHolder(MODERATOR_ROLE), user1);
-        
+
         // Verify user2 only has the transferred role
         assertFalse(accessControl.hasRole(MANAGER_ROLE, user2));
         assertFalse(accessControl.hasRole(MODERATOR_ROLE, user2));
-        
+
         // Test functional access: user1 can still use remaining roles
         vm.prank(user1);
         string memory result = accessControl.restrictedToManager();
         assertEq(result, "Manager access granted");
-        
+
         // Test that user1 cannot use the transferred role
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -955,7 +953,7 @@ contract MultiAdminSingleHolderAccessControlTest is Test {
         );
         vm.prank(user1);
         accessControl.restrictedToCustomRole(OPERATOR_ROLE);
-        
+
         // Test that user2 can use the transferred role
         vm.prank(user2);
         string memory result2 = accessControl.restrictedToCustomRole(OPERATOR_ROLE);
