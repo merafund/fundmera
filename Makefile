@@ -18,6 +18,8 @@ ifneq ("$(wildcard ./.library_addresses.env)","")
   include ./.library_addresses.env
 endif
 
+UPDATE_IMPLEMENTATIONS_SCRIPT := script/UpdateImplementations.s.sol
+
 all: help
 
 build:
@@ -356,6 +358,95 @@ grant-role-polygon:
 		--broadcast \
 		-vvv
 
+# Update implementations commands
+update-implementations-testnet:
+	forge clean
+	@echo "Updating implementations in testnet..."
+	forge script ${UPDATE_IMPLEMENTATIONS_SCRIPT} \
+		--rpc-url ${TESTNET_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${POLYGONSCAN_API_KEY} \
+		--verifier etherscan \
+		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
+		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
+		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
+		-vvv
+
+update-implementations-polygon:
+	forge clean
+	@echo "Updating implementations in Polygon network..."
+	forge script ${UPDATE_IMPLEMENTATIONS_SCRIPT} \
+		--rpc-url ${POLYGON_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${POLYGONSCAN_API_KEY} \
+		--verifier etherscan \
+		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
+		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
+		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
+		--legacy \
+		-vvv
+
+update-implementations-holesky:
+	forge clean
+	@echo "Updating implementations in Holesky test network..."
+	forge script ${UPDATE_IMPLEMENTATIONS_SCRIPT} \
+		--rpc-url ${HOLESKY_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${ETHERSCAN_API_KEY} \
+		--verifier etherscan \
+		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
+		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
+		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
+		-vvv
+
+update-implementations-base:
+	forge clean
+	@echo "Updating implementations in Base network..."
+	forge script ${UPDATE_IMPLEMENTATIONS_SCRIPT} \
+		--rpc-url ${BASE_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${BASESCAN_API_KEY} \
+		--verifier etherscan \
+		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
+		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
+		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
+		-vvv
+
+update-implementations-mainnet:
+	@echo "WARNING! You are about to update implementations on MAINNET!"
+	@echo "Press Ctrl+C to cancel or Enter to continue..."
+	@read -p ""
+	forge clean
+	@echo "Updating implementations in Mainnet..."
+	forge script ${UPDATE_IMPLEMENTATIONS_SCRIPT} \
+		--rpc-url ${MAINNET_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${ETHERSCAN_API_KEY} \
+		--verifier etherscan \
+		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
+		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
+		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
+		-vvv
+
+update-implementations-local:
+	forge clean
+	@echo "Updating implementations in local network..."
+	forge script ${UPDATE_IMPLEMENTATIONS_SCRIPT} \
+		--rpc-url ${LOCAL_RPC_URL} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		-vvv
+
 help:
 	@echo "Available commands:"
 	@echo "  make build          - Build contracts"
@@ -386,9 +477,18 @@ help:
 	@echo "  make deploy-all-factory-holesky - Deploy libraries and factory to Holesky"
 	@echo "  make deploy-all-factory-base - Deploy libraries and factory to Base"
 	@echo "  make deploy-all-factory-mainnet - Deploy libraries and factory to mainnet (use with caution!)"
+	@echo "  make update-implementations-local - Update implementations in local network"
+	@echo "  make update-implementations-testnet - Update implementations in testnet with verification"
+	@echo "  make update-implementations-polygon - Update implementations in Polygon with verification"
+	@echo "  make update-implementations-holesky - Update implementations in Holesky with verification"
+	@echo "  make update-implementations-base - Update implementations in Base with verification"
+	@echo "  make update-implementations-mainnet - Update implementations in mainnet with verification (use with caution!)"
 	@echo "  make verify         - Manually verify a contract on Etherscan"
 	@echo "  make clean          - Clean build artifacts"
 	@echo "  make swap-tokens    - Execute token swap via InvestmentVault"
 	@echo "  make help           - Show this help message"
 	@echo ""
-	@echo "Before deploying, make sure to set up the required environment variables in .env file." 
+	@echo "Before deploying, make sure to set up the required environment variables in .env file."
+	@echo ""
+	@echo "For updating implementations, set FACTORY_ADDRESS in your .env file."
+	@echo "Optional flags: DEPLOY_MAIN_VAULT, DEPLOY_INVESTMENT_VAULT, DEPLOY_AGENT_DISTRIBUTION (default: true)" 
