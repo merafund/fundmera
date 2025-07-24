@@ -164,6 +164,8 @@ contract FactoryScript is Script {
 
         console.log("Factory deployed at:", address(factory));
 
+        // Wait for 5 seconds before ending
+        vm.sleep(5000);
         vm.stopBroadcast();
 
         console.log("Factory configuration:");

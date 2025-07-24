@@ -37,7 +37,8 @@ contract DeployLibrariesScript is Script {
         console.log("MainVaultSwapLibrary deployed at:", mainVaultSwapLib);
         console.log("SwapLibrary deployed at:", swapLib);
         console.log("Constants deployed at:", constantsLib);
-
+        // Wait for 5 seconds before ending
+        vm.sleep(5000);
         vm.stopBroadcast();
 
         try this.writeLibraryAddresses(mainVaultSwapLib, swapLib, constantsLib) {

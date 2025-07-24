@@ -11,7 +11,7 @@ DEPLOY_SCRIPT := script/MainVault.s.sol
 LIBRARIES_SCRIPT := script/DeployLibraries.s.sol
 FACTORY_SCRIPT := script/Factory.s.sol
 PRIVATE_KEY := ${PRIVATE_KEY}
-
+CHAIN_ID := 137
 
 # Проверяем наличие файла с адресами библиотек
 ifneq ("$(wildcard ./.library_addresses.env)","")
@@ -301,7 +301,7 @@ verify:
 	@read -p "Contract address: " contract_address; \
 	echo "Please enter the contract name (MainVault, InvestmentVault, or ERC1967Proxy):"; \
 	read -p "Contract name: " contract_name; \
-	forge verify-contract $$contract_address $$contract_name --chain-id ${CHAIN_ID} --etherscan-api-key ${ETHERSCAN_API_KEY}
+	forge verify-contract $$contract_address $$contract_name  --rpc-url ${POLYGON_RPC} --chain-id ${CHAIN_ID} --etherscan-api-key ${POLYGONSCAN_API_KEY}
 
 clean:
 	@echo "Cleaning build artifacts..."
