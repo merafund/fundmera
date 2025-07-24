@@ -253,7 +253,11 @@ library SwapLibrary {
             BadPriceAndTimeBetweenBuys()
         );
 
-        require(tokenData.mvBought * tokenData.step / Constants.SHARE_DENOMINATOR >= mvReceived, AssetBoughtTooMuch());
+        require(
+            tokenData.mvBought * tokenData.step * tokenData.initDeposit
+                / (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) >= mvReceived,
+            AssetBoughtTooMuch()
+        );
 
         // Update tracking variables
         tokenData.depositInMv += miSpent;
@@ -379,7 +383,9 @@ library SwapLibrary {
         );
 
         require(
-            assetData.tokenBought * assetData.step / Constants.SHARE_DENOMINATOR >= assetReceived, AssetBoughtTooMuch()
+            assetData.tokenBought * assetData.step * assetData.capital
+                / (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) >= assetReceived,
+            AssetBoughtTooMuch()
         );
 
         assetData.tokenBought += assetReceived;
