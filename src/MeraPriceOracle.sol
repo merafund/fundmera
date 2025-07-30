@@ -24,7 +24,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract MeraPriceOracle is IMeraPriceOracle, Ownable {
     // Custom Errors
     error InconsistentParamsLength();
-
+    error AssetSourceAlreadySet();
     // Map of asset price sources (asset => priceSource)
     mapping(address => AggregatorInterface) private assetsSources;
     mapping(address => uint8) private assetsDecimals;
@@ -74,6 +74,7 @@ contract MeraPriceOracle is IMeraPriceOracle, Ownable {
      */
     function _setAssetsSources(address[] memory assets, address[] memory sources) internal {
         for (uint256 i = 0; i < assets.length; i++) {
+            require(assetsSources[assets[i]] == AggregatorInterface(address(0)), AssetSourceAlreadySet());
             assetsSources[assets[i]] = AggregatorInterface(sources[i]);
             emit AssetSourceUpdated(assets[i], sources[i]);
         }

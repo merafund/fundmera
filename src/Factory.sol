@@ -166,6 +166,14 @@ contract Factory is IFactory, Ownable {
     }
 
     /// @inheritdoc IFactory
+    function setMeraPriceOracle(address _meraPriceOracle) external onlyOwner {
+        require(_meraPriceOracle != address(0), ZeroAddress());
+        address oldMeraPriceOracle = meraPriceOracle;
+        meraPriceOracle = _meraPriceOracle;
+        emit MeraPriceOracleUpdated(oldMeraPriceOracle, _meraPriceOracle);
+    }
+
+    /// @inheritdoc IFactory
     function createAgentDistribution(
         string calldata referralCode,
         address agentWallet,

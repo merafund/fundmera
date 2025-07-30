@@ -116,6 +116,7 @@ contract MainVault is
     DataTypes.ProfitType public profitType;
     uint32 public currentFixedProfitPercent;
     uint32 public proposedFixedProfitPercentByAdmin;
+    address public proposedMeraPriceOracleByAdmin;
 
     IPauserList public pauserList;
     IMeraPriceOracle public meraPriceOracle;
@@ -328,6 +329,23 @@ contract MainVault is
         currentFixedProfitPercent = proposedFixedProfitPercentByAdmin;
 
         emit CurrentFixedProfitPercentSet(oldPercent, currentFixedProfitPercent);
+    }
+
+    /// @inheritdoc IMainVault
+    function setProposedMeraPriceOracleByAdmin(address _proposedOracle) external onlyRole(ADMIN_ROLE) {
+        require(_proposedOracle != address(0), ZeroAddressNotAllowed());
+        proposedMeraPriceOracleByAdmin = _proposedOracle;
+        emit ProposedMeraPriceOracleByAdminSet(proposedMeraPriceOracleByAdmin);
+    }
+
+    /// @inheritdoc IMainVault
+    function setCurrentMeraPriceOracle() external onlyRole(MAIN_INVESTOR_ROLE) {
+        require(proposedMeraPriceOracleByAdmin != address(0), ZeroAddressNotAllowed());
+        address oldOracle = address(meraPriceOracle);
+        meraPriceOracle = IMeraPriceOracle(proposedMeraPriceOracleByAdmin);
+        proposedMeraPriceOracleByAdmin = address(0); // Reset proposed oracle after confirmation
+
+        emit MeraPriceOracleSet(oldOracle, address(meraPriceOracle));
     }
 
     /// @inheritdoc IMainVault

@@ -52,7 +52,7 @@ interface IFactory {
     event FounderWalletUpdated(address indexed oldFundWallet, address indexed newFundWallet);
     event MeraCapitalWalletUpdated(address indexed oldMeraCapitalWallet, address indexed newMeraCapitalWallet);
     event DeployerUpdated(address indexed oldDeployer, address indexed newDeployer);
-
+    event MeraPriceOracleUpdated(address indexed oldMeraPriceOracle, address indexed newMeraPriceOracle);
     /// @notice Creates a new MainVault instance
     /// @param mainInvestor The address of the main investor
     /// @param backupInvestor The address of the backup investor
@@ -125,4 +125,8 @@ interface IFactory {
     /// @param agentDistribution The address of the AgentDistribution contract
     /// @return The referral code associated with the contract
     function getReferralCode(address agentDistribution) external view returns (string memory);
+
+    /// @notice Sets the Mera Price Oracle
+    /// @param _meraPriceOracle The new Mera Price Oracle address
+    function setMeraPriceOracle(address _meraPriceOracle) external;
 }

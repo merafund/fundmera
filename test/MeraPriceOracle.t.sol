@@ -113,8 +113,10 @@ contract MeraPriceOracleTest is Test {
     function test_SetAssetSources() public {
         MockAggregator newAggregator = new MockAggregator();
 
+        // Use a new asset that doesn't have a source set yet
+        address newAsset = address(0x3);
         address[] memory assets = new address[](1);
-        assets[0] = ASSET1;
+        assets[0] = newAsset;
 
         address[] memory sources = new address[](1);
         sources[0] = address(newAggregator);
@@ -125,7 +127,7 @@ contract MeraPriceOracleTest is Test {
         vm.prank(owner);
         oracle.setAssetSources(assets, sources, decimals);
 
-        assertEq(oracle.getSourceOfAsset(ASSET1), address(newAggregator));
+        assertEq(oracle.getSourceOfAsset(newAsset), address(newAggregator));
 
         MeraPriceOracle.AssetPriceData[] memory priceData = oracle.getAssetsPriceData(assets);
         assertEq(priceData[0].decimals, 6);
@@ -173,5 +175,22 @@ contract MeraPriceOracleTest is Test {
 
         vm.expectRevert(MeraPriceOracle.InconsistentParamsLength.selector);
         new MeraPriceOracle(assets, sources, decimals, address(mockFallbackOracle));
+    }
+
+    function test_RevertWhen_SetAssetSources_AssetSourceAlreadySet() public {
+        MockAggregator newAggregator = new MockAggregator();
+
+        address[] memory assets = new address[](1);
+        assets[0] = ASSET1; // ASSET1 already has a source set in setUp
+
+        address[] memory sources = new address[](1);
+        sources[0] = address(newAggregator);
+
+        uint8[] memory decimals = new uint8[](1);
+        decimals[0] = 6;
+
+        vm.prank(owner);
+        vm.expectRevert(MeraPriceOracle.AssetSourceAlreadySet.selector);
+        oracle.setAssetSources(assets, sources, decimals);
     }
 }

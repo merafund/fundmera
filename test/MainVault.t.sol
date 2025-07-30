@@ -91,6 +91,8 @@ contract MainVaultTest is Test {
     event CurrentFixedProfitPercentSet(uint32 oldPercent, uint32 newPercent);
     event WithdrawalLockSet(uint256 lockPeriod, uint64 lockUntil);
     event AutoRenewWithdrawalLockSet(bool autoRenewEnabled, bool newAutoRenewValue);
+    event ProposedMeraPriceOracleByAdminSet(address newOracle);
+    event MeraPriceOracleSet(address oldOracle, address newOracle);
 
     function setUp() public {
         vm.startPrank(owner);
@@ -1706,7 +1708,7 @@ contract MainVaultTest is Test {
         vault.deposit(token, DEPOSIT_AMOUNT);
 
         vm.expectEmit(false, false, false, true);
-        emit WithdrawalLockAutoRenewed(uint64(initialLockUntil + 182 days));
+        emit WithdrawalLockAutoRenewed(uint64(initialLockUntil + 365 days));
 
         vm.expectRevert(MainVault.WithdrawalLocked.selector);
         vault.withdraw(IERC20(address(token)), DEPOSIT_AMOUNT);
@@ -2826,6 +2828,99 @@ contract MainVaultTest is Test {
 
         vault.setWithdrawalLockWithAutoRenew(lockPeriod, true);
 
+        vm.stopPrank();
+    }
+
+    // ============================= MeraPriceOracle Tests =============================
+
+    function testSetProposedMeraPriceOracleByAdmin() public {
+        address newOracle = makeAddr("newOracle");
+
+        vm.startPrank(admin);
+        vault.setProposedMeraPriceOracleByAdmin(newOracle);
+        assertEq(vault.proposedMeraPriceOracleByAdmin(), newOracle, "Proposed oracle should be updated");
+        vm.stopPrank();
+    }
+
+    function testSetProposedMeraPriceOracleByAdmin_OnlyAdmin() public {
+        address newOracle = makeAddr("newOracle");
+
+        vm.startPrank(user1);
+        vm.expectRevert();
+        vault.setProposedMeraPriceOracleByAdmin(newOracle);
+        vm.stopPrank();
+    }
+
+    function testSetProposedMeraPriceOracleByAdmin_ZeroAddress() public {
+        vm.startPrank(admin);
+        vm.expectRevert();
+        vault.setProposedMeraPriceOracleByAdmin(address(0));
+        vm.stopPrank();
+    }
+
+    function testSetProposedMeraPriceOracleByAdmin_EmitsEvent() public {
+        address newOracle = makeAddr("newOracle");
+
+        vm.startPrank(admin);
+        vm.expectEmit(true, true, true, true);
+        emit ProposedMeraPriceOracleByAdminSet(newOracle);
+        vault.setProposedMeraPriceOracleByAdmin(newOracle);
+        vm.stopPrank();
+    }
+
+    function testSetCurrentMeraPriceOracle() public {
+        address newOracle = makeAddr("newOracle");
+        address oldOracle = address(vault.meraPriceOracle());
+
+        // First admin proposes new oracle
+        vm.startPrank(admin);
+        vault.setProposedMeraPriceOracleByAdmin(newOracle);
+        vm.stopPrank();
+
+        // Then main investor confirms it
+        vm.startPrank(mainInvestor);
+        vault.setCurrentMeraPriceOracle();
+        assertEq(address(vault.meraPriceOracle()), newOracle, "Oracle should be updated");
+        assertEq(vault.proposedMeraPriceOracleByAdmin(), address(0), "Proposed oracle should be reset");
+        vm.stopPrank();
+    }
+
+    function testSetCurrentMeraPriceOracle_OnlyMainInvestor() public {
+        address newOracle = makeAddr("newOracle");
+
+        // Admin proposes oracle first
+        vm.startPrank(admin);
+        vault.setProposedMeraPriceOracleByAdmin(newOracle);
+        vm.stopPrank();
+
+        // Try with non-main investor
+        vm.startPrank(user1);
+        vm.expectRevert();
+        vault.setCurrentMeraPriceOracle();
+        vm.stopPrank();
+    }
+
+    function testSetCurrentMeraPriceOracle_RequiresProposedOracle() public {
+        vm.startPrank(mainInvestor);
+        vm.expectRevert(); // Should revert because no oracle was proposed
+        vault.setCurrentMeraPriceOracle();
+        vm.stopPrank();
+    }
+
+    function testSetCurrentMeraPriceOracle_EmitsEvent() public {
+        address newOracle = makeAddr("newOracle");
+        address oldOracle = address(vault.meraPriceOracle());
+
+        // Admin proposes oracle first
+        vm.startPrank(admin);
+        vault.setProposedMeraPriceOracleByAdmin(newOracle);
+        vm.stopPrank();
+
+        // Main investor confirms with event
+        vm.startPrank(mainInvestor);
+        vm.expectEmit(true, true, true, true);
+        emit MeraPriceOracleSet(oldOracle, newOracle);
+        vault.setCurrentMeraPriceOracle();
         vm.stopPrank();
     }
 }

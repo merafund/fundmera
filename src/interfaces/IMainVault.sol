@@ -176,6 +176,12 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl, IERC5267 {
     /// @dev Emitted when proposed fixed profit percent is set by admin
     event ProposedFixedProfitPercentByAdminSet(uint32 percent);
 
+    /// @dev Emitted when admin proposes a new MeraPriceOracle
+    event ProposedMeraPriceOracleByAdminSet(address proposedOracle);
+
+    /// @dev Emitted when MeraPriceOracle is updated by main investor
+    event MeraPriceOracleSet(address oldOracle, address newOracle);
+
     /// @dev Initialization struct to prevent stack too deep errors
     struct InitParams {
         address mainInvestor;
@@ -534,6 +540,13 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl, IERC5267 {
     /// @dev Sets the proposed fixed profit percent by admin
     /// @param _proposedFixedProfitPercent The proposed fixed profit percent
     function setProposedFixedProfitPercentByAdmin(uint32 _proposedFixedProfitPercent) external;
+
+    /// @dev Sets the proposed MeraPriceOracle by admin
+    /// @param _proposedOracle The proposed MeraPriceOracle address
+    function setProposedMeraPriceOracleByAdmin(address _proposedOracle) external;
+
+    /// @dev Can be called by main investor to confirm proposed MeraPriceOracle
+    function setCurrentMeraPriceOracle() external;
 
     /// @dev Get current fixed profit percent
     /// @return percent Current fixed profit percent

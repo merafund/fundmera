@@ -54,6 +54,7 @@ contract FactoryTest is Test {
     event DeployerUpdated(address indexed oldDeployer, address indexed newDeployer);
     event FounderWalletUpdated(address indexed oldFundWallet, address indexed newFundWallet);
     event MeraCapitalWalletUpdated(address indexed oldMeraCapitalWallet, address indexed newMeraCapitalWallet);
+    event MeraPriceOracleUpdated(address indexed oldMeraPriceOracle, address indexed newMeraPriceOracle);
 
     function setUp() public {
         owner = address(this);
@@ -547,5 +548,36 @@ contract FactoryTest is Test {
         // Test emergencyInvestor
         vm.expectRevert(IFactory.ZeroAddress.selector);
         factory.createMainVault(mainInvestor, backupInvestor, address(0), profitWallet, referralCode);
+    }
+
+    function test_SetMeraPriceOracle() public {
+        address newMeraPriceOracle = makeAddr("newMeraPriceOracle");
+        address oldMeraPriceOracle = factory.meraPriceOracle();
+
+        vm.startPrank(owner);
+
+        vm.expectEmit(true, true, true, true);
+        emit MeraPriceOracleUpdated(oldMeraPriceOracle, newMeraPriceOracle);
+
+        factory.setMeraPriceOracle(newMeraPriceOracle);
+        assertEq(factory.meraPriceOracle(), newMeraPriceOracle);
+
+        vm.stopPrank();
+    }
+
+    function test_RevertSetMeraPriceOracleIfNotOwner() public {
+        address newMeraPriceOracle = makeAddr("newMeraPriceOracle");
+
+        vm.startPrank(ALICE);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", ALICE));
+        factory.setMeraPriceOracle(newMeraPriceOracle);
+        vm.stopPrank();
+    }
+
+    function test_RevertSetMeraPriceOracleToZeroAddress() public {
+        vm.startPrank(owner);
+        vm.expectRevert(IFactory.ZeroAddress.selector);
+        factory.setMeraPriceOracle(address(0));
+        vm.stopPrank();
     }
 }
