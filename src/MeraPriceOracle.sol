@@ -26,6 +26,7 @@ contract MeraPriceOracle is IMeraPriceOracle, Ownable {
     error InconsistentParamsLength();
     error AssetSourceAlreadySet();
     // Map of asset price sources (asset => priceSource)
+
     mapping(address => AggregatorInterface) private assetsSources;
     mapping(address => uint8) private assetsDecimals;
 

@@ -60,6 +60,7 @@ interface IFactory {
     /// @param profitWallet The address of the profit wallet
     /// @param referralCode The referral code to be used
     /// @return mainVaultProxy The address of the created MainVault proxy
+
     function createMainVault(
         address mainInvestor,
         address backupInvestor,
