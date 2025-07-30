@@ -184,7 +184,7 @@ contract FactoryScript is Script {
             sources[4] = address(0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE); // BNB/USD
             sources[5] = address(0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e); // ETH/USD
             sources[6] = address(0x264990fbd0A4796A3E3d8E37C4d5F87a3aCa5Ebf); // BTC/USD
-            sources[7] = address(0x93A67D414896A280bF8FFB6E7F51645503C1d358); // XRP/USD
+            sources[7] = address(0x93A67d414896a280Bf8Ffb6e7f51645503c1d358); // XRP/USD
             sources[8] = address(0x0E8a53DD9c13589df6382F13dA6B3Ec8F919B323); // SOL/USD
             sources[9] = address(0x3AB0A0d137D4F946fBB19eecc6e92E64660231C8); // DOGE/USD
             sources[10] = address(0xB6064eD41d4f67e353768aA239cA86f4F73665a1); // CAKE/USD
