@@ -13,6 +13,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IUniswapV2Router02} from "../interfaces/IUniswapV2Router02.sol";
 import {ISwapRouter} from "../interfaces/ISwapRouter.sol";
+import {ISwapRouterBase} from "../interfaces/ISwapRouterBase.sol";
 import {IQuickswapV3Router} from "../interfaces/IQuickswapV3Router.sol";
 import {Constants} from "./Constants.sol";
 import {DataTypes} from "./DataTypes.sol";
@@ -94,8 +95,21 @@ library MainVaultSwapLibrary {
             inputToken.safeIncreaseAllowance(router, type(uint256).max);
         }
 
-        // Execute the swap
-        amountOut = ISwapRouter(router).exactInputSingle(routerParams);
+        if (params.deadline == 0) {
+            amountOut = ISwapRouterBase(router).exactInputSingle(
+                ISwapRouterBase.ExactInputSingleParams({
+                    tokenIn: params.tokenIn,
+                    tokenOut: params.tokenOut,
+                    fee: params.fee,
+                    recipient: address(this),
+                    amountIn: params.amountIn,
+                    amountOutMinimum: params.amountOutMinimum,
+                    sqrtPriceLimitX96: params.sqrtPriceLimitX96
+                })
+            );
+        } else {
+            amountOut = ISwapRouter(router).exactInputSingle(routerParams);
+        }
 
         // Emit event
         emit ExactInputSingleDelegateExecuted(router, params.tokenIn, params.tokenOut, params.amountIn, amountOut);
@@ -159,8 +173,18 @@ library MainVaultSwapLibrary {
             inputToken.safeIncreaseAllowance(router, type(uint256).max);
         }
 
-        // Execute the swap
-        amountOut = ISwapRouter(router).exactInput(routerParams);
+        if (params.deadline == 0) {
+            amountOut = ISwapRouterBase(router).exactInput(
+                ISwapRouterBase.ExactInputParams({
+                    path: params.path,
+                    recipient: address(this),
+                    amountIn: params.amountIn,
+                    amountOutMinimum: params.amountOutMinimum
+                })
+            );
+        } else {
+            amountOut = ISwapRouter(router).exactInput(routerParams);
+        }
 
         // Emit event
         emit ExactInputDelegateExecuted(router, firstToken, lastToken, params.amountIn, amountOut);
@@ -204,8 +228,21 @@ library MainVaultSwapLibrary {
             inputToken.safeIncreaseAllowance(router, type(uint256).max);
         }
 
-        // Execute the swap
-        amountIn = ISwapRouter(router).exactOutputSingle(routerParams);
+        if (params.deadline == 0) {
+            amountIn = ISwapRouterBase(router).exactOutputSingle(
+                ISwapRouterBase.ExactOutputSingleParams({
+                    tokenIn: params.tokenIn,
+                    tokenOut: params.tokenOut,
+                    fee: params.fee,
+                    recipient: address(this),
+                    amountOut: params.amountOut,
+                    amountInMaximum: params.amountInMaximum,
+                    sqrtPriceLimitX96: params.sqrtPriceLimitX96
+                })
+            );
+        } else {
+            amountIn = ISwapRouter(router).exactOutputSingle(routerParams);
+        }
 
         // Emit event
         emit ExactOutputSingleDelegateExecuted(router, params.tokenIn, params.tokenOut, amountIn, params.amountOut);
@@ -269,8 +306,18 @@ library MainVaultSwapLibrary {
             inputToken.safeIncreaseAllowance(router, type(uint256).max);
         }
 
-        // Execute the swap
-        amountIn = ISwapRouter(router).exactOutput(routerParams);
+        if (params.deadline == 0) {
+            amountIn = ISwapRouterBase(router).exactOutput(
+                ISwapRouterBase.ExactOutputParams({
+                    path: params.path,
+                    recipient: address(this),
+                    amountOut: params.amountOut,
+                    amountInMaximum: params.amountInMaximum
+                })
+            );
+        } else {
+            amountIn = ISwapRouter(router).exactOutput(routerParams);
+        }
 
         // Emit event
         emit ExactOutputDelegateExecuted(router, lastToken, firstToken, amountIn, params.amountOut);

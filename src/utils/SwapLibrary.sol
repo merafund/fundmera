@@ -13,6 +13,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IUniswapV2Router02} from "../interfaces/IUniswapV2Router02.sol";
 import {ISwapRouter} from "../interfaces/ISwapRouter.sol";
+import {ISwapRouterBase} from "../interfaces/ISwapRouterBase.sol";
 import {Constants} from "./Constants.sol";
 import {DataTypes} from "./DataTypes.sol";
 import {IMainVault} from "../interfaces/IMainVault.sol";
@@ -602,7 +603,18 @@ library SwapLibrary {
         uint256 secondBalanceBefore = IERC20(lastToken).balanceOf(address(this));
 
         // Execute the swap
-        amountOut = ISwapRouter(router).exactInput(routerParams);
+        if (params.deadline == 0) {
+            amountOut = ISwapRouterBase(router).exactInput(
+                ISwapRouterBase.ExactInputParams({
+                    path: params.path,
+                    recipient: address(this),
+                    amountIn: params.amountIn,
+                    amountOutMinimum: params.amountOutMinimum
+                })
+            );
+        } else {
+            amountOut = ISwapRouter(router).exactInput(routerParams);
+        }
 
         // Process swap data
         computeDataSwap(
@@ -671,7 +683,21 @@ library SwapLibrary {
         uint256 secondBalanceBefore = outputToken.balanceOf(address(this));
 
         // Execute the swap
-        amountOut = ISwapRouter(router).exactInputSingle(routerParams);
+        if (params.deadline == 0) {
+            amountOut = ISwapRouterBase(router).exactInputSingle(
+                ISwapRouterBase.ExactInputSingleParams({
+                    tokenIn: params.tokenIn,
+                    tokenOut: params.tokenOut,
+                    fee: params.fee,
+                    recipient: address(this),
+                    amountIn: params.amountIn,
+                    amountOutMinimum: params.amountOutMinimum,
+                    sqrtPriceLimitX96: params.sqrtPriceLimitX96
+                })
+            );
+        } else {
+            amountOut = ISwapRouter(router).exactInputSingle(routerParams);
+        }
 
         // Process swap data
         computeDataSwap(

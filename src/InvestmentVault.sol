@@ -19,6 +19,7 @@ import {IInvestmentVault} from "./interfaces/IInvestmentVault.sol";
 import {IMainVault} from "./interfaces/IMainVault.sol";
 import {IUniswapV2Router02} from "./interfaces/IUniswapV2Router02.sol";
 import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
+import {ISwapRouterBase} from "./interfaces/ISwapRouterBase.sol";
 import {IQuickswapV3Router} from "./interfaces/IQuickswapV3Router.sol";
 import {Constants} from "./utils/Constants.sol";
 import {SwapLibrary} from "./utils/SwapLibrary.sol";
@@ -649,7 +650,18 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
                 amountIn: amountIn,
                 amountOutMinimum: initSwapsData.amountOutMin
             });
-            amountOut = router.exactInput(params);
+            if (deadline == 0) {
+                amountOut = ISwapRouterBase(address(router)).exactInput(
+                    ISwapRouterBase.ExactInputParams({
+                        path: initSwapsData.pathBytes,
+                        recipient: address(this),
+                        amountIn: amountIn,
+                        amountOutMinimum: initSwapsData.amountOutMin
+                    })
+                );
+            } else {
+                amountOut = router.exactInput(params);
+            }
         } else if (initSwapsData.routerType == DataTypes.Router.QuickswapV3) {
             IQuickswapV3Router router = IQuickswapV3Router(initSwapsData.router);
             IQuoterQuickswap quoter = IQuoterQuickswap(initSwapsData.quouter);
