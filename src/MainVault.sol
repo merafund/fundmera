@@ -166,9 +166,9 @@ contract MainVault is
         }
 
         availableLock[10 minutes] = true;
-        availableLock[182 days] = true;
         availableLock[365 days] = true;
-        availableLock[730 days] = true;
+        availableLock[365 days * 3] = true;
+        availableLock[365 days * 5] = true;
 
         currentFixedProfitPercent = 2000; // 20%
 

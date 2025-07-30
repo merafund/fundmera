@@ -20,7 +20,7 @@ library Constants {
     // Time constants
     uint256 public constant PAUSE_AFTER_INIT = 4 hours;
     uint256 public constant AUTO_RENEW_CHECK_PERIOD = 7 days; // Period before lock expiry to check for auto-renewal
-    uint256 public constant AUTO_RENEW_PERIOD = 182 days; // Period to extend lock when auto-renewal is enabled
+    uint256 public constant AUTO_RENEW_PERIOD = 365 days; // Period to extend lock when auto-renewal is enabled
     uint256 public constant PAUSE_AFTER_UPDATE_ACCESS = 4 hours; // Pause period after access update
     uint256 public constant WITHDRAW_COMMIT_MIN_DELAY = 1 hours; // Minimum delay for withdraw commit
     uint256 public constant WITHDRAW_COMMIT_MAX_DELAY = 1 days; // Maximum delay for withdraw commit
