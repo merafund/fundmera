@@ -202,6 +202,53 @@ contract FactoryScript is Script {
             decimals[9] = 8; // DOGE/USD
             decimals[10] = 8; // CAKE/USD
         }
+        // Ethereum mainnet
+        else if (block.chainid == 1) {
+            assets = new address[](13);
+            assets[0] = address(0xdAC17F958D2ee523a2206206994597C13D831ec7); // USDT
+            assets[1] = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); // USDC
+            assets[2] = address(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3); // USDe
+            assets[3] = address(0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c); // EURC
+            assets[4] = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
+            assets[5] = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2); // WETH
+            // assets[6] = address(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0); // wstETH
+            assets[6] = address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599); // WBTC
+            assets[7] = address(0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf); // cbBTC
+            assets[8] = address(0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984); // UNI
+            assets[9] = address(0x514910771AF9Ca656af840dff83E8264EcF986CA); // LINK
+            assets[10] = address(0xD31a59c85aE9D8edEFeC411D448f90841571b89c); // SOL
+            assets[11] = address(0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d); // USD1
+
+            sources = new address[](13);
+            sources[0] = address(0x3E7d1eAB13ad0104d2750B8863b489D65364e32D); // USDT/USD
+            sources[1] = address(0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6); // USDC/USD
+            sources[2] = address(0xa569d910839Ae8865Da8F8e70FfFb0cBA869F961); // USDe/USD
+            sources[3] = address(0x04F84020Fdf10d9ee64D1dcC2986EDF2F556DA11); // EURC/USD
+            sources[4] = address(0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9); // DAI/USD
+            sources[5] = address(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419); // ETH/USD
+            // sources[6] = address(0x164C5B1682E4e4b52B08a03ADd5F7Cae6A625E5a); // wstETH/USD
+            sources[6] = address(0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c); // BTC/USD (for WBTC)
+            sources[7] = address(0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c); // BTC/USD (for cbBTC)
+            sources[8] = address(0x553303d460EE0afB37EdFf9bE42922D8FF63220e); // UNI/USD
+            sources[9] = address(0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c); // LINK/USD
+            sources[10] = address(0x4ffC43a60e009B551865A93d232E33Fce9f01507); // SOL/USD
+            sources[11] = address(0xF0d9bb015Cd7BfAb877B7156146dc09Bf461370d); // USD1/USD
+
+            decimals = new uint8[](13);
+            decimals[0] = 8; // USDT/USD
+            decimals[1] = 8; // USDC/USD
+            decimals[2] = 8; // USDe/USD
+            decimals[3] = 8; // EURC/USD
+            decimals[4] = 8; // DAI/USD
+            decimals[5] = 8; // ETH/USD
+            // decimals[6] = 8; // wstETH/USD
+            decimals[6] = 8; // BTC/USD
+            decimals[7] = 8; // BTC/USD
+            decimals[8] = 8; // UNI/USD
+            decimals[9] = 8; // LINK/USD
+            decimals[10] = 8; // SOL/USD
+            decimals[11] = 8; // USD1/USD
+        }
 
         address fallbackOracle = address(0x0);
 
