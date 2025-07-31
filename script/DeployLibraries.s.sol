@@ -41,14 +41,12 @@ contract DeployLibrariesScript is Script {
         vm.sleep(5000);
         vm.stopBroadcast();
 
-        try this.writeLibraryAddresses(mainVaultSwapLib, swapLib, constantsLib) {
-            console.log("Library addresses successfully saved");
-        } catch Error(string memory reason) {
-            console.log("Failed to write library addresses:", reason);
-        }
+        // Direct internal call to avoid external call on the ephemeral script address
+        writeLibraryAddresses(mainVaultSwapLib, swapLib, constantsLib);
+        console.log("Library addresses successfully saved");
     }
 
-    function writeLibraryAddresses(address mainVaultSwapLib, address swapLib, address constantsLib) external {
+    function writeLibraryAddresses(address mainVaultSwapLib, address swapLib, address constantsLib) internal {
         string memory addressesJson = string(
             abi.encodePacked(
                 '{"mainVaultSwapLibrary":"',
@@ -62,7 +60,6 @@ contract DeployLibrariesScript is Script {
                 '"}'
             )
         );
-
         vm.writeFile(LIBRARY_ADDRESSES_FILE, addressesJson);
         console.log("Library addresses saved to", LIBRARY_ADDRESSES_FILE);
 
