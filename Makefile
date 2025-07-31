@@ -88,9 +88,6 @@ deploy-libraries-holesky:
 	fi
 
 deploy-libraries-mainnet:
-	@echo "WARNING! You are about to deploy libraries to MAINNET!"
-	@echo "Press Ctrl+C to cancel or Enter to continue..."
-	@read -p ""
 	forge clean
 	@echo "Deploying libraries to Mainnet..."
 	forge script ${LIBRARIES_SCRIPT} \
@@ -218,9 +215,6 @@ deploy-holesky-contracts:
 		-vvv
 
 deploy-mainnet-contracts:
-	@echo "WARNING! You are about to deploy to MAINNET!"
-	@echo "Press Ctrl+C to cancel or Enter to continue..."
-	@read -p ""
 	forge clean
 	forge script ${DEPLOY_SCRIPT} \
 		--rpc-url ${MAINNET_RPC} \
@@ -285,10 +279,6 @@ deploy-factory-holesky:
 
 # Деплой MainVaultFactory в основную сеть
 deploy-factory-mainnet:
-	@echo "WARNING! You are about to deploy to MAINNET!"
-	@echo "Press Ctrl+C to cancel or Enter to continue..."
-	@read -p ""
-	forge clean
 	forge script ${FACTORY_SCRIPT} \
 		--rpc-url ${MAINNET_RPC} \
 		--private-key ${PRIVATE_KEY} \
@@ -443,20 +433,7 @@ deploy-bsc-contracts:
 		--legacy \
 		-vvv
 
-deploy-factory-base:
-	forge clean
-	@echo "Deploying MainVaultFactory to Base network..."
-	forge script ${FACTORY_SCRIPT} \
-		--rpc-url ${BASE_RPC} \
-		--private-key ${PRIVATE_KEY} \
-		--broadcast \
-		--verify \
-		--etherscan-api-key ${BASESCAN_API_KEY} \
-		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
-		-vvv
+
 
 deploy-all-factory-base: deploy-libraries-base deploy-factory-base
 
@@ -563,9 +540,6 @@ update-implementations-bsc:
 		-vvv
 
 update-implementations-mainnet:
-	@echo "WARNING! You are about to update implementations on MAINNET!"
-	@echo "Press Ctrl+C to cancel or Enter to continue..."
-	@read -p ""
 	forge clean
 	@echo "Updating implementations in Mainnet..."
 	forge script ${UPDATE_IMPLEMENTATIONS_SCRIPT} \
