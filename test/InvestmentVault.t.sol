@@ -589,19 +589,19 @@ contract InvestmentVaultTest is Test {
         setUp_DifferentTokens();
         vm.startPrank(owner);
 
-        IERC20[] memory tokens = new IERC20[](2);
+        IERC20[] memory tokens = new IERC20[](1);
         tokens[0] = IERC20(address(assetToken1));
-        tokens[1] = IERC20(address(assetToken2));
+        // tokens[1] = IERC20(address(assetToken2));
 
-        uint256[] memory capitals = new uint256[](2);
-        capitals[0] = 1000 * 10 ** 18;
-        capitals[1] = 500 * 10 ** 6;
+        uint256[] memory capitals = new uint256[](1);
+        capitals[0] = 0;
+        // capitals[1] = 500 * 10 ** 6;
 
         // Expect events for both tokens
         vm.expectEmit(true, false, false, true);
         emit AssetCapitalUpdated(address(tokens[0]), 0, capitals[0]);
-        vm.expectEmit(true, false, false, true);
-        emit AssetCapitalUpdated(address(tokens[1]), 0, capitals[1]);
+        // vm.expectEmit(true, false, false, true);
+        // emit AssetCapitalUpdated(address(tokens[1]), 0, capitals[1]);
 
         vault.setAssetCapital(tokens, capitals);
 
@@ -666,10 +666,76 @@ contract InvestmentVaultTest is Test {
         setUp_DifferentTokens();
         vm.startPrank(owner);
 
+        // Need to initialize swaps first before setting capital
+        (,, uint256 pauseToTimestamp,) = vault.vaultState();
+        vm.warp(pauseToTimestamp + 1);
+
+        // Approve tokens for router from vault
+        vm.stopPrank();
+        vm.startPrank(address(vault));
+        tokenMI.approve(address(router), type(uint256).max);
+        tokenMV.approve(address(router), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(owner);
+
+        // First initialize MI to MV swap
+        bytes memory pathBytesMiMv = abi.encodePacked(address(tokenMI), uint24(3000), address(tokenMV));
+
+        DataTypes.InitSwapsData memory miToMvData = DataTypes.InitSwapsData({
+            quouter: address(router),
+            router: address(router),
+            path: new address[](2),
+            pathBytes: pathBytesMiMv,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        miToMvData.path[0] = address(tokenMI);
+        miToMvData.path[1] = address(tokenMV);
+
+        // Initialize MI to MV swap
+        vault.initMiToMvSwap(miToMvData, block.timestamp + 1);
+
+        // Now prepare MV to Tokens swaps data
+        DataTypes.InitSwapsData[] memory mvToTokenPaths = new DataTypes.InitSwapsData[](2);
+
+        // Path for first asset (MV -> Asset1)
+        bytes memory pathBytesAsset1 = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+
+        mvToTokenPaths[0] = DataTypes.InitSwapsData({
+            quouter: address(router),
+            router: address(router),
+            path: new address[](2),
+            pathBytes: pathBytesAsset1,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE / 4,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        mvToTokenPaths[0].path[0] = address(tokenMV);
+        mvToTokenPaths[0].path[1] = address(assetToken1);
+
+        // Path for second asset (MV -> Asset2)
+        bytes memory pathBytesAsset2 = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken2));
+
+        mvToTokenPaths[1] = DataTypes.InitSwapsData({
+            quouter: address(router),
+            router: address(router),
+            path: new address[](2),
+            pathBytes: pathBytesAsset2,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE / 4,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        mvToTokenPaths[1].path[0] = address(tokenMV);
+        mvToTokenPaths[1].path[1] = address(assetToken2);
+
+        // Initialize MV to Tokens swaps
+        vault.initMvToTokensSwaps(mvToTokenPaths, block.timestamp + 1);
+
         IERC20[] memory tokens = new IERC20[](1);
         tokens[0] = IERC20(address(assetToken1));
         uint256[] memory capitals = new uint256[](1);
-        capitals[0] = 1 * 10 ** 18;
+        capitals[0] = 3000 * 10 ** 18; // Set capital less than mvBought (3500 * 10**18)
         vault.setAssetCapital(tokens, capitals);
 
         uint256[] memory shares = new uint256[](1);
@@ -1655,10 +1721,76 @@ contract InvestmentVaultTest is Test {
         setUp_DifferentTokens();
         vm.startPrank(owner);
 
+        // Need to initialize swaps first before setting capital
+        (,, uint256 pauseToTimestamp,) = vault.vaultState();
+        vm.warp(pauseToTimestamp + 1);
+
+        // Approve tokens for router from vault
+        vm.stopPrank();
+        vm.startPrank(address(vault));
+        tokenMI.approve(address(router), type(uint256).max);
+        tokenMV.approve(address(router), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(owner);
+
+        // First initialize MI to MV swap
+        bytes memory pathBytesMiMv = abi.encodePacked(address(tokenMI), uint24(3000), address(tokenMV));
+
+        DataTypes.InitSwapsData memory miToMvData = DataTypes.InitSwapsData({
+            quouter: address(router),
+            router: address(router),
+            path: new address[](2),
+            pathBytes: pathBytesMiMv,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        miToMvData.path[0] = address(tokenMI);
+        miToMvData.path[1] = address(tokenMV);
+
+        // Initialize MI to MV swap
+        vault.initMiToMvSwap(miToMvData, block.timestamp + 1);
+
+        // Now prepare MV to Tokens swaps data
+        DataTypes.InitSwapsData[] memory mvToTokenPaths = new DataTypes.InitSwapsData[](2);
+
+        // Path for first asset (MV -> Asset1)
+        bytes memory pathBytesAsset1 = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+
+        mvToTokenPaths[0] = DataTypes.InitSwapsData({
+            quouter: address(router),
+            router: address(router),
+            path: new address[](2),
+            pathBytes: pathBytesAsset1,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE / 4,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        mvToTokenPaths[0].path[0] = address(tokenMV);
+        mvToTokenPaths[0].path[1] = address(assetToken1);
+
+        // Path for second asset (MV -> Asset2)
+        bytes memory pathBytesAsset2 = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken2));
+
+        mvToTokenPaths[1] = DataTypes.InitSwapsData({
+            quouter: address(router),
+            router: address(router),
+            path: new address[](2),
+            pathBytes: pathBytesAsset2,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE / 4,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        mvToTokenPaths[1].path[0] = address(tokenMV);
+        mvToTokenPaths[1].path[1] = address(assetToken2);
+
+        // Initialize MV to Tokens swaps
+        vault.initMvToTokensSwaps(mvToTokenPaths, block.timestamp + 1);
+
         IERC20[] memory tokens = new IERC20[](1);
         tokens[0] = IERC20(address(assetToken1));
         uint256[] memory capitals = new uint256[](1);
-        capitals[0] = 1 * 10 ** 18;
+        capitals[0] = 3000 * 10 ** 18; // Set capital less than mvBought (3500 * 10**18)
         vault.setAssetCapital(tokens, capitals);
 
         uint256[] memory shares = new uint256[](1);

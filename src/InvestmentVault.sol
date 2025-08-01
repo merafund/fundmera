@@ -69,6 +69,8 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
     error InvalidToken();
     error DepositIsZero();
     error AssetStrategyIsFirst();
+    error CapitalLessThanDeposit();
+    error CapitalExceedsMvBought();
 
     event ProfitCalculated(address indexed fromToken, address indexed toToken, uint256 profitAmount);
 
@@ -351,6 +353,9 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
             // Get current asset data and verify it exists
             DataTypes.AssetData memory assetData = assetsData[token];
             require(assetData.decimals > 0, AssetNotFound());
+            require(assetData.strategy != DataTypes.Strategy.First, AssetStrategyIsFirst());
+            require(newCapital <= tokenData.mvBought, CapitalExceedsMvBought());
+            require(newCapital >= uint256(assetData.deposit), CapitalLessThanDeposit());
 
             uint256 oldCapital = assetData.capital;
 
