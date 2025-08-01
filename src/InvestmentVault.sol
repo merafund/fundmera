@@ -68,6 +68,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
     error InvalidStep();
     error InvalidToken();
     error DepositIsZero();
+    error AssetStrategyIsFirst();
 
     event ProfitCalculated(address indexed fromToken, address indexed toToken, uint256 profitAmount);
 
@@ -321,6 +322,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
 
             // Get current asset data and verify it exists
             DataTypes.AssetData memory assetData = assetsData[token];
+            require(assetData.strategy != DataTypes.Strategy.First, AssetStrategyIsFirst());
 
             require(assetData.decimals > 0, AssetNotFound());
             require(

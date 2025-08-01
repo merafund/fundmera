@@ -1947,12 +1947,12 @@ contract InvestmentVaultTest is Test {
         console.log("4--------------------------------");
 
         uint256 balance = assetToken1.balanceOf(address(vault));
-        IERC20[] memory tokens1 = new IERC20[](2);
+        IERC20[] memory tokens1 = new IERC20[](1);
         tokens1[0] = IERC20(address(assetToken1));
-        tokens1[1] = IERC20(address(assetToken2));
-        uint256[] memory shares1 = new uint256[](2);
+        // tokens1[1] = IERC20(address(assetToken2));
+        uint256[] memory shares1 = new uint256[](1);
         shares1[0] = 0;
-        shares1[1] = 0;
+        // shares1[1] = 0;
         mainVault.setAvailableRouter(address(v3Mock), true);
 
         vault.setAssetShares(tokens1, shares1);
@@ -2075,12 +2075,12 @@ contract InvestmentVaultTest is Test {
         vault.initMvToTokensSwaps(mvToTokenPaths, block.timestamp + 1);
 
         uint256 balance = assetToken1.balanceOf(address(vault));
-        IERC20[] memory tokens1 = new IERC20[](2);
+        IERC20[] memory tokens1 = new IERC20[](1);
         tokens1[0] = IERC20(address(assetToken1));
-        tokens1[1] = IERC20(address(assetToken2));
-        uint256[] memory shares1 = new uint256[](2);
+        // tokens1[1] = IERC20(address(assetToken2));
+        uint256[] memory shares1 = new uint256[](1);
         shares1[0] = 0;
-        shares1[1] = 0;
+        // shares1[1] = 0;
         mainVault.setAvailableRouter(address(v3Mock), true);
 
         vault.setAssetShares(tokens1, shares1);
@@ -2205,12 +2205,12 @@ contract InvestmentVaultTest is Test {
         console.log("4--------------------------------");
 
         uint256 balance = assetToken1.balanceOf(address(vault));
-        IERC20[] memory tokens1 = new IERC20[](2);
+        IERC20[] memory tokens1 = new IERC20[](1);
         tokens1[0] = IERC20(address(assetToken1));
-        tokens1[1] = IERC20(address(assetToken2));
-        uint256[] memory shares1 = new uint256[](2);
+        // tokens1[1] = IERC20(address(assetToken2));
+        uint256[] memory shares1 = new uint256[](1);
         shares1[0] = 0;
-        shares1[1] = 0;
+        // shares1[1] = 0;
         mainVault.setAvailableRouter(address(v3Mock), true);
 
         vault.setAssetShares(tokens1, shares1);
@@ -2352,12 +2352,12 @@ contract InvestmentVaultTest is Test {
         console.log("4--------------------------------");
         uint256 balance = assetToken1.balanceOf(address(vault));
         {
-            IERC20[] memory tokens1 = new IERC20[](2);
+            IERC20[] memory tokens1 = new IERC20[](1);
             tokens1[0] = IERC20(address(assetToken1));
-            tokens1[1] = IERC20(address(assetToken2));
-            uint256[] memory shares1 = new uint256[](2);
+            // tokens1[1] = IERC20(address(assetToken2));
+            uint256[] memory shares1 = new uint256[](1);
             shares1[0] = 0;
-            shares1[1] = 0;
+            // shares1[1] = 0;
             mainVault.setAvailableRouter(address(v3Mock), true);
 
             vault.setAssetShares(tokens1, shares1);
@@ -2515,12 +2515,12 @@ contract InvestmentVaultTest is Test {
         console.log("4--------------------------------");
         uint256 balance = assetToken1.balanceOf(address(vault));
         {
-            IERC20[] memory tokens1 = new IERC20[](2);
+            IERC20[] memory tokens1 = new IERC20[](1);
             tokens1[0] = IERC20(address(assetToken1));
-            tokens1[1] = IERC20(address(assetToken2));
-            uint256[] memory shares1 = new uint256[](2);
+            // tokens1[1] = IERC20(address(assetToken2));
+            uint256[] memory shares1 = new uint256[](1);
             shares1[0] = 0;
-            shares1[1] = 0;
+            // shares1[1] = 0;
             mainVault.setAvailableRouter(address(v3Mock), true);
 
             vault.setAssetShares(tokens1, shares1);
@@ -2679,12 +2679,12 @@ contract InvestmentVaultTest is Test {
         console.log("4--------------------------------");
         uint256 balance = assetToken1.balanceOf(address(vault));
         {
-            IERC20[] memory tokens1 = new IERC20[](2);
+            IERC20[] memory tokens1 = new IERC20[](1);
             tokens1[0] = IERC20(address(assetToken1));
-            tokens1[1] = IERC20(address(assetToken2));
-            uint256[] memory shares1 = new uint256[](2);
+            // tokens1[1] = IERC20(address(assetToken2));
+            uint256[] memory shares1 = new uint256[](1);
             shares1[0] = 0;
-            shares1[1] = 0;
+            // shares1[1] = 0;
             mainVault.setAvailableRouter(address(v3Mock), true);
 
             vault.setAssetShares(tokens1, shares1);

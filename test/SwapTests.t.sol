@@ -1279,12 +1279,12 @@ contract SwapTests is Test {
         vm.startPrank(owner);
 
         vault.setShareMi(0);
-        uint256[] memory assetShares = new uint256[](2);
+        uint256[] memory assetShares = new uint256[](1);
         assetShares[0] = 0;
-        assetShares[1] = 0;
-        IERC20[] memory assets = new IERC20[](2);
+        // assetShares[1] = 0;
+        IERC20[] memory assets = new IERC20[](1);
         assets[0] = IERC20(assetToken1);
-        assets[1] = IERC20(assetToken2);
+        // assets[1] = IERC20(assetToken2);
         vault.setAssetShares(assets, assetShares);
 
         vm.stopPrank();
@@ -1380,12 +1380,12 @@ contract SwapTests is Test {
         vm.startPrank(owner);
 
         vault.setShareMi(0);
-        uint256[] memory assetShares = new uint256[](2);
+        uint256[] memory assetShares = new uint256[](1);
         assetShares[0] = 0;
-        assetShares[1] = 0;
-        IERC20[] memory assets = new IERC20[](2);
+        // assetShares[1] = 0;
+        IERC20[] memory assets = new IERC20[](1);
         assets[0] = IERC20(assetToken1);
-        assets[1] = IERC20(assetToken2);
+        // assets[1] = IERC20(assetToken2);
         vault.setAssetShares(assets, assetShares);
 
         vm.stopPrank();
@@ -1433,12 +1433,12 @@ contract SwapTests is Test {
         vm.startPrank(owner);
 
         vault.setShareMi(0);
-        uint256[] memory assetShares = new uint256[](2);
+        uint256[] memory assetShares = new uint256[](1);
         assetShares[0] = 0;
-        assetShares[1] = 0;
-        IERC20[] memory assets = new IERC20[](2);
+        // assetShares[1] = 0;
+        IERC20[] memory assets = new IERC20[](1);
         assets[0] = IERC20(assetToken1);
-        assets[1] = IERC20(assetToken2);
+        // assets[1] = IERC20(assetToken2);
         vault.setAssetShares(assets, assetShares);
 
         vm.stopPrank();
@@ -1486,12 +1486,12 @@ contract SwapTests is Test {
         vm.startPrank(owner);
 
         vault.setShareMi(0);
-        uint256[] memory assetShares = new uint256[](2);
+        uint256[] memory assetShares = new uint256[](1);
         assetShares[0] = 0;
-        assetShares[1] = 0;
-        IERC20[] memory assets = new IERC20[](2);
+        // assetShares[1] = 0;
+        IERC20[] memory assets = new IERC20[](1);
         assets[0] = IERC20(assetToken1);
-        assets[1] = IERC20(assetToken2);
+        // assets[1] = IERC20(assetToken2);
         vault.setAssetShares(assets, assetShares);
 
         vm.stopPrank();
@@ -1805,12 +1805,12 @@ contract SwapTests is Test {
         console.log("0-tokenMV.balanceOf(address(vault))", tokenMV.balanceOf(address(vault)));
 
         vm.startPrank(owner);
-        uint256[] memory assetShares = new uint256[](2);
+        uint256[] memory assetShares = new uint256[](1);
         assetShares[0] = 0;
-        assetShares[1] = 0;
-        IERC20[] memory assets = new IERC20[](2);
+        // assetShares[1] = 0;
+        IERC20[] memory assets = new IERC20[](1);
         assets[0] = IERC20(assetToken1);
-        assets[1] = IERC20(assetToken2);
+        // assets[1] = IERC20(assetToken2);?
         vault.setAssetShares(assets, assetShares);
         vm.stopPrank();
 
@@ -1999,12 +1999,12 @@ contract SwapTests is Test {
         vm.stopPrank();
         vm.startPrank(owner);
         vault.setShareMi(1 * 10 ** 17); // Set to 10%
-        uint256[] memory assetShares = new uint256[](2);
+        uint256[] memory assetShares = new uint256[](1);
         assetShares[0] = 4 * 10 ** 17; // Keep asset1 share
-        assetShares[1] = 1 * 10 ** 17; // Reduce asset2 share to 10%
-        IERC20[] memory assets = new IERC20[](2);
+        // assetShares[1] = 1 * 10 ** 17; // Reduce asset2 share to 10%
+        IERC20[] memory assets = new IERC20[](1);
         assets[0] = IERC20(assetToken1);
-        assets[1] = IERC20(assetToken2);
+        // assets[1] = IERC20(assetToken2);
         vault.setAssetShares(assets, assetShares);
         vm.stopPrank();
         vm.startPrank(manager);
@@ -2144,12 +2144,12 @@ contract SwapTests is Test {
         vm.stopPrank();
         vm.startPrank(owner);
         vault.setShareMi(1 * 10 ** 17); // Set to 10%
-        uint256[] memory assetShares = new uint256[](2);
+        uint256[] memory assetShares = new uint256[](1);
         assetShares[0] = 4 * 10 ** 17;
-        assetShares[1] = 1 * 10 ** 17; // Reduce asset2 share to 10%
-        IERC20[] memory assets = new IERC20[](2);
+        // assetShares[1] = 1 * 10 ** 17; // Reduce asset2 share to 10%
+        IERC20[] memory assets = new IERC20[](1);
         assets[0] = IERC20(assetToken1);
-        assets[1] = IERC20(assetToken2);
+        // assets[1] = IERC20(assetToken2);
         vault.setAssetShares(assets, assetShares);
         vm.stopPrank();
         vm.startPrank(manager);
