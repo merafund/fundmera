@@ -120,6 +120,12 @@ library SwapLibrary {
             } else if (assetsData[swapParams.fromToken].strategy == DataTypes.Strategy.First) {
                 checkFirstStrategySell(swapParams, assetsData, tokenData, profitData, feePercentage, mainVault);
             }
+        }
+        // Case 5: Asset to MI swap (selling asset for MI directly) for Zero strategy
+        else if (swapParams.toToken == tokenData.tokenMI && assetsData[swapParams.fromToken].decimals > 0) {
+            if (assetsData[swapParams.fromToken].strategy == DataTypes.Strategy.Zero) {
+                handleZeroStrategySellToMi(swapParams, assetsData, tokenData, profitData, feePercentage, mainVault);
+            }
         } else {
             revert InvalidSwap();
         }
@@ -473,6 +479,13 @@ library SwapLibrary {
         // Check that we received tokens
         require(assetReceived > 0, NoTokensReceived());
 
+        // Calculate current purchase price (MV per Asset)
+        uint256 currentPrice = (mvSpent * Constants.SHARE_DENOMINATOR) / assetReceived;
+
+        // Calculate average purchase price before this transaction
+        uint256 averagePurchasePrice =
+            (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) / assetData.tokenBought;
+
         uint256 workingOrderDeposit = (assetData.capital * assetData.shareMV * assetData.step)
             / (Constants.SHARE_DENOMINATOR * (Constants.SHARE_DENOMINATOR + assetData.step));
 
@@ -484,6 +497,20 @@ library SwapLibrary {
 
         assetData.deposit += int256(mvSpent);
         assetData.tokenBought += assetReceived;
+
+        // Update last buy price according to strategy requirements
+        if (currentPrice < assetData.lastBuyPrice) {
+            // If current purchase price is lower than previous, record it
+            assetData.lastBuyPrice = currentPrice;
+        } else if (currentPrice > averagePurchasePrice) {
+            // If current purchase price is higher than average purchase price, record the average purchase price
+            assetData.lastBuyPrice = averagePurchasePrice;
+        }
+        // If currentPrice is between lastBuyPrice and averagePurchasePrice, keep the existing lastBuyPrice
+
+        // Always update the timestamp
+        assetData.lastBuyTimestamp = block.timestamp;
+
         return true;
     }
 
@@ -917,5 +944,85 @@ library SwapLibrary {
         emit ExactInputDelegateExecuted(router, firstToken, lastToken, params.amountIn, amountOut);
 
         return amountOut;
+    }
+
+    /// @dev Handle Zero strategy sell logic directly into MI token
+    function handleZeroStrategySellToMi(
+        DataTypes.SwapParams memory swapParams,
+        mapping(IERC20 => DataTypes.AssetData) storage assetsData,
+        DataTypes.TokenData storage tokenData,
+        DataTypes.ProfitData storage profitData,
+        function() external view returns (uint256) feePercentage,
+        IMainVault mainVault
+    ) internal {
+        // Calculate amounts spent and received
+        uint256 assetSpent = swapParams.firstBalanceBefore - IERC20(swapParams.fromToken).balanceOf(address(this));
+        uint256 miReceived = IERC20(swapParams.toToken).balanceOf(address(this)) - swapParams.secondBalanceBefore;
+
+        // Must receive some MI tokens
+        require(miReceived > 0, NoTokensReceived());
+
+        DataTypes.AssetData storage assetData = assetsData[swapParams.fromToken];
+
+        // Ensure the position was opened and we're selling entire balance
+        require(assetData.tokenBought > 0 && uint256(assetData.deposit) > 0, PositionNotOpened());
+        require(assetSpent == assetData.tokenBought, SoldMoreThanExpectedWOB());
+
+        // Require we have MV purchase history for average price calculation
+        require(tokenData.mvBought > 0 && tokenData.depositInMv > 0, NoPreviousPurchases());
+
+        // Average price MI per MV (scaled by SHARE_DENOMINATOR)
+        uint256 averagePriceMiPerMv = (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) / tokenData.mvBought;
+
+        // Minimum MI that should be received to cover the deposit
+        uint256 minMiRequired = (uint256(assetData.deposit) * averagePriceMiPerMv) / Constants.SHARE_DENOMINATOR;
+
+        // Ensure we receive at least the minimum amount
+        require(miReceived >= minMiRequired, PriceDidNotIncreaseEnough());
+
+        uint256 profit = miReceived - minMiRequired;
+
+        // Reset asset pair (portfolio dismantled)
+        assetData.deposit = int256(0);
+        assetData.tokenBought = 0;
+        assetData.capital = 0;
+
+        // Distribute profit (if any) between investor and fee wallets
+        if (profit > 0) {
+            if (tokenData.profitType == DataTypes.ProfitType.Dynamic) {
+                uint256 feePercent = feePercentage();
+                uint256 feeAmount = (profit * feePercent) / Constants.MAX_PERCENT;
+                uint256 investorProfit = profit - feeAmount;
+
+                profitData.earntProfitInvestor += investorProfit;
+                profitData.earntProfitFee += feeAmount;
+                profitData.earntProfitTotal += profit;
+            } else {
+                profitData.earntProfitTotal += profit;
+                uint256 currentFixedProfitPercent = mainVault.currentFixedProfitPercent();
+                uint256 daysSinceStart = (block.timestamp - tokenData.timestampOfStartInvestment) / 1 days;
+                uint256 fixedProfit =
+                    (currentFixedProfitPercent * daysSinceStart * tokenData.initDeposit) / 365 / Constants.MAX_PERCENT;
+
+                if (fixedProfit < profitData.earntProfitTotal) {
+                    uint256 mustEarntProfitFee = profitData.earntProfitTotal - fixedProfit;
+                    if (mustEarntProfitFee > profitData.earntProfitFee) {
+                        profitData.earntProfitFee = mustEarntProfitFee;
+                        profitData.earntProfitInvestor = fixedProfit;
+                    } else {
+                        profitData.earntProfitFee =
+                            mustEarntProfitFee + (profitData.earntProfitFee - mustEarntProfitFee);
+                        profitData.earntProfitInvestor = fixedProfit - (profitData.earntProfitFee - mustEarntProfitFee);
+                    }
+                } else {
+                    profitData.earntProfitInvestor += profit;
+                }
+            }
+
+            emit ProfitCalculated(address(swapParams.fromToken), address(swapParams.toToken), profit);
+        }
+
+        // Emit position closed event
+        emit PositionClosed(address(swapParams.fromToken));
     }
 }

@@ -67,6 +67,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
     error BigDeviationOracle();
     error InvalidStep();
     error InvalidToken();
+    error DepositIsZero();
 
     event ProfitCalculated(address indexed fromToken, address indexed toToken, uint256 profitAmount);
 
@@ -89,6 +90,9 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
     event ExactOutputDelegateExecuted(
         address indexed router, address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut
     );
+
+    /// @dev Emitted when the strategy for an asset is changed
+    event StrategySet(address indexed asset, DataTypes.Strategy strategy);
 
     IMainVault public mainVault;
 
@@ -548,6 +552,89 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         amountOut = SwapLibrary.executeQuickswapExactInputSwap(
             params.router, params, tokenData, profitData, assetsData, mainVault
         );
+    }
+
+    function setStrategy(IERC20 asset, DataTypes.Strategy strategy) external OnlyAdmin whenNotPaused {
+        DataTypes.AssetData storage assetData = assetsData[asset];
+
+        // Ensure that the asset exists in storage
+        require(assetData.decimals > 0, AssetNotFound());
+
+        // If the strategy is not changing – nothing to do
+        if (assetData.strategy == strategy) {
+            return;
+        }
+
+        DataTypes.Strategy oldStrategy = assetData.strategy;
+
+        // 1 -> 0 (First -> Zero)
+        if (oldStrategy == DataTypes.Strategy.First && strategy == DataTypes.Strategy.Zero) {
+            // Deposit must be greater than zero to be able to switch to Zero strategy
+            require(assetData.deposit > 0, DepositIsZero());
+
+            // Make sure the share * capital does not exceed the current deposit
+            uint256 currentDeposit = uint256(assetData.deposit);
+            uint256 maxAllowedShare = (currentDeposit * Constants.SHARE_DENOMINATOR) / assetData.capital;
+
+            if (assetData.shareMV > maxAllowedShare) {
+                uint256 oldShare = assetData.shareMV;
+                assetData.shareMV = maxAllowedShare;
+                emit AssetShareUpdated(address(asset), oldShare, maxAllowedShare);
+            }
+        }
+        // 0 -> 1 (Zero -> First)
+        else if (oldStrategy == DataTypes.Strategy.Zero && strategy == DataTypes.Strategy.First) {
+            // Fetch prices from oracle: [asset, MV]
+            IMeraPriceOracle oracle = mainVault.meraPriceOracle();
+
+            address[] memory assets = new address[](2);
+            assets[0] = address(asset);
+            assets[1] = address(tokenData.tokenMV);
+
+            IMeraPriceOracle.AssetPriceData[] memory priceData = oracle.getAssetsPriceData(assets);
+
+            // Current price of MV denominated in Asset with 18 decimals
+            uint256 mvPrice = priceData[1].price; // price of MV in oracle decimals
+            uint256 assetPrice = priceData[0].price; // price of asset in oracle decimals
+
+            // Bring MV/Asset price to 18 decimals using the same approach as in oracle check helper
+            uint256 mvPerAsset = (mvPrice * (10 ** (18 + priceData[0].decimals - priceData[1].decimals))) / assetPrice;
+
+            // Calculate virtual deposit using current oracle price
+            uint256 depositByOracle;
+            uint8 assetDecimals = assetData.decimals;
+            uint8 mvDecimals = IERC20Metadata(address(tokenData.tokenMV)).decimals();
+
+            if (uint256(assetDecimals) + 18 >= uint256(mvDecimals)) {
+                uint256 pow = uint256(assetDecimals) + 18 - uint256(mvDecimals);
+                depositByOracle = (assetData.tokenBought * mvPerAsset) / (10 ** pow);
+            } else {
+                uint256 pow = uint256(mvDecimals) - uint256(assetDecimals) - 18;
+                depositByOracle = (assetData.tokenBought * mvPerAsset) * (10 ** pow);
+            }
+
+            // Calculate new share so that the evaluated deposit roughly matches current capital allocation
+            uint256 newShare = (depositByOracle * Constants.SHARE_DENOMINATOR) / assetData.capital;
+
+            if (newShare > Constants.SHARE_DENOMINATOR) {
+                newShare = Constants.SHARE_DENOMINATOR; // cannot exceed 100%
+            }
+
+            // Share must be positive
+            require(newShare > 0, ShareMustBePositive());
+
+            if (newShare != assetData.shareMV) {
+                uint256 oldShare = assetData.shareMV;
+                assetData.shareMV = newShare;
+                emit AssetShareUpdated(address(asset), oldShare, newShare);
+            }
+        }
+
+        // Update the strategy
+        assetData.strategy = strategy;
+
+        // Emit the StrategySet event
+        emit StrategySet(address(asset), strategy);
     }
 
     /// @dev Validates if the price deviation between two swaps is within acceptable range
