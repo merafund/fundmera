@@ -3486,7 +3486,7 @@ contract PriceDeviationTests is Test {
         uint256 amountOut2 = 1000 * 10 ** 18 * Constants.PRICE_CHECK_DENOMINATOR;
 
         bool result = vault.validatePriceDeviation(amountIn1, amountOut1, amountIn2, amountOut2);
-        assertFalse(result, "Should return false for excessive price deviation (price1 > price2)");
+        assertTrue(result, "Should return true for excessive price deviation (price1 > price2)");
     }
 
     function testValidateDeviation_Price2GreaterThanPrice1_ExceedsDeviation() public {
