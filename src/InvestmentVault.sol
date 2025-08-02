@@ -337,6 +337,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
             // Update the share value
             assetData.shareMV = newShareMV;
             assetsData[token] = assetData;
+            require(assetData.shareMV <= Constants.SHARE_INITIAL_MAX, ShareExceedsMaximum());
 
             emit AssetShareUpdated(address(token), oldShareMV, newShareMV);
         }
@@ -636,6 +637,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
                 emit AssetShareUpdated(address(asset), oldShare, newShare);
             }
         }
+        require(assetData.shareMV <= Constants.SHARE_INITIAL_MAX, ShareExceedsMaximum());
 
         // Update the strategy
         assetData.strategy = strategy;
