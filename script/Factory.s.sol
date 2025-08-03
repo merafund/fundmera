@@ -117,6 +117,7 @@ contract FactoryScript is Script {
             assets[2] = address(0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2); // USDT
             assets[3] = address(0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf); // cbBTC
             assets[4] = address(0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b); // VIRTUAL
+            assets[5] = address(0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42); // EURC
 
             sources = new address[](5);
             sources[0] = address(0x7e860098F58bBFC8648a4311b374B1D669a2bc6B); // USDC/USD
@@ -124,6 +125,7 @@ contract FactoryScript is Script {
             sources[2] = address(0xf19d560eB8d2ADf07BD6D13ed03e1D11215721F9); // USDT/USD
             sources[3] = address(0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F); // BTC/USD
             sources[4] = address(0xEaf310161c9eF7c813A14f8FEF6Fb271434019F7); // VIRTUAL/USD
+            sources[5] = address(0xDAe398520e2B67cd3f27aeF9Cf14D93D927f8250); // EURC/USD
 
             decimals = new uint8[](5);
             decimals[0] = 8; // USDC/USD
@@ -131,6 +133,7 @@ contract FactoryScript is Script {
             decimals[2] = 8; // USDT/USD
             decimals[3] = 8; // BTC/USD
             decimals[4] = 8; // VIRTUAL/USD
+            decimals[5] = 8; // EURC/USD
         }
         // Arbitrum mainnet
         else if (block.chainid == 42161) {
