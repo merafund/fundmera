@@ -99,7 +99,8 @@ contract MainVaultScript is Script {
             feePercentage: feePercentage,
             currentImplementationOfInvestmentVault: address(investmentVaultImpl),
             pauserList: address(pauserList),
-            meraPriceOracle: address(meraPriceOracle)
+            meraPriceOracle: address(meraPriceOracle),
+            lockPeriod: 0
         });
 
         // Encode initialization call

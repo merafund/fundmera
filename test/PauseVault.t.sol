@@ -116,7 +116,8 @@ contract PauseVaultTest is Test {
             feePercentage: 1000, // 10%
             currentImplementationOfInvestmentVault: address(0),
             pauserList: address(pauserList),
-            meraPriceOracle: address(0)
+            meraPriceOracle: address(0),
+            lockPeriod: 0
         });
 
         console.log("Encoding initialization call");

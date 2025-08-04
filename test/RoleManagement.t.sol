@@ -76,7 +76,8 @@ contract RoleManagementTest is Test {
             feePercentage: 1000,
             currentImplementationOfInvestmentVault: address(0),
             pauserList: address(0),
-            meraPriceOracle: address(0)
+            meraPriceOracle: address(0),
+            lockPeriod: 0
         });
 
         bytes memory initData = abi.encodeWithSelector(MainVault.initialize.selector, params);

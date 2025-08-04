@@ -166,6 +166,7 @@ contract MainVault is
             adminIsCanceledOracleCheck = true;
         }
 
+        availableLock[0] = true;
         availableLock[10 minutes] = true;
         availableLock[365 days] = true;
         availableLock[365 days * 3] = true;
@@ -213,7 +214,9 @@ contract MainVault is
         _setRoleAdmin(BACKUP_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE);
         _setRoleAdmin(EMERGENCY_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE);
 
-        withdrawalLockedUntil = uint64(block.timestamp);
+        //set lock
+        require(availableLock[params.lockPeriod], LockPeriodNotAvailable());
+        withdrawalLockedUntil = uint64(block.timestamp + params.lockPeriod);
     }
 
     /// @inheritdoc IMainVault

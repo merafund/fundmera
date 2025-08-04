@@ -138,7 +138,8 @@ contract Factory is IFactory, Ownable {
             feePercentage: feePercentage,
             currentImplementationOfInvestmentVault: investmentVaultImplementation,
             pauserList: pauserList,
-            meraPriceOracle: meraPriceOracle
+            meraPriceOracle: meraPriceOracle,
+            lockPeriod: 0
         });
 
         // Encode initialization call
@@ -157,6 +158,60 @@ contract Factory is IFactory, Ownable {
 
         return mainVaultProxy;
     }
+
+    function createMainVaultWithLock(
+        address mainInvestor,
+        address backupInvestor,
+        address emergencyInvestor,
+        address profitWallet,
+        string calldata referralCode,
+        uint64 lockPeriod
+    ) external returns (address mainVaultProxy) {
+        require(mainInvestor != address(0), ZeroAddress());
+        require(backupInvestor != address(0), ZeroAddress());
+        require(emergencyInvestor != address(0), ZeroAddress());
+
+        // Get profit wallet from referral code or use default
+        address feeWallet = referralToAgentDistribution[referralCode];
+        if (feeWallet == address(0)) {
+            feeWallet = defaultAgentDistribution;
+        }
+
+        // Prepare initialization parameters
+        IMainVault.InitParams memory initParams = IMainVault.InitParams({
+            mainInvestor: mainInvestor,
+            backupInvestor: backupInvestor,
+            emergencyInvestor: emergencyInvestor,
+            manager: manager,
+            admin: admin,
+            backupAdmin: backupAdmin,
+            emergencyAdmin: emergencyAdmin,
+            feeWallet: feeWallet,
+            profitWallet: profitWallet,
+            feePercentage: feePercentage,
+            currentImplementationOfInvestmentVault: investmentVaultImplementation,
+            pauserList: pauserList,
+            meraPriceOracle: meraPriceOracle,
+            lockPeriod: lockPeriod
+        });
+
+        // Encode initialization call
+        bytes memory initData = abi.encodeWithSelector(MainVault.initialize.selector, initParams);
+
+        // Deploy proxy
+        ERC1967Proxy newProxy = new ERC1967Proxy(mainVaultImplementation, initData);
+        mainVaultProxy = address(newProxy);
+
+        // Use actual referral code or DEFAULT if not found
+        string memory usedReferralCode = feeWallet == defaultAgentDistribution ? DEFAULT_REFERRAL_CODE : referralCode;
+
+        emit MainVaultCreated(
+            mainVaultProxy, mainInvestor, msg.sender, backupInvestor, emergencyInvestor, profitWallet, usedReferralCode
+        );
+
+        return mainVaultProxy;
+    }
+
 
     /// @inheritdoc IFactory
     function setDeployer(address _deployer) external onlyOwner {

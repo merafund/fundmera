@@ -122,7 +122,8 @@ contract MainVaultTest is Test {
             feePercentage: FEE_PERCENTAGE,
             currentImplementationOfInvestmentVault: address(investmentVaultImplementation),
             pauserList: address(pauserList),
-            meraPriceOracle: address(0)
+            meraPriceOracle: address(0),
+            lockPeriod: 0
         });
 
         bytes memory initData = abi.encodeWithSelector(MainVault.initialize.selector, initParams);
@@ -1637,7 +1638,8 @@ contract MainVaultTest is Test {
             feePercentage: FEE_PERCENTAGE,
             currentImplementationOfInvestmentVault: address(investmentVaultImplementation),
             pauserList: address(pauserList),
-            meraPriceOracle: address(0)
+            meraPriceOracle: address(0),
+            lockPeriod: 0
         });
 
         bytes memory initData = abi.encodeWithSelector(MainVault.initialize.selector, initParams);

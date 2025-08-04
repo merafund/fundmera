@@ -61,7 +61,8 @@ contract MainVaultSwapsTest is Test {
             feePercentage: 0,
             currentImplementationOfInvestmentVault: address(0),
             pauserList: address(0),
-            meraPriceOracle: address(0)
+            meraPriceOracle: address(0),
+            lockPeriod: 0
         });
 
         // Deploy proxy

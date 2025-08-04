@@ -197,6 +197,7 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl, IERC5267 {
         address currentImplementationOfInvestmentVault;
         address pauserList;
         address meraPriceOracle;
+        uint64 lockPeriod;
     }
 
     /// @dev Token availability configuration struct
