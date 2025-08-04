@@ -212,7 +212,6 @@ contract Factory is IFactory, Ownable {
         return mainVaultProxy;
     }
 
-
     /// @inheritdoc IFactory
     function setDeployer(address _deployer) external onlyOwner {
         require(_deployer != address(0), ZeroAddress());
