@@ -111,7 +111,7 @@ contract FactoryScript is Script {
         }
         // Base mainnet
         else if (block.chainid == 8453) {
-            assets = new address[](5);
+            assets = new address[](6);
             assets[0] = address(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913); // USDC
             assets[1] = address(0x4200000000000000000000000000000000000006); // WETH
             assets[2] = address(0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2); // USDT
@@ -119,7 +119,7 @@ contract FactoryScript is Script {
             assets[4] = address(0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b); // VIRTUAL
             assets[5] = address(0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42); // EURC
 
-            sources = new address[](5);
+            sources = new address[](6);
             sources[0] = address(0x7e860098F58bBFC8648a4311b374B1D669a2bc6B); // USDC/USD
             sources[1] = address(0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70); // ETH/USD
             sources[2] = address(0xf19d560eB8d2ADf07BD6D13ed03e1D11215721F9); // USDT/USD
@@ -127,7 +127,7 @@ contract FactoryScript is Script {
             sources[4] = address(0xEaf310161c9eF7c813A14f8FEF6Fb271434019F7); // VIRTUAL/USD
             sources[5] = address(0xDAe398520e2B67cd3f27aeF9Cf14D93D927f8250); // EURC/USD
 
-            decimals = new uint8[](5);
+            decimals = new uint8[](6);
             decimals[0] = 8; // USDC/USD
             decimals[1] = 8; // ETH/USD
             decimals[2] = 8; // USDT/USD
