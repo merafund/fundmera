@@ -92,4 +92,4 @@ contract DeployImplementationsScript is Script {
         console.log("\nNote: These implementations are NOT automatically updated in any Factory.");
         console.log("To update them in a Factory, use the UpdateImplementations script.");
     }
-} 
+}
