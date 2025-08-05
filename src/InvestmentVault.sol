@@ -606,7 +606,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
             uint256 assetPrice = priceData[0].price; // price of asset in oracle decimals
 
             // Bring MV/Asset price to 18 decimals using the same approach as in oracle check helper
-            uint256 mvPerAsset = (mvPrice * (10 ** (18 + priceData[0].decimals - priceData[1].decimals))) / assetPrice;
+            uint256 mvPerAsset = (assetPrice * (10 ** (18 + priceData[1].decimals - priceData[0].decimals))) / mvPrice;
 
             // Calculate virtual deposit using current oracle price
             uint256 depositByOracle;
