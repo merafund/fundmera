@@ -293,7 +293,7 @@ library SwapLibrary {
         // Average purchase price (MI per MV) before selling
         uint256 averageBuyPrice = (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) / tokenData.mvBought;
         // Calculate how many MV tokens were spent and how many MI tokens were received
-        tokenData.lastBuyPrice = averageBuyPrice;
+        
         int256 newDeposit;
         uint256 currentSellPrice;
         {
@@ -331,6 +331,12 @@ library SwapLibrary {
             tokenData.depositInMv = initialDeposit; // Do not reduce deposit below the initial one
         } else {
             tokenData.depositInMv = uint256(newDeposit);
+        }
+
+        if (tokenData.mvBought > 0) {
+            tokenData.lastBuyPrice = (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) / tokenData.mvBought;
+        } else {
+            tokenData.lastBuyPrice = currentSellPrice;
         }
 
         // Calculate the minimum required MV tokens that should remain after the sale
@@ -433,7 +439,7 @@ library SwapLibrary {
         int256 newDeposit = int256(assetData.deposit) - int256(mvReceived);
         // Calculate average purchase price (MV/Asset)
         uint256 averageBuyPrice = (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) / assetData.tokenBought;
-        assetData.lastBuyPrice = averageBuyPrice;
+        
         // Calculate current selling price (MV/Asset)
         uint256 currentSellPrice = (mvReceived * Constants.SHARE_DENOMINATOR) / tokenSpent;
 
@@ -448,7 +454,7 @@ library SwapLibrary {
         } else {
             assetData.deposit = newDeposit;
         }
-
+        
         // Check that we're not selling too much asset
         uint256 remainingTokens = assetData.tokenBought - tokenSpent;
         uint256 minRequiredTokens = (assetData.capital * assetData.shareMV) / currentSellPrice;
@@ -457,6 +463,12 @@ library SwapLibrary {
         require(remainingTokens >= minRequiredTokens, InsufficientTokensRemaining());
 
         assetData.tokenBought -= tokenSpent;
+
+        if (assetData.tokenBought > 0){
+            assetData.lastBuyPrice = (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) / assetData.tokenBought;
+        } else {
+            assetData.lastBuyPrice = currentSellPrice;
+        }
     }
 
     /// @dev Check First strategy buy logic
@@ -981,6 +993,9 @@ library SwapLibrary {
         require(miReceived >= minMiRequired, PriceDidNotIncreaseEnough());
 
         uint256 profit = miReceived - minMiRequired;
+
+        tokenData.mvBought -= uint256(assetData.deposit);
+        tokenData.depositInMv -= uint256(minMiRequired);
 
         // Reset asset pair (portfolio dismantled)
         assetData.deposit = int256(0);
