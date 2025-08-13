@@ -464,7 +464,7 @@ library SwapLibrary {
 
         assetData.tokenBought -= tokenSpent;
 
-        if (assetData.tokenBought > 0){
+        if (assetData.tokenBought > 0) {
             assetData.lastBuyPrice = (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) / assetData.tokenBought;
         } else {
             assetData.lastBuyPrice = currentSellPrice;
