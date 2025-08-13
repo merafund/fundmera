@@ -293,7 +293,7 @@ library SwapLibrary {
         // Average purchase price (MI per MV) before selling
         uint256 averageBuyPrice = (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) / tokenData.mvBought;
         // Calculate how many MV tokens were spent and how many MI tokens were received
-        
+
         int256 newDeposit;
         uint256 currentSellPrice;
         {
@@ -439,7 +439,7 @@ library SwapLibrary {
         int256 newDeposit = int256(assetData.deposit) - int256(mvReceived);
         // Calculate average purchase price (MV/Asset)
         uint256 averageBuyPrice = (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) / assetData.tokenBought;
-        
+
         // Calculate current selling price (MV/Asset)
         uint256 currentSellPrice = (mvReceived * Constants.SHARE_DENOMINATOR) / tokenSpent;
 
@@ -454,7 +454,7 @@ library SwapLibrary {
         } else {
             assetData.deposit = newDeposit;
         }
-        
+
         // Check that we're not selling too much asset
         uint256 remainingTokens = assetData.tokenBought - tokenSpent;
         uint256 minRequiredTokens = (assetData.capital * assetData.shareMV) / currentSellPrice;
