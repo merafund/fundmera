@@ -385,6 +385,12 @@ library SwapLibrary {
 
         require(averagePriceBefore > currentPrice, NonAdvantageousPurchasePrice());
 
+        require(
+            assetData.tokenBought * assetData.step * assetData.capital
+                / (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) >= assetReceived,
+            AssetBoughtTooMuch()
+        );
+
         assetData.deposit += int256(mvSpent);
         require(assetData.deposit <= int256(assetData.capital), DepositIsGreaterThanCapital());
 
@@ -393,12 +399,6 @@ library SwapLibrary {
                 || assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step) / Constants.SHARE_DENOMINATOR
                     >= currentPrice,
             BadPriceAndTimeBetweenBuys()
-        );
-
-        require(
-            assetData.tokenBought * assetData.step * assetData.capital
-                / (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) >= assetReceived,
-            AssetBoughtTooMuch()
         );
 
         assetData.tokenBought += assetReceived;
