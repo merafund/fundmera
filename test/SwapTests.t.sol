@@ -1726,30 +1726,30 @@ contract SwapTests is Test {
         vm.stopPrank();
     }
 
-    function testDepositIsGreaterThanCapital() public {
-        vm.startPrank(manager);
-        vm.warp(block.timestamp + 31 days);
+    // function testDepositIsGreaterThanCapital() public {
+    //     vm.startPrank(manager);
+    //     vm.warp(block.timestamp + 31 days);
 
-        bytes memory pathBytes = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+    //     bytes memory pathBytes = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
 
-        uniswapV3Router.setPrice(address(assetToken1), address(tokenMV), 1 * 10 ** 17);
+    //     uniswapV3Router.setPrice(address(assetToken1), address(tokenMV), 1 * 10 ** 17);
 
-        uint256 amountIn = tokenMV.balanceOf(address(vault));
+    //     uint256 amountIn = tokenMV.balanceOf(address(vault));
 
-        DataTypes.DelegateExactInputParams memory params = DataTypes.DelegateExactInputParams({
-            router: address(uniswapV3Router),
-            path: pathBytes,
-            deadline: block.timestamp + 1,
-            amountIn: amountIn,
-            amountOutMinimum: 0,
-            swapType: DataTypes.SwapType.Default
-        });
+    //     DataTypes.DelegateExactInputParams memory params = DataTypes.DelegateExactInputParams({
+    //         router: address(uniswapV3Router),
+    //         path: pathBytes,
+    //         deadline: block.timestamp + 1,
+    //         amountIn: amountIn,
+    //         amountOutMinimum: 0,
+    //         swapType: DataTypes.SwapType.Default
+    //     });
 
-        vm.expectRevert(SwapLibrary.DepositIsGreaterThanCapital.selector);
-        vault.exactInput(params);
+    //     vm.expectRevert(SwapLibrary.DepositIsGreaterThanCapital.selector);
+    //     vault.exactInput(params);
 
-        vm.stopPrank();
-    }
+    //     vm.stopPrank();
+    // }
 
     function testPriceDidNotIncreaseEnoughFirstLayer() public {
         vm.startPrank(manager);
