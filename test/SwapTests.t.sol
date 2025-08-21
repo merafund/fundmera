@@ -1732,7 +1732,17 @@ contract SwapTests is Test {
 
         bytes memory pathBytes = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
 
-        (uint256 shareMV, uint256 step, DataTypes.Strategy strategy, int256 currentDeposit, uint256 currentCapital, uint256 tokenBought, uint8 decimals, uint256 lastBuyPrice, uint256 lastBuyTimestamp) = vault.assetsData(IERC20(address(assetToken1)));
+        (
+            uint256 shareMV,
+            uint256 step,
+            DataTypes.Strategy strategy,
+            int256 currentDeposit,
+            uint256 currentCapital,
+            uint256 tokenBought,
+            uint8 decimals,
+            uint256 lastBuyPrice,
+            uint256 lastBuyTimestamp
+        ) = vault.assetsData(IERC20(address(assetToken1)));
         console.log("Current deposit for assetToken1:", uint256(currentDeposit));
         console.log("Current capital for assetToken1:", currentCapital);
 
@@ -1743,7 +1753,6 @@ contract SwapTests is Test {
         console.log("Setting capital to:", capitals[0]);
         vault.setAssetCapital(tokens, capitals);
 
-   
         uniswapV3Router.setPrice(address(assetToken1), address(tokenMV), 1 * 10 ** 6);
 
         uint256 amountIn = 2000; // 2000 wei MV - это должно превысить капитал
