@@ -24,7 +24,7 @@ contract DeployPriceOracleScript is Script {
 
     function setUp() public {
         factoryAddress = vm.envOr("FACTORY_ADDRESS", address(0));
-        newFactoryOwner = vm.envOr("NEW_FACTORY_OWNER", address(0x11));
+        newFactoryOwner = vm.envOr("NEW_FACTORY_OWNER", address(0));
     }
 
     function run() public {
