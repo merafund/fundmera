@@ -1726,30 +1726,44 @@ contract SwapTests is Test {
         vm.stopPrank();
     }
 
-    // function testDepositIsGreaterThanCapital() public {
-    //     vm.startPrank(manager);
-    //     vm.warp(block.timestamp + 31 days);
+    function testDepositIsGreaterThanCapital() public {
+        vm.startPrank(manager);
+        vm.warp(block.timestamp + 31 days);
 
-    //     bytes memory pathBytes = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+        bytes memory pathBytes = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
 
-    //     uniswapV3Router.setPrice(address(assetToken1), address(tokenMV), 1 * 10 ** 17);
+        (uint256 shareMV, uint256 step, DataTypes.Strategy strategy, int256 currentDeposit, uint256 currentCapital, uint256 tokenBought, uint8 decimals, uint256 lastBuyPrice, uint256 lastBuyTimestamp) = vault.assetsData(IERC20(address(assetToken1)));
+        console.log("Current deposit for assetToken1:", uint256(currentDeposit));
+        console.log("Current capital for assetToken1:", currentCapital);
 
-    //     uint256 amountIn = tokenMV.balanceOf(address(vault));
+        IERC20[] memory tokens = new IERC20[](1);
+        tokens[0] = IERC20(address(assetToken1));
+        uint256[] memory capitals = new uint256[](1);
+        capitals[0] = uint256(currentDeposit) + 1000; // Капитал = депозит + 1000 wei
+        console.log("Setting capital to:", capitals[0]);
+        vault.setAssetCapital(tokens, capitals);
 
-    //     DataTypes.DelegateExactInputParams memory params = DataTypes.DelegateExactInputParams({
-    //         router: address(uniswapV3Router),
-    //         path: pathBytes,
-    //         deadline: block.timestamp + 1,
-    //         amountIn: amountIn,
-    //         amountOutMinimum: 0,
-    //         swapType: DataTypes.SwapType.Default
-    //     });
+   
+        uniswapV3Router.setPrice(address(assetToken1), address(tokenMV), 1 * 10 ** 6);
 
-    //     vm.expectRevert(SwapLibrary.DepositIsGreaterThanCapital.selector);
-    //     vault.exactInput(params);
+        uint256 amountIn = 2000; // 2000 wei MV - это должно превысить капитал
+        console.log("Using amountIn:", amountIn);
 
-    //     vm.stopPrank();
-    // }
+        DataTypes.DelegateExactInputParams memory params = DataTypes.DelegateExactInputParams({
+            router: address(uniswapV3Router),
+            path: pathBytes,
+            deadline: block.timestamp + 1,
+            amountIn: amountIn,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        console.log("About to call exactInput with expected DepositIsGreaterThanCapital revert");
+        vm.expectRevert(SwapLibrary.DepositIsGreaterThanCapital.selector);
+        vault.exactInput(params);
+
+        vm.stopPrank();
+    }
 
     function testPriceDidNotIncreaseEnoughFirstLayer() public {
         vm.startPrank(manager);
