@@ -44,6 +44,8 @@ contract AgentDistributionProfit is
     address public fundWallet;
     address public meraCapitalWallet;
     uint256 public agentPercentage;
+    uint256 private unusedFundProfit;
+    uint256 private unusedMeraCapitalProfit;
     address public adminApproved;
     address public agentApproved;
     uint256 public adminApprovedTimestamp;
