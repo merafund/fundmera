@@ -174,18 +174,18 @@ contract AgentDistributionProfitTest is Test {
 
         // Check that fund wallet received correct amount
         assertEq(
-            token.balanceOf(profitDistributor.fundWallet()) - initialFundBalance, 
-            fundAmount, 
+            token.balanceOf(profitDistributor.fundWallet()) - initialFundBalance,
+            fundAmount,
             "Fund wallet should receive correct amount"
         );
-        
+
         // Check that mera capital wallet received correct amount
         assertEq(
             token.balanceOf(profitDistributor.meraCapitalWallet()) - initialMeraBalance,
             meraAmount,
             "Mera Capital wallet should receive correct amount"
         );
-        
+
         // Check that agent received correct amount
         assertEq(token.balanceOf(mainAgent) - initialAgentBalance, agentAmount, "Agent should receive correct amount");
 
