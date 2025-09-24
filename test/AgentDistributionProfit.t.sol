@@ -156,8 +156,9 @@ contract AgentDistributionProfitTest is Test {
     function testDistributeProfitByAgent() public {
         vm.startPrank(mainAgent);
 
-        uint256 initialFundProfit = profitDistributor.fundProfit();
-        uint256 initialMeraProfit = profitDistributor.meraCapitalProfit();
+        // Get initial balances of all wallets
+        uint256 initialFundBalance = token.balanceOf(profitDistributor.fundWallet());
+        uint256 initialMeraBalance = token.balanceOf(profitDistributor.meraCapitalWallet());
         uint256 initialAgentBalance = token.balanceOf(mainAgent);
 
         address[] memory tokens = new address[](1);
@@ -165,19 +166,27 @@ contract AgentDistributionProfitTest is Test {
 
         profitDistributor.distributeProfit(tokens);
 
+        // Calculate expected amounts
         uint256 agentAmount = INITIAL_BALANCE * profitDistributor.agentPercentage() / profitDistributor.MAX_PERCENTAGE();
         uint256 meraAmount =
             INITIAL_BALANCE * profitDistributor.MERA_CAPITAL_PERCENTAGE() / profitDistributor.MAX_PERCENTAGE();
         uint256 fundAmount = INITIAL_BALANCE - agentAmount - meraAmount;
 
+        // Check that fund wallet received correct amount
         assertEq(
-            profitDistributor.fundProfit() - initialFundProfit, fundAmount, "Fund profit should be increased correctly"
+            token.balanceOf(profitDistributor.fundWallet()) - initialFundBalance, 
+            fundAmount, 
+            "Fund wallet should receive correct amount"
         );
+        
+        // Check that mera capital wallet received correct amount
         assertEq(
-            profitDistributor.meraCapitalProfit() - initialMeraProfit,
+            token.balanceOf(profitDistributor.meraCapitalWallet()) - initialMeraBalance,
             meraAmount,
-            "Mera Capital profit should be increased correctly"
+            "Mera Capital wallet should receive correct amount"
         );
+        
+        // Check that agent received correct amount
         assertEq(token.balanceOf(mainAgent) - initialAgentBalance, agentAmount, "Agent should receive correct amount");
 
         vm.stopPrank();

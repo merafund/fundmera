@@ -44,8 +44,6 @@ contract AgentDistributionProfit is
     address public fundWallet;
     address public meraCapitalWallet;
     uint256 public agentPercentage;
-    uint256 public fundProfit;
-    uint256 public meraCapitalProfit;
     address public adminApproved;
     address public agentApproved;
     uint256 public adminApprovedTimestamp;
@@ -102,6 +100,9 @@ contract AgentDistributionProfit is
         _setRoleAdmin(BACKUP_ADMIN_ROLE, BACKUP_ADMIN_ROLE);
         _setRoleAdmin(EMERGENCY_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE);
 
+        _setRoleAdmin(MAIN_AGENT_ROLE, BACKUP_AGENT_ROLE);
+        _setRoleAdmin(ADMIN_ROLE, BACKUP_ADMIN_ROLE);
+
         // Emergency agent can manage main and backup agents
         _setRoleAdmin(MAIN_AGENT_ROLE, EMERGENCY_AGENT_ROLE);
         _setRoleAdmin(BACKUP_AGENT_ROLE, EMERGENCY_AGENT_ROLE);
@@ -136,19 +137,11 @@ contract AgentDistributionProfit is
             uint256 fundAmount = balance - agentAmount - meraCapitalAmount;
 
             if (fundAmount > 0) {
-                if (hasRole(ADMIN_ROLE, msg.sender)) {
-                    IERC20(token).safeTransfer(fundWallet, fundAmount);
-                } else {
-                    fundProfit += fundAmount;
-                }
+                IERC20(token).safeTransfer(fundWallet, fundAmount);
             }
 
             if (meraCapitalAmount > 0) {
-                if (hasRole(ADMIN_ROLE, msg.sender)) {
-                    IERC20(token).safeTransfer(meraCapitalWallet, meraCapitalAmount);
-                } else {
-                    meraCapitalProfit += meraCapitalAmount;
-                }
+                IERC20(token).safeTransfer(meraCapitalWallet, meraCapitalAmount);
             }
 
             if (agentAmount > 0) {
