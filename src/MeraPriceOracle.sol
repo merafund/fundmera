@@ -25,6 +25,7 @@ contract MeraPriceOracle is IMeraPriceOracle, Ownable {
     // Custom Errors
     error InconsistentParamsLength();
     error AssetSourceAlreadySet();
+    error AssetPriceNotAvailable(address asset);
     // Map of asset price sources (asset => priceSource)
 
     mapping(address => AggregatorInterface) private assetsSources;
@@ -112,7 +113,7 @@ contract MeraPriceOracle is IMeraPriceOracle, Ownable {
             if (price > 0) {
                 return uint256(price);
             } else {
-                return _fallbackOracle.getAssetPrice(asset);
+                revert AssetPriceNotAvailable(asset);
             }
         }
     }

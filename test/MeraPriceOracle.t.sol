@@ -54,6 +54,10 @@ contract MeraPriceOracleTest is Test {
         assertEq(oracle.getSourceOfAsset(ASSET2), address(mockAggregator2));
         assertEq(oracle.getFallbackOracle(), address(mockFallbackOracle));
 
+        // Set prices for aggregators to avoid AssetPriceNotAvailable error
+        mockAggregator1.setPrice(100);
+        mockAggregator2.setPrice(200);
+
         address[] memory assets = new address[](2);
         assets[0] = ASSET1;
         assets[1] = ASSET2;
@@ -70,10 +74,10 @@ contract MeraPriceOracleTest is Test {
     }
 
     function test_GetAssetPrice_FromFallback_WhenAggregatorReturnsZero() public {
-        mockAggregator1.setShouldReturnZero(true);
+        mockAggregator1.setPrice(0);
         mockFallbackOracle.setAssetPrice(ASSET1, 200);
-        uint256 price = oracle.getAssetPrice(ASSET1);
-        assertEq(price, 200);
+        vm.expectRevert(abi.encodeWithSelector(MeraPriceOracle.AssetPriceNotAvailable.selector, ASSET1));
+        oracle.getAssetPrice(ASSET1);
     }
 
     function test_GetAssetPrice_FromFallback_WhenNoAggregator() public {
@@ -86,8 +90,8 @@ contract MeraPriceOracleTest is Test {
     function test_GetAssetPrice_FromFallback_WhenAggregatorReturnsNegative() public {
         mockAggregator1.setPrice(-100);
         mockFallbackOracle.setAssetPrice(ASSET1, 400);
-        uint256 price = oracle.getAssetPrice(ASSET1);
-        assertEq(price, 400);
+        vm.expectRevert(abi.encodeWithSelector(MeraPriceOracle.AssetPriceNotAvailable.selector, ASSET1));
+        oracle.getAssetPrice(ASSET1);
     }
 
     function test_GetAssetsPriceData() public {
@@ -128,6 +132,9 @@ contract MeraPriceOracleTest is Test {
         oracle.setAssetSources(assets, sources, decimals);
 
         assertEq(oracle.getSourceOfAsset(newAsset), address(newAggregator));
+
+        // Set price for the new aggregator to avoid AssetPriceNotAvailable error
+        newAggregator.setPrice(300);
 
         MeraPriceOracle.AssetPriceData[] memory priceData = oracle.getAssetsPriceData(assets);
         assertEq(priceData[0].decimals, 6);
@@ -192,5 +199,27 @@ contract MeraPriceOracleTest is Test {
         vm.prank(owner);
         vm.expectRevert(MeraPriceOracle.AssetSourceAlreadySet.selector);
         oracle.setAssetSources(assets, sources, decimals);
+    }
+
+    function test_RevertWhen_GetAssetPrice_AssetPriceNotAvailable_WhenAggregatorReturnsZero() public {
+        // Set aggregator to return zero price
+        mockAggregator1.setPrice(0);
+
+        // Set fallback oracle to also return zero (simulating no price available)
+        mockFallbackOracle.setAssetPrice(ASSET1, 0);
+
+        vm.expectRevert(abi.encodeWithSelector(MeraPriceOracle.AssetPriceNotAvailable.selector, ASSET1));
+        oracle.getAssetPrice(ASSET1);
+    }
+
+    function test_RevertWhen_GetAssetPrice_AssetPriceNotAvailable_WhenAggregatorReturnsNegative() public {
+        // Set aggregator to return negative price
+        mockAggregator1.setPrice(-50);
+
+        // Set fallback oracle to also return zero (simulating no price available)
+        mockFallbackOracle.setAssetPrice(ASSET1, 0);
+
+        vm.expectRevert(abi.encodeWithSelector(MeraPriceOracle.AssetPriceNotAvailable.selector, ASSET1));
+        oracle.getAssetPrice(ASSET1);
     }
 }
