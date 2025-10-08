@@ -64,7 +64,8 @@ describe("MainVault Upgrade Tests", function () {
       feePercentage: 100, // 1%
       currentImplementationOfInvestmentVault: ethers.ZeroAddress,
       pauserList: await pauserList.getAddress(),
-      meraPriceOracle: await meraPriceOracle.getAddress()
+      meraPriceOracle: await meraPriceOracle.getAddress(),
+      lockPeriod: 0 // No lock period for test
     }]);
 
     // Deploy proxy
@@ -105,43 +106,15 @@ describe("MainVault Upgrade Tests", function () {
     const newImplementation = await MainVaultV2.deploy();
     const newImplementationAddress = await newImplementation.getAddress();
     
-    // Prepare upgrade data and get signature from main investor
-    const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+    // Admin approves the upgrade
+    await mainVault.connect(admin).approveMainVaultUpgrade(newImplementationAddress);
     
-    const domain = {
-      name: "MainVault",
-      version: "1",
-      chainId: (await ethers.provider.getNetwork()).chainId,
-      verifyingContract: await mainVault.getAddress(),
-    };
+    // Main investor approves the upgrade
+    await mainVault.connect(mainInvestor).approveMainVaultUpgrade(newImplementationAddress);
     
-    const types = {
-      FutureMainVaultImplementation: [
-        { name: "implementation", type: "address" },
-        { name: "deadline", type: "uint64" },
-      ],
-    };
-    
-    const value = {
-      implementation: newImplementationAddress,
-      deadline: deadline,
-    };
-    
-    // Get signature from main investor
-    const signature = await mainInvestor.signTypedData(domain, types, value);
-    
-    // Admin sets the future implementation with main investor's signature
-    await mainVault.connect(admin).setFutureMainVaultImplementation(
-      {
-        implementation: newImplementationAddress,
-        deadline: deadline,
-      },
-      signature
-    );
-    
-    // Verify future implementation is set correctly
-    expect(await mainVault.nextFutureImplementationOfMainVault()).to.equal(newImplementationAddress);
-    expect(await mainVault.nextFutureImplementationOfMainVaultDeadline()).to.equal(deadline);
+    // Verify approvals are set correctly
+    expect(await mainVault.adminApprovedMainVaultImpl()).to.equal(newImplementationAddress);
+    expect(await mainVault.investorApprovedMainVaultImpl()).to.equal(newImplementationAddress);
     
     // Admin performs the upgrade
     await mainVault.connect(admin).upgradeToAndCall(newImplementationAddress, "0x");
@@ -151,12 +124,16 @@ describe("MainVault Upgrade Tests", function () {
     expect(newImplAddress).to.not.equal(currentImplAddress);
     expect(newImplAddress.slice(-40).toLowerCase()).to.equal(newImplementationAddress.slice(2).toLowerCase());
     
+    // Verify approval state is cleared
+    expect(await mainVault.adminApprovedMainVaultImpl()).to.equal(ethers.ZeroAddress);
+    expect(await mainVault.investorApprovedMainVaultImpl()).to.equal(ethers.ZeroAddress);
+    
     // Verify roles are preserved after upgrade
     expect(await mainVault.hasRole(await mainVault.MAIN_INVESTOR_ROLE(), await mainInvestor.getAddress())).to.be.true;
     expect(await mainVault.hasRole(await mainVault.ADMIN_ROLE(), await admin.getAddress())).to.be.true;
   });
 
-  it("Should fail to upgrade with invalid signature", async function () {
+  it("Should fail to upgrade with only admin approval", async function () {
     // Deploy MainVaultSwapLibrary first for the new implementation
     const MainVaultSwapLibrary = await ethers.getContractFactory("MainVaultSwapLibrary");
     const mainVaultSwapLibrary = await MainVaultSwapLibrary.deploy();
@@ -167,45 +144,18 @@ describe("MainVault Upgrade Tests", function () {
       },
     });
     const implementation = await MainVaultV2.deploy();
+    const implementationAddress = await implementation.getAddress();
     
-    const deadline = Math.floor(Date.now() / 1000) + 3600;
+    // Only admin approves
+    await mainVault.connect(admin).approveMainVaultUpgrade(implementationAddress);
     
-    // Create invalid signature (signed by wrong account)
-    const domain = {
-      name: "MainVault",
-      version: "1",
-      chainId: (await ethers.provider.getNetwork()).chainId,
-      verifyingContract: await mainVault.getAddress(),
-    };
-    
-    const types = {
-      FutureMainVaultImplementation: [
-        { name: "implementation", type: "address" },
-        { name: "deadline", type: "uint64" },
-      ],
-    };
-    
-    const value = {
-      implementation: await implementation.getAddress(),
-      deadline: deadline,
-    };
-    
-    // Sign with wrong account (admin instead of main investor)
-    const signature = await admin.signTypedData(domain, types, value);
-    
-    // Attempt to set future implementation should fail
+    // Attempt to upgrade should fail
     await expect(
-      mainVault.connect(admin).setFutureMainVaultImplementation(
-        {
-          implementation: await implementation.getAddress(),
-          deadline: deadline,
-        },
-        signature
-      )
-    ).to.be.revertedWithCustomError(mainVault, "InvalidSigner");
+      mainVault.connect(admin).upgradeToAndCall(implementationAddress, "0x")
+    ).to.be.revertedWithCustomError(mainVault, "ImplementationNotApprovedByInvestor");
   });
 
-  it("Should fail to upgrade with expired deadline", async function () {
+  it("Should fail to upgrade with expired approval", async function () {
     // Deploy MainVaultSwapLibrary first for the new implementation
     const MainVaultSwapLibrary = await ethers.getContractFactory("MainVaultSwapLibrary");
     const mainVaultSwapLibrary = await MainVaultSwapLibrary.deploy();
@@ -216,40 +166,50 @@ describe("MainVault Upgrade Tests", function () {
       },
     });
     const implementation = await MainVaultV2.deploy();
+    const implementationAddress = await implementation.getAddress();
     
-    // Set deadline in the past
-    const deadline = Math.floor(Date.now() / 1000) - 3600; // 1 hour ago
+    // Both approve
+    await mainVault.connect(admin).approveMainVaultUpgrade(implementationAddress);
+    await mainVault.connect(mainInvestor).approveMainVaultUpgrade(implementationAddress);
     
-    const domain = {
-      name: "MainVault",
-      version: "1",
-      chainId: (await ethers.provider.getNetwork()).chainId,
-      verifyingContract: await mainVault.getAddress(),
-    };
+    // Increase time by more than UPGRADE_TIME_LIMIT (1 day)
+    await ethers.provider.send("evm_increaseTime", [86401]); // 1 day + 1 second
+    await ethers.provider.send("evm_mine", []);
     
-    const types = {
-      FutureMainVaultImplementation: [
-        { name: "implementation", type: "address" },
-        { name: "deadline", type: "uint64" },
-      ],
-    };
-    
-    const value = {
-      implementation: await implementation.getAddress(),
-      deadline: deadline,
-    };
-    
-    const signature = await mainInvestor.signTypedData(domain, types, value);
-    
-    // Attempt to set future implementation should fail
+    // Attempt to upgrade should fail
     await expect(
-      mainVault.connect(admin).setFutureMainVaultImplementation(
-        {
-          implementation: await implementation.getAddress(),
-          deadline: deadline,
-        },
-        signature
-      )
-    ).to.be.revertedWithCustomError(mainVault, "TimestampMustBeInTheFuture");
+      mainVault.connect(admin).upgradeToAndCall(implementationAddress, "0x")
+    ).to.be.revertedWithCustomError(mainVault, "UpgradeDeadlineExpired");
+  });
+
+  it("Should fail to upgrade with different approvals", async function () {
+    // Deploy MainVaultSwapLibrary first
+    const MainVaultSwapLibrary = await ethers.getContractFactory("MainVaultSwapLibrary");
+    const mainVaultSwapLibrary = await MainVaultSwapLibrary.deploy();
+
+    const MainVaultV2 = await ethers.getContractFactory("MainVault", {
+      libraries: {
+        MainVaultSwapLibrary: await mainVaultSwapLibrary.getAddress(),
+      },
+    });
+    
+    // Deploy two different implementations
+    const implementation1 = await MainVaultV2.deploy();
+    const implementation2 = await MainVaultV2.deploy();
+    const impl1Address = await implementation1.getAddress();
+    const impl2Address = await implementation2.getAddress();
+    
+    // Admin approves one, investor approves another
+    await mainVault.connect(admin).approveMainVaultUpgrade(impl1Address);
+    await mainVault.connect(mainInvestor).approveMainVaultUpgrade(impl2Address);
+    
+    // Attempt to upgrade to either should fail
+    await expect(
+      mainVault.connect(admin).upgradeToAndCall(impl1Address, "0x")
+    ).to.be.revertedWithCustomError(mainVault, "ImplementationNotApprovedByInvestor");
+    
+    await expect(
+      mainVault.connect(admin).upgradeToAndCall(impl2Address, "0x")
+    ).to.be.revertedWithCustomError(mainVault, "ImplementationNotApprovedByAdmin");
   });
 }); 

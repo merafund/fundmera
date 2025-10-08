@@ -129,7 +129,8 @@ describe("InvestmentVault Upgrade Tests", function () {
       feePercentage: BigInt(100), // 1%
       currentImplementationOfInvestmentVault: investmentVaultImplAddress,
       pauserList: pauserListAddress,
-      meraPriceOracle: meraPriceOracleAddress
+      meraPriceOracle: meraPriceOracleAddress,
+      lockPeriod: BigInt(0) // No lock period for test
     };
     console.log("MainVault initialization params:", mainVaultParams);
 
@@ -202,55 +203,41 @@ describe("InvestmentVault Upgrade Tests", function () {
       },
     });
     const newImplementation = await InvestmentVaultV2.deploy();
+    const newImplAddress = await newImplementation.getAddress();
     
     // Get current implementation address for comparison
     const currentImplAddress = await ethers.provider.getStorage(await investmentVault.getAddress(), "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc");
     
-    // Set future implementation with signature from main investor
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600); // 1 hour from now
-    const domain = {
-      name: 'MainVault',
-      version: '1',
-      chainId: (await ethers.provider.getNetwork()).chainId,
-      verifyingContract: await mainVault.getAddress()
-    };
+    // Admin approves the new InvestorVault implementation
+    await mainVault.connect(admin).approveInvestorVaultUpgrade(newImplAddress);
     
-    const types = {
-      FutureInvestorVaultImplementation: [
-        { name: 'implementation', type: 'address' },
-        { name: 'deadline', type: 'uint64' }
-      ]
-    };
+    // Main investor approves the new InvestorVault implementation
+    await mainVault.connect(mainInvestor).approveInvestorVaultUpgrade(newImplAddress);
     
-    const value = {
-      implementation: await newImplementation.getAddress(),
-      deadline: deadline
-    };
+    // Verify approvals are set
+    expect(await mainVault.adminApprovedInvestorVaultImpl()).to.equal(newImplAddress);
+    expect(await mainVault.investorApprovedInvestorVaultImpl()).to.equal(newImplAddress);
     
-    const signature = await mainInvestor.signTypedData(domain, types, value);
-    
-    // Admin sets the future implementation
-    await mainVault.connect(admin).setFutureInvestorVaultImplementation(
-      { implementation: await newImplementation.getAddress(), deadline: deadline },
-      signature
-    );
-    
-    // Admin sets the current implementation
-    await mainVault.connect(admin).setCurrentImplementationOfInvestmentVault(await newImplementation.getAddress());
+    // Admin sets the current implementation (requires both approvals)
+    await mainVault.connect(admin).setCurrentImplementationOfInvestmentVault(newImplAddress);
     
     // Verify MainVault has the correct implementation set
-    expect(await mainVault.currentImplementationOfInvestmentVault()).to.equal(await newImplementation.getAddress());
+    expect(await mainVault.currentImplementationOfInvestmentVault()).to.equal(newImplAddress);
+    
+    // Verify approval state is cleared
+    expect(await mainVault.adminApprovedInvestorVaultImpl()).to.equal(ethers.ZeroAddress);
+    expect(await mainVault.investorApprovedInvestorVaultImpl()).to.equal(ethers.ZeroAddress);
     
     // Verify mainInvestor does not have ADMIN_ROLE
     expect(await mainVault.hasRole(await mainVault.ADMIN_ROLE(), await mainInvestor.getAddress())).to.be.false;
     
     // Upgrade InvestmentVault
-    await investmentVault.connect(admin).upgradeToAndCall(await newImplementation.getAddress(), "0x");
+    await investmentVault.connect(admin).upgradeToAndCall(newImplAddress, "0x");
     
     // Verify upgrade was successful
-    const newImplAddress = await ethers.provider.getStorage(await investmentVault.getAddress(), "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc");
-    expect(newImplAddress).to.not.equal(currentImplAddress);
-    expect(newImplAddress.slice(-40).toLowerCase()).to.equal((await newImplementation.getAddress()).slice(2).toLowerCase());
+    const finalImplAddress = await ethers.provider.getStorage(await investmentVault.getAddress(), "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc");
+    expect(finalImplAddress).to.not.equal(currentImplAddress);
+    expect(finalImplAddress.slice(-40).toLowerCase()).to.equal(newImplAddress.slice(2).toLowerCase());
     
     // Verify state is preserved
     expect(await investmentVault.mainVault()).to.equal(await mainVault.getAddress());
@@ -290,45 +277,21 @@ describe("InvestmentVault Upgrade Tests", function () {
       },
     });
     const newImplementation = await InvestmentVaultV2.deploy();
+    const newImplAddress = await newImplementation.getAddress();
     
-    // Set future implementation with signature from main investor
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600); // 1 hour from now
-    const domain = {
-      name: 'MainVault',
-      version: '1',
-      chainId: (await ethers.provider.getNetwork()).chainId,
-      verifyingContract: await mainVault.getAddress()
-    };
-    
-    const types = {
-      FutureInvestorVaultImplementation: [
-        { name: 'implementation', type: 'address' },
-        { name: 'deadline', type: 'uint64' }
-      ]
-    };
-    
-    const value = {
-      implementation: await newImplementation.getAddress(),
-      deadline: deadline
-    };
-    
-    const signature = await mainInvestor.signTypedData(domain, types, value);
-    
-    // Admin sets the future implementation
-    await mainVault.connect(admin).setFutureInvestorVaultImplementation(
-      { implementation: await newImplementation.getAddress(), deadline: deadline },
-      signature
-    );
+    // Admin and investor approve the upgrade
+    await mainVault.connect(admin).approveInvestorVaultUpgrade(newImplAddress);
+    await mainVault.connect(mainInvestor).approveInvestorVaultUpgrade(newImplAddress);
     
     // Admin sets the current implementation
-    await mainVault.connect(admin).setCurrentImplementationOfInvestmentVault(await newImplementation.getAddress());
+    await mainVault.connect(admin).setCurrentImplementationOfInvestmentVault(newImplAddress);
     
     // Verify mainInvestor does not have ADMIN_ROLE
     expect(await mainVault.hasRole(await mainVault.ADMIN_ROLE(), await mainInvestor.getAddress())).to.be.false;
     
     // Attempt to upgrade from non-admin account should fail
     await expect(
-      investmentVault.connect(mainInvestor).upgradeToAndCall(await newImplementation.getAddress(), "0x")
+      investmentVault.connect(mainInvestor).upgradeToAndCall(newImplAddress, "0x")
     ).to.be.reverted;
   });
 }); 

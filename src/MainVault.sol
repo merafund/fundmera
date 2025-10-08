@@ -15,8 +15,6 @@ import {MultiAdminSingleHolderAccessControlUppgradable} from
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
@@ -37,12 +35,10 @@ contract MainVault is
     Initializable,
     UUPSUpgradeable,
     MultiAdminSingleHolderAccessControlUppgradable,
-    EIP712Upgradeable,
     PausableUpgradeable,
     IMainVault
 {
     using SafeERC20 for IERC20;
-    using ECDSA for bytes32;
 
     // Custom Errors
     error InvalidSigner();
@@ -62,6 +58,11 @@ contract MainVault is
     error NotPauser();
     error InitializePause();
     error WithdrawCommitTimestampExpired();
+    error InvalidUpgradeAddress();
+    error ImplementationNotApprovedByAdmin();
+    error ImplementationNotApprovedByInvestor();
+    error UpgradeDeadlineExpired();
+    error AccessDenied();
     // Role definitions
     // Each role is represented by a unique bytes32 value computed from the role name
 
@@ -73,12 +74,8 @@ contract MainVault is
     bytes32 public constant BACKUP_ADMIN_ROLE = keccak256("BACKUP_ADMIN_ROLE"); // Backup admin role
     bytes32 public constant EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE"); // Emergency admin role
 
-    // EIP-712 Type Hashes
-    bytes32 private constant _FUTURE_MAIN_VAULT_IMPLEMENTATION_TYPEHASH =
-        keccak256("FutureMainVaultImplementation(address implementation,uint64 deadline)");
-
-    bytes32 private constant _FUTURE_INVESTOR_VAULT_IMPLEMENTATION_TYPEHASH =
-        keccak256("FutureInvestorVaultImplementation(address implementation,uint64 deadline)");
+    // Constants for upgrade time limit
+    uint256 public constant UPGRADE_TIME_LIMIT = 1 days; // Time limit for upgrade approval
 
     // Allowed tokens and routers mappings
     mapping(address => bool) public availableTokensByInvestor;
@@ -101,11 +98,17 @@ contract MainVault is
 
     address public currentImplementationOfInvestmentVault;
 
-    // we can optimize this storage
-    address public nextFutureImplementationOfMainVault;
-    uint64 public nextFutureImplementationOfMainVaultDeadline;
-    address public nextFutureImplementationOfInvestorVault;
-    uint64 public nextFutureImplementationOfInvestorVaultDeadline;
+    // Upgrade approval storage for MainVault
+    address public adminApprovedMainVaultImpl;
+    uint256 public adminApprovedMainVaultTimestamp;
+    address public investorApprovedMainVaultImpl;
+    uint256 public investorApprovedMainVaultTimestamp;
+
+    // Upgrade approval storage for InvestorVault
+    address public adminApprovedInvestorVaultImpl;
+    uint256 public adminApprovedInvestorVaultTimestamp;
+    address public investorApprovedInvestorVaultImpl;
+    uint256 public investorApprovedInvestorVaultTimestamp;
 
     uint64 public withdrawCommitTimestamp;
     uint64 public pauseToTimestamp;
@@ -138,6 +141,11 @@ contract MainVault is
         _;
     }
 
+    modifier onlyAdminOrInvestor() {
+        require(hasRole(ADMIN_ROLE, msg.sender) || hasRole(MAIN_INVESTOR_ROLE, msg.sender), AccessDenied());
+        _;
+    }
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -148,7 +156,6 @@ contract MainVault is
     function initialize(InitParams calldata params) public virtual initializer {
         __UUPSUpgradeable_init();
         __AccessControl_init();
-        __EIP712_init("MainVault", "1");
         __Pausable_init();
 
         // Set initial wallets and configuration
@@ -224,41 +231,33 @@ contract MainVault is
     }
 
     /// @inheritdoc IMainVault
-    function setFutureMainVaultImplementation(
-        FutureMainVaultImplementation calldata futureImplementation,
-        bytes calldata signature
-    ) external onlyRole(ADMIN_ROLE) {
-        // Verify the signature comes from the main investor
-        address signer = _verifyFutureMainVaultImplementationSignature(futureImplementation, signature);
-        require(hasRole(MAIN_INVESTOR_ROLE, signer), InvalidSigner());
+    function approveMainVaultUpgrade(address newImplementation) external onlyAdminOrInvestor {
+        require(newImplementation != address(0), InvalidUpgradeAddress());
 
-        // Verify deadline is in the future
-        require(futureImplementation.deadline > uint64(block.timestamp), TimestampMustBeInTheFuture());
-
-        // Set the future implementation
-        nextFutureImplementationOfMainVault = futureImplementation.implementation;
-        nextFutureImplementationOfMainVaultDeadline = futureImplementation.deadline;
-
-        emit FutureMainVaultImplementationSet(futureImplementation.implementation, futureImplementation.deadline);
+        if (hasRole(ADMIN_ROLE, msg.sender)) {
+            adminApprovedMainVaultImpl = newImplementation;
+            adminApprovedMainVaultTimestamp = block.timestamp;
+            emit MainVaultUpgradeApproved(newImplementation, msg.sender);
+        } else {
+            investorApprovedMainVaultImpl = newImplementation;
+            investorApprovedMainVaultTimestamp = block.timestamp;
+            emit MainVaultUpgradeApproved(newImplementation, msg.sender);
+        }
     }
 
     /// @inheritdoc IMainVault
-    function setFutureInvestorVaultImplementation(
-        FutureInvestorVaultImplementation calldata futureImplementation,
-        bytes calldata signature
-    ) external onlyRole(ADMIN_ROLE) {
-        // Verify the signature comes from the main investor
-        address signer = _verifyFutureInvestorVaultImplementationSignature(futureImplementation, signature);
-        require(hasRole(MAIN_INVESTOR_ROLE, signer), InvalidSigner());
+    function approveInvestorVaultUpgrade(address newImplementation) external onlyAdminOrInvestor {
+        require(newImplementation != address(0), InvalidUpgradeAddress());
 
-        // Verify deadline is in the future
-        require(futureImplementation.deadline > uint64(block.timestamp), TimestampMustBeInTheFuture());
-
-        // Set the future implementation
-        nextFutureImplementationOfInvestorVault = futureImplementation.implementation;
-        nextFutureImplementationOfInvestorVaultDeadline = futureImplementation.deadline;
-
-        emit FutureInvestorVaultImplementationSet(futureImplementation.implementation, futureImplementation.deadline);
+        if (hasRole(ADMIN_ROLE, msg.sender)) {
+            adminApprovedInvestorVaultImpl = newImplementation;
+            adminApprovedInvestorVaultTimestamp = block.timestamp;
+            emit InvestorVaultUpgradeApproved(newImplementation, msg.sender);
+        } else {
+            investorApprovedInvestorVaultImpl = newImplementation;
+            investorApprovedInvestorVaultTimestamp = block.timestamp;
+            emit InvestorVaultUpgradeApproved(newImplementation, msg.sender);
+        }
     }
 
     /// @inheritdoc IMainVault
@@ -370,16 +369,21 @@ contract MainVault is
     }
 
     /// @inheritdoc IMainVault
-    function setCurrentImplementationOfInvestmentVault(address implementation) external onlyRole(ADMIN_ROLE) {
-        require(implementation == nextFutureImplementationOfInvestorVault, InvalidImplementationAddress());
-        require(block.timestamp <= nextFutureImplementationOfInvestorVaultDeadline, InvalidImplementationDeadline());
+    function setCurrentImplementationOfInvestmentVault(address implementation) external onlyAdminOrInvestor {
+        require(implementation != address(0), InvalidUpgradeAddress());
+        require(implementation == adminApprovedInvestorVaultImpl, ImplementationNotApprovedByAdmin());
+        require(implementation == investorApprovedInvestorVaultImpl, ImplementationNotApprovedByInvestor());
+        require(block.timestamp - adminApprovedInvestorVaultTimestamp < UPGRADE_TIME_LIMIT, UpgradeDeadlineExpired());
+        require(block.timestamp - investorApprovedInvestorVaultTimestamp < UPGRADE_TIME_LIMIT, UpgradeDeadlineExpired());
 
         address oldImplementation = currentImplementationOfInvestmentVault;
-
         currentImplementationOfInvestmentVault = implementation;
 
-        nextFutureImplementationOfInvestorVault = address(0);
-        nextFutureImplementationOfInvestorVaultDeadline = 0;
+        // Reset approval state
+        adminApprovedInvestorVaultImpl = address(0);
+        adminApprovedInvestorVaultTimestamp = 0;
+        investorApprovedInvestorVaultImpl = address(0);
+        investorApprovedInvestorVaultTimestamp = 0;
 
         emit CurrentImplementationOfInvestmentVaultSet(oldImplementation, implementation);
     }
@@ -758,55 +762,21 @@ contract MainVault is
         return block.timestamp < withdrawalLockedUntil;
     }
 
-    /// @dev Verifies the EIP-712 signature for a future Main Vault implementation
-    /// @param futureImplementation The implementation data that was signed
-    /// @param signature The signature to verify
-    /// @return The signer's address
-    function _verifyFutureMainVaultImplementationSignature(
-        FutureMainVaultImplementation calldata futureImplementation,
-        bytes calldata signature
-    ) internal view returns (address) {
-        bytes32 structHash = keccak256(
-            abi.encode(
-                _FUTURE_MAIN_VAULT_IMPLEMENTATION_TYPEHASH,
-                futureImplementation.implementation,
-                futureImplementation.deadline
-            )
-        );
-
-        bytes32 hash = _hashTypedDataV4(structHash);
-        return ECDSA.recover(hash, signature);
-    }
-
-    /// @dev Verifies the EIP-712 signature for a future Investor Vault implementation
-    /// @param futureImplementation The implementation data that was signed
-    /// @param signature The signature to verify
-    /// @return The signer's address
-    function _verifyFutureInvestorVaultImplementationSignature(
-        FutureInvestorVaultImplementation calldata futureImplementation,
-        bytes calldata signature
-    ) internal view returns (address) {
-        bytes32 structHash = keccak256(
-            abi.encode(
-                _FUTURE_INVESTOR_VAULT_IMPLEMENTATION_TYPEHASH,
-                futureImplementation.implementation,
-                futureImplementation.deadline
-            )
-        );
-
-        bytes32 hash = _hashTypedDataV4(structHash);
-        return ECDSA.recover(hash, signature);
-    }
-
     /// @dev Contract upgrade authorization function (UUPS pattern)
-    /// Only the admin role can authorize contract upgrades
+    /// Requires approval from both admin and main investor within the time limit
     ///
     /// @param newImplementation Address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(ADMIN_ROLE) {
-        require(newImplementation == nextFutureImplementationOfMainVault, InvalidImplementationAddress());
-        require(block.timestamp <= nextFutureImplementationOfMainVaultDeadline, InvalidImplementationDeadline());
+    function _authorizeUpgrade(address newImplementation) internal override onlyAdminOrInvestor {
+        require(newImplementation != address(0), InvalidUpgradeAddress());
+        require(newImplementation == adminApprovedMainVaultImpl, ImplementationNotApprovedByAdmin());
+        require(newImplementation == investorApprovedMainVaultImpl, ImplementationNotApprovedByInvestor());
+        require(block.timestamp - adminApprovedMainVaultTimestamp < UPGRADE_TIME_LIMIT, UpgradeDeadlineExpired());
+        require(block.timestamp - investorApprovedMainVaultTimestamp < UPGRADE_TIME_LIMIT, UpgradeDeadlineExpired());
 
-        nextFutureImplementationOfMainVault = address(0);
-        nextFutureImplementationOfMainVaultDeadline = 0;
+        // Reset approval state
+        adminApprovedMainVaultImpl = address(0);
+        adminApprovedMainVaultTimestamp = 0;
+        investorApprovedMainVaultImpl = address(0);
+        investorApprovedMainVaultTimestamp = 0;
     }
 }

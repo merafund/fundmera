@@ -12,7 +12,6 @@ pragma solidity ^0.8.29;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IInvestmentVault} from "./IInvestmentVault.sol";
 import {IMultiAdminSingleHolderAccessControl} from "./IMultiAdminSingleHolderAccessControl.sol";
-import {IERC5267} from "@openzeppelin/contracts/interfaces/IERC5267.sol";
 import {IPauserList} from "./IPauserList.sol";
 import {Constants} from "../utils/Constants.sol";
 import {DataTypes} from "../utils/DataTypes.sol";
@@ -20,7 +19,7 @@ import {IMeraPriceOracle} from "./IMeraPriceOracle.sol";
 
 /// @title IMainVault
 /// @dev Interface for Main Vault
-interface IMainVault is IMultiAdminSingleHolderAccessControl, IERC5267 {
+interface IMainVault is IMultiAdminSingleHolderAccessControl {
     function paused() external view returns (bool);
 
     /// @dev Main investor role
@@ -81,11 +80,11 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl, IERC5267 {
     /// @dev Emitted when withdraw commit timestamp is set
     event WithdrawCommitTimestampSet(uint64 timestamp);
 
-    /// @dev Emitted when a future implementation for Main Vault is set
-    event FutureMainVaultImplementationSet(address indexed implementation, uint64 deadline);
+    /// @dev Emitted when MainVault upgrade is approved by admin or investor
+    event MainVaultUpgradeApproved(address indexed implementation, address indexed approver);
 
-    /// @dev Emitted when a future implementation for Investor Vault is set
-    event FutureInvestorVaultImplementationSet(address indexed implementation, uint64 deadline);
+    /// @dev Emitted when InvestorVault upgrade is approved by admin or investor
+    event InvestorVaultUpgradeApproved(address indexed implementation, address indexed approver);
 
     /// @dev Emitted when profit wallet address is changed
     event ProfitWalletSet(address indexed oldWallet, address indexed newWallet);
@@ -218,18 +217,6 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl, IERC5267 {
         bool isAvailable;
     }
 
-    /// @dev Future Main Vault Implementation configuration struct
-    struct FutureMainVaultImplementation {
-        address implementation;
-        uint64 deadline;
-    }
-
-    /// @dev Future Investor Vault Implementation configuration struct
-    struct FutureInvestorVaultImplementation {
-        address implementation;
-        uint64 deadline;
-    }
-
     /// @dev Get token availability by investor
     /// @param token Token address to check
     /// @return isAvailable True if token is available for investor
@@ -288,26 +275,46 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl, IERC5267 {
     /// @return implementation Current implementation address
     function currentImplementationOfInvestmentVault() external view returns (address);
 
-    /// @dev Get next future implementation of main vault
-    /// @return implementation Next implementation address
-    function nextFutureImplementationOfMainVault() external view returns (address);
+    /// @dev Get admin approved MainVault implementation
+    /// @return implementation Admin approved implementation address
+    function adminApprovedMainVaultImpl() external view returns (address);
 
-    /// @dev Get deadline for next future implementation of main vault
-    /// @return deadline Deadline timestamp
-    function nextFutureImplementationOfMainVaultDeadline() external view returns (uint64);
+    /// @dev Get admin approved MainVault implementation timestamp
+    /// @return timestamp Admin approval timestamp
+    function adminApprovedMainVaultTimestamp() external view returns (uint256);
 
-    /// @dev Get next future implementation of investor vault
-    /// @return implementation Next implementation address
-    function nextFutureImplementationOfInvestorVault() external view returns (address);
+    /// @dev Get investor approved MainVault implementation
+    /// @return implementation Investor approved implementation address
+    function investorApprovedMainVaultImpl() external view returns (address);
+
+    /// @dev Get investor approved MainVault implementation timestamp
+    /// @return timestamp Investor approval timestamp
+    function investorApprovedMainVaultTimestamp() external view returns (uint256);
+
+    /// @dev Get admin approved InvestorVault implementation
+    /// @return implementation Admin approved implementation address
+    function adminApprovedInvestorVaultImpl() external view returns (address);
+
+    /// @dev Get admin approved InvestorVault implementation timestamp
+    /// @return timestamp Admin approval timestamp
+    function adminApprovedInvestorVaultTimestamp() external view returns (uint256);
+
+    /// @dev Get investor approved InvestorVault implementation
+    /// @return implementation Investor approved implementation address
+    function investorApprovedInvestorVaultImpl() external view returns (address);
+
+    /// @dev Get investor approved InvestorVault implementation timestamp
+    /// @return timestamp Investor approval timestamp
+    function investorApprovedInvestorVaultTimestamp() external view returns (uint256);
 
     /// @dev Manually triggers the withdrawal lock renewal check
     /// @dev Can only be called by admin to force check and potentially renew the withdrawal lock
     /// @return renewed True if the lock was renewed, false otherwise
     function checkAndRenewWithdrawalLock() external returns (bool renewed);
 
-    /// @dev Get deadline for next future implementation of investor vault
-    /// @return deadline Deadline timestamp
-    function nextFutureImplementationOfInvestorVaultDeadline() external view returns (uint64);
+    /// @dev Get upgrade time limit constant
+    /// @return limit Time limit for upgrade approval
+    function UPGRADE_TIME_LIMIT() external view returns (uint256);
 
     /// @dev Sets availability status for multiple tokens by investor
     /// @param configs Array of token availability configurations
@@ -331,25 +338,19 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl, IERC5267 {
     /// @param configs Array of lock period availability configurations
     function setLockPeriodsAvailability(LockPeriodAvailability[] calldata configs) external;
 
-    /// @dev Sets the future implementation of the Main Vault
-    /// Only admin can call this function, and it requires a valid signature from the main investor
+    /// @dev Approves a new implementation for the Main Vault
+    /// Can be called by either admin or main investor
+    /// Both must approve the same implementation within UPGRADE_TIME_LIMIT for upgrade to be authorized
     ///
-    /// @param futureImplementation Structure containing the implementation address and deadline
-    /// @param signature EIP-712 signature from the main investor
-    function setFutureMainVaultImplementation(
-        FutureMainVaultImplementation calldata futureImplementation,
-        bytes calldata signature
-    ) external;
+    /// @param newImplementation Address of the new implementation
+    function approveMainVaultUpgrade(address newImplementation) external;
 
-    /// @dev Sets the future implementation of the Investor Vault
-    /// Only admin can call this function, and it requires a valid signature from the main investor
+    /// @dev Approves a new implementation for the Investor Vault
+    /// Can be called by either admin or main investor
+    /// Both must approve the same implementation within UPGRADE_TIME_LIMIT for setCurrentImplementationOfInvestmentVault to succeed
     ///
-    /// @param futureImplementation Structure containing the implementation address and deadline
-    /// @param signature EIP-712 signature from the main investor
-    function setFutureInvestorVaultImplementation(
-        FutureInvestorVaultImplementation calldata futureImplementation,
-        bytes calldata signature
-    ) external;
+    /// @param newImplementation Address of the new implementation
+    function approveInvestorVaultUpgrade(address newImplementation) external;
 
     /// @dev Sets the profit wallet address
     /// Only the main investor can call this function

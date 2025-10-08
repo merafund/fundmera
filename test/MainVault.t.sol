@@ -460,205 +460,103 @@ contract MainVaultTest is Test {
         vm.stopPrank();
     }
 
-    function _getDomainSeparator() internal view returns (bytes32) {
-        (, string memory name, string memory version, uint256 chainId, address verifyingContract,,) =
-            vault.eip712Domain();
-
-        return keccak256(
-            abi.encode(
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes(name)),
-                keccak256(bytes(version)),
-                chainId,
-                verifyingContract
-            )
-        );
-    }
-
-    function _getDigest(address _implementation, uint64 deadline, bytes32 domainSeparator)
-        internal
-        pure
-        returns (bytes32)
-    {
-        bytes32 FUTURE_MAIN_VAULT_IMPLEMENTATION_TYPEHASH =
-            keccak256("FutureMainVaultImplementation(address implementation,uint64 deadline)");
-
-        bytes32 structHash = keccak256(abi.encode(FUTURE_MAIN_VAULT_IMPLEMENTATION_TYPEHASH, _implementation, deadline));
-        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
-    }
-
-    function _generateMainVaultImplementationSignature(address _implementation, uint64 deadline, uint256 signerKey)
-        internal
-        view
-        returns (bytes memory)
-    {
-        bytes32 domainSeparator = _getDomainSeparator();
-        bytes32 digest = _getDigest(_implementation, deadline, domainSeparator);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, digest);
-        return abi.encodePacked(r, s, v);
-    }
-
-    function testSetFutureMainVaultImplementation() public {
+    // Test for approveMainVaultUpgrade - Admin approval
+    function testApproveMainVaultUpgrade_Admin() public {
         address newImplementation = address(new MainVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
-
-        IMainVault.FutureMainVaultImplementation memory futureImplementation =
-            IMainVault.FutureMainVaultImplementation({implementation: newImplementation, deadline: deadline});
-
-        bytes memory signature = _generateMainVaultImplementationSignature(newImplementation, deadline, 123456);
 
         vm.startPrank(admin);
-        vault.setFutureMainVaultImplementation(futureImplementation, signature);
+        vault.approveMainVaultUpgrade(newImplementation);
 
         // Verify state changes
-        assertEq(vault.nextFutureImplementationOfMainVault(), newImplementation, "Next implementation should be set");
-        assertEq(vault.nextFutureImplementationOfMainVaultDeadline(), deadline, "Deadline should be set");
+        assertEq(vault.adminApprovedMainVaultImpl(), newImplementation, "Admin approved implementation should be set");
+        assertEq(vault.adminApprovedMainVaultTimestamp(), block.timestamp, "Admin approval timestamp should be set");
         vm.stopPrank();
     }
 
-    function testSetFutureMainVaultImplementation_InvalidSigner() public {
+    // Test for approveMainVaultUpgrade - Investor approval
+    function testApproveMainVaultUpgrade_Investor() public {
         address newImplementation = address(new MainVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
-
-        IMainVault.FutureMainVaultImplementation memory futureImplementation =
-            IMainVault.FutureMainVaultImplementation({implementation: newImplementation, deadline: deadline});
-
-        bytes memory signature = _generateMainVaultImplementationSignature(newImplementation, deadline, 1234);
-
-        vm.startPrank(admin);
-        vm.expectRevert(MainVault.InvalidSigner.selector);
-        vault.setFutureMainVaultImplementation(futureImplementation, signature);
-        vm.stopPrank();
-    }
-
-    function testSetFutureMainVaultImplementation_PastDeadline() public {
-        address newImplementation = address(new MainVaultV2());
-        uint64 deadline = uint64(block.timestamp - 1); // Past deadline
-
-        IMainVault.FutureMainVaultImplementation memory futureImplementation =
-            IMainVault.FutureMainVaultImplementation({implementation: newImplementation, deadline: deadline});
-
-        bytes memory signature = _generateMainVaultImplementationSignature(newImplementation, deadline, 123456);
-
-        vm.startPrank(admin);
-        vm.expectRevert(MainVault.TimestampMustBeInTheFuture.selector);
-        vault.setFutureMainVaultImplementation(futureImplementation, signature);
-        vm.stopPrank();
-    }
-
-    function testSetFutureMainVaultImplementation_OnlyAdminCanCall() public {
-        address newImplementation = address(new MainVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
-
-        IMainVault.FutureMainVaultImplementation memory futureImplementation =
-            IMainVault.FutureMainVaultImplementation({implementation: newImplementation, deadline: deadline});
-
-        bytes memory signature = _generateMainVaultImplementationSignature(newImplementation, deadline, 123456);
-
-        // Try calling from non-admin addresses
-        vm.startPrank(user1);
-        vm.expectRevert();
-        vault.setFutureMainVaultImplementation(futureImplementation, signature);
-        vm.stopPrank();
 
         vm.startPrank(mainInvestor);
-        vm.expectRevert();
-        vault.setFutureMainVaultImplementation(futureImplementation, signature);
-        vm.stopPrank();
-    }
-
-    function _getInvestorVaultDigest(address _implementation, uint64 deadline, bytes32 domainSeparator)
-        internal
-        pure
-        returns (bytes32)
-    {
-        bytes32 FUTURE_INVESTOR_VAULT_IMPLEMENTATION_TYPEHASH =
-            keccak256("FutureInvestorVaultImplementation(address implementation,uint64 deadline)");
-
-        bytes32 structHash =
-            keccak256(abi.encode(FUTURE_INVESTOR_VAULT_IMPLEMENTATION_TYPEHASH, _implementation, deadline));
-        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
-    }
-
-    function _generateInvestorVaultImplementationSignature(address _implementation, uint64 deadline, uint256 signerKey)
-        internal
-        view
-        returns (bytes memory)
-    {
-        bytes32 domainSeparator = _getDomainSeparator();
-        bytes32 digest = _getInvestorVaultDigest(_implementation, deadline, domainSeparator);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, digest);
-        return abi.encodePacked(r, s, v);
-    }
-
-    function testSetFutureInvestorVaultImplementation() public {
-        address newImplementation = address(new InvestmentVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
-
-        IMainVault.FutureInvestorVaultImplementation memory futureImplementation =
-            IMainVault.FutureInvestorVaultImplementation({implementation: newImplementation, deadline: deadline});
-
-        bytes memory signature = _generateInvestorVaultImplementationSignature(newImplementation, deadline, 123456);
-
-        vm.startPrank(admin);
-        vault.setFutureInvestorVaultImplementation(futureImplementation, signature);
+        vault.approveMainVaultUpgrade(newImplementation);
 
         // Verify state changes
         assertEq(
-            vault.nextFutureImplementationOfInvestorVault(), newImplementation, "Next implementation should be set"
+            vault.investorApprovedMainVaultImpl(), newImplementation, "Investor approved implementation should be set"
         );
-        assertEq(vault.nextFutureImplementationOfInvestorVaultDeadline(), deadline, "Deadline should be set");
+        assertEq(
+            vault.investorApprovedMainVaultTimestamp(), block.timestamp, "Investor approval timestamp should be set"
+        );
         vm.stopPrank();
     }
 
-    function testSetFutureInvestorVaultImplementation_InvalidSigner() public {
-        address newImplementation = address(new InvestmentVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
-
-        IMainVault.FutureInvestorVaultImplementation memory futureImplementation =
-            IMainVault.FutureInvestorVaultImplementation({implementation: newImplementation, deadline: deadline});
-
-        // Generate signature with wrong private key
-        bytes memory signature = _generateInvestorVaultImplementationSignature(newImplementation, deadline, 1234);
-
+    // Test for approveMainVaultUpgrade - Zero address
+    function testApproveMainVaultUpgrade_ZeroAddress() public {
         vm.startPrank(admin);
-        vm.expectRevert(MainVault.InvalidSigner.selector);
-        vault.setFutureInvestorVaultImplementation(futureImplementation, signature);
+        vm.expectRevert(MainVault.InvalidUpgradeAddress.selector);
+        vault.approveMainVaultUpgrade(address(0));
         vm.stopPrank();
     }
 
-    function testSetFutureInvestorVaultImplementation_PastDeadline() public {
-        address newImplementation = address(new InvestmentVaultV2());
-        uint64 deadline = uint64(block.timestamp - 1); // Past deadline
-
-        IMainVault.FutureInvestorVaultImplementation memory futureImplementation =
-            IMainVault.FutureInvestorVaultImplementation({implementation: newImplementation, deadline: deadline});
-
-        bytes memory signature = _generateInvestorVaultImplementationSignature(newImplementation, deadline, 123456);
-
-        vm.startPrank(admin);
-        vm.expectRevert(MainVault.TimestampMustBeInTheFuture.selector);
-        vault.setFutureInvestorVaultImplementation(futureImplementation, signature);
-        vm.stopPrank();
-    }
-
-    function testSetFutureInvestorVaultImplementation_OnlyAdminCanCall() public {
-        address newImplementation = address(new InvestmentVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
-
-        IMainVault.FutureInvestorVaultImplementation memory futureImplementation =
-            IMainVault.FutureInvestorVaultImplementation({implementation: newImplementation, deadline: deadline});
-
-        bytes memory signature = _generateInvestorVaultImplementationSignature(newImplementation, deadline, 123456);
+    // Test for approveMainVaultUpgrade - Access control
+    function testApproveMainVaultUpgrade_OnlyAdminOrInvestor() public {
+        address newImplementation = address(new MainVaultV2());
 
         vm.startPrank(user1);
-        vm.expectRevert();
-        vault.setFutureInvestorVaultImplementation(futureImplementation, signature);
+        vm.expectRevert(MainVault.AccessDenied.selector);
+        vault.approveMainVaultUpgrade(newImplementation);
         vm.stopPrank();
+    }
+
+    // Test for approveInvestorVaultUpgrade - Admin approval
+    function testApproveInvestorVaultUpgrade_Admin() public {
+        address newImplementation = address(new InvestmentVaultV2());
+
+        vm.startPrank(admin);
+        vault.approveInvestorVaultUpgrade(newImplementation);
+
+        // Verify state changes
+        assertEq(
+            vault.adminApprovedInvestorVaultImpl(), newImplementation, "Admin approved implementation should be set"
+        );
+        assertEq(vault.adminApprovedInvestorVaultTimestamp(), block.timestamp, "Admin approval timestamp should be set");
+        vm.stopPrank();
+    }
+
+    // Test for approveInvestorVaultUpgrade - Investor approval
+    function testApproveInvestorVaultUpgrade_Investor() public {
+        address newImplementation = address(new InvestmentVaultV2());
 
         vm.startPrank(mainInvestor);
-        vm.expectRevert();
-        vault.setFutureInvestorVaultImplementation(futureImplementation, signature);
+        vault.approveInvestorVaultUpgrade(newImplementation);
+
+        // Verify state changes
+        assertEq(
+            vault.investorApprovedInvestorVaultImpl(),
+            newImplementation,
+            "Investor approved implementation should be set"
+        );
+        assertEq(
+            vault.investorApprovedInvestorVaultTimestamp(), block.timestamp, "Investor approval timestamp should be set"
+        );
+        vm.stopPrank();
+    }
+
+    // Test for approveInvestorVaultUpgrade - Zero address
+    function testApproveInvestorVaultUpgrade_ZeroAddress() public {
+        vm.startPrank(admin);
+        vm.expectRevert(MainVault.InvalidUpgradeAddress.selector);
+        vault.approveInvestorVaultUpgrade(address(0));
+        vm.stopPrank();
+    }
+
+    // Test for approveInvestorVaultUpgrade - Access control
+    function testApproveInvestorVaultUpgrade_OnlyAdminOrInvestor() public {
+        address newImplementation = address(new InvestmentVaultV2());
+
+        vm.startPrank(user1);
+        vm.expectRevert(MainVault.AccessDenied.selector);
+        vault.approveInvestorVaultUpgrade(newImplementation);
         vm.stopPrank();
     }
 
@@ -1243,16 +1141,16 @@ contract MainVaultTest is Test {
 
     function testSetCurrentImplementationOfInvestmentVault() public {
         address newImplementation = address(new InvestmentVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
 
-        IMainVault.FutureInvestorVaultImplementation memory futureImplementation =
-            IMainVault.FutureInvestorVaultImplementation({implementation: newImplementation, deadline: deadline});
+        // Both admin and investor approve
+        vm.prank(admin);
+        vault.approveInvestorVaultUpgrade(newImplementation);
 
-        bytes memory signature = _generateInvestorVaultImplementationSignature(newImplementation, deadline, 123456);
+        vm.prank(mainInvestor);
+        vault.approveInvestorVaultUpgrade(newImplementation);
 
-        vm.startPrank(admin);
-        vault.setFutureInvestorVaultImplementation(futureImplementation, signature);
-
+        // Admin sets the implementation
+        vm.prank(admin);
         vault.setCurrentImplementationOfInvestmentVault(newImplementation);
 
         assertEq(
@@ -1261,86 +1159,97 @@ contract MainVaultTest is Test {
             "Current implementation should be updated"
         );
 
-        assertEq(vault.nextFutureImplementationOfInvestorVault(), address(0), "Future implementation should be cleared");
-        assertEq(
-            vault.nextFutureImplementationOfInvestorVaultDeadline(),
-            0,
-            "Future implementation deadline should be cleared"
-        );
-
-        vm.stopPrank();
+        // Verify approval state is cleared
+        assertEq(vault.adminApprovedInvestorVaultImpl(), address(0), "Admin approval should be cleared");
+        assertEq(vault.investorApprovedInvestorVaultImpl(), address(0), "Investor approval should be cleared");
     }
 
-    function testSetCurrentImplementationOfInvestmentVault_InvalidImplementation() public {
-        address correctImplementation = address(new InvestmentVaultV2());
-        address wrongImplementation = address(new InvestmentVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
+    function testSetCurrentImplementationOfInvestmentVault_OnlyInvestorApproved() public {
+        address newImplementation = address(new InvestmentVaultV2());
 
-        IMainVault.FutureInvestorVaultImplementation memory futureImplementation =
-            IMainVault.FutureInvestorVaultImplementation({implementation: correctImplementation, deadline: deadline});
+        // Only investor approves
+        vm.prank(mainInvestor);
+        vault.approveInvestorVaultUpgrade(newImplementation);
 
-        bytes memory signature = _generateInvestorVaultImplementationSignature(correctImplementation, deadline, 123456);
+        // Try to set without admin approval
+        vm.prank(admin);
+        vm.expectRevert(MainVault.ImplementationNotApprovedByAdmin.selector);
+        vault.setCurrentImplementationOfInvestmentVault(newImplementation);
+    }
 
-        vm.startPrank(admin);
-        vault.setFutureInvestorVaultImplementation(futureImplementation, signature);
+    function testSetCurrentImplementationOfInvestmentVault_OnlyAdminApproved() public {
+        address newImplementation = address(new InvestmentVaultV2());
 
-        vm.expectRevert(MainVault.InvalidImplementationAddress.selector);
-        vault.setCurrentImplementationOfInvestmentVault(wrongImplementation);
+        // Only admin approves
+        vm.prank(admin);
+        vault.approveInvestorVaultUpgrade(newImplementation);
 
-        vm.stopPrank();
+        // Try to set without investor approval
+        vm.prank(mainInvestor);
+        vm.expectRevert(MainVault.ImplementationNotApprovedByInvestor.selector);
+        vault.setCurrentImplementationOfInvestmentVault(newImplementation);
+    }
+
+    function testSetCurrentImplementationOfInvestmentVault_DifferentApprovals() public {
+        address implementation1 = address(new InvestmentVaultV2());
+        address implementation2 = address(new InvestmentVaultV2());
+
+        // Admin approves one implementation
+        vm.prank(admin);
+        vault.approveInvestorVaultUpgrade(implementation1);
+
+        // Investor approves different implementation
+        vm.prank(mainInvestor);
+        vault.approveInvestorVaultUpgrade(implementation2);
+
+        // Try to set either - both should fail
+        vm.prank(admin);
+        vm.expectRevert(MainVault.ImplementationNotApprovedByInvestor.selector);
+        vault.setCurrentImplementationOfInvestmentVault(implementation1);
+
+        vm.prank(admin);
+        vm.expectRevert(MainVault.ImplementationNotApprovedByAdmin.selector);
+        vault.setCurrentImplementationOfInvestmentVault(implementation2);
     }
 
     function testSetCurrentImplementationOfInvestmentVault_ExpiredDeadline() public {
         address newImplementation = address(new InvestmentVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
 
-        IMainVault.FutureInvestorVaultImplementation memory futureImplementation =
-            IMainVault.FutureInvestorVaultImplementation({implementation: newImplementation, deadline: deadline});
+        // Both approve
+        vm.prank(admin);
+        vault.approveInvestorVaultUpgrade(newImplementation);
 
-        bytes memory signature = _generateInvestorVaultImplementationSignature(newImplementation, deadline, 123456);
+        vm.prank(mainInvestor);
+        vault.approveInvestorVaultUpgrade(newImplementation);
 
-        vm.startPrank(admin);
-        vault.setFutureInvestorVaultImplementation(futureImplementation, signature);
+        // Warp past deadline
+        vm.warp(block.timestamp + vault.UPGRADE_TIME_LIMIT() + 1);
 
-        vm.warp(deadline + 1);
-
-        vm.expectRevert(MainVault.InvalidImplementationDeadline.selector);
+        vm.prank(admin);
+        vm.expectRevert(MainVault.UpgradeDeadlineExpired.selector);
         vault.setCurrentImplementationOfInvestmentVault(newImplementation);
-
-        vm.stopPrank();
     }
 
-    function testSetCurrentImplementationOfInvestmentVault_OnlyAdminCanCall() public {
+    function testSetCurrentImplementationOfInvestmentVault_AdminOrInvestorCanCall() public {
         address newImplementation = address(new InvestmentVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
 
-        IMainVault.FutureInvestorVaultImplementation memory futureImplementation =
-            IMainVault.FutureInvestorVaultImplementation({implementation: newImplementation, deadline: deadline});
+        // Both approve
+        vm.prank(admin);
+        vault.approveInvestorVaultUpgrade(newImplementation);
 
-        bytes memory signature = _generateInvestorVaultImplementationSignature(newImplementation, deadline, 123456);
+        vm.prank(mainInvestor);
+        vault.approveInvestorVaultUpgrade(newImplementation);
 
-        vm.startPrank(admin);
-        vault.setFutureInvestorVaultImplementation(futureImplementation, signature);
-        vm.stopPrank();
-
-        vm.startPrank(user1);
-        vm.expectRevert();
+        // User cannot call
+        vm.prank(user1);
+        vm.expectRevert(MainVault.AccessDenied.selector);
         vault.setCurrentImplementationOfInvestmentVault(newImplementation);
-        vm.stopPrank();
 
-        vm.startPrank(mainInvestor);
-        vm.expectRevert();
+        // Investor can call
+        vm.prank(mainInvestor);
         vault.setCurrentImplementationOfInvestmentVault(newImplementation);
-        vm.stopPrank();
 
-        vm.startPrank(admin);
-        vault.setCurrentImplementationOfInvestmentVault(newImplementation);
-        assertEq(
-            vault.currentImplementationOfInvestmentVault(),
-            newImplementation,
-            "Admin should be able to set implementation"
-        );
-        vm.stopPrank();
+        assertEq(vault.currentImplementationOfInvestmentVault(), newImplementation, "Implementation should be updated");
     }
 
     function testSetAutoRenewWithdrawalLock() public {
@@ -1803,144 +1712,142 @@ contract MainVaultTest is Test {
 
     function testUpgradeAuthorization() public {
         address newImplementation = address(new MainVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
 
-        IMainVault.FutureMainVaultImplementation memory futureImplementation =
-            IMainVault.FutureMainVaultImplementation({implementation: newImplementation, deadline: deadline});
+        // Both admin and investor approve
+        vm.prank(admin);
+        vault.approveMainVaultUpgrade(newImplementation);
 
-        bytes memory signature = _generateMainVaultImplementationSignature(newImplementation, deadline, 123456);
+        vm.prank(mainInvestor);
+        vault.approveMainVaultUpgrade(newImplementation);
 
-        vm.startPrank(admin);
-        vault.setFutureMainVaultImplementation(futureImplementation, signature);
-
-        assertEq(vault.nextFutureImplementationOfMainVault(), newImplementation);
-        assertEq(vault.nextFutureImplementationOfMainVaultDeadline(), deadline);
+        // Verify approval state
+        assertEq(vault.adminApprovedMainVaultImpl(), newImplementation);
+        assertEq(vault.investorApprovedMainVaultImpl(), newImplementation);
 
         vm.expectEmit(true, true, true, true);
         emit Upgraded(newImplementation);
-        UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
-
-        assertEq(vault.nextFutureImplementationOfMainVault(), address(0));
-        assertEq(vault.nextFutureImplementationOfMainVaultDeadline(), 0);
-
-        vm.stopPrank();
-    }
-
-    function testUpgradeAuthorization_OnlyAdminCanUpgrade() public {
-        address newImplementation = address(new MainVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
-
-        IMainVault.FutureMainVaultImplementation memory futureImplementation =
-            IMainVault.FutureMainVaultImplementation({implementation: newImplementation, deadline: deadline});
-
-        bytes memory signature = _generateMainVaultImplementationSignature(newImplementation, deadline, 123456);
 
         vm.prank(admin);
-        vault.setFutureMainVaultImplementation(futureImplementation, signature);
-
-        vm.startPrank(user1);
-        vm.expectRevert();
         UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
-        vm.stopPrank();
 
-        vm.startPrank(mainInvestor);
-        vm.expectRevert();
-        UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
-        vm.stopPrank();
-
-        vm.startPrank(admin);
-        UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
-        vm.stopPrank();
+        // Verify approval state is cleared
+        assertEq(vault.adminApprovedMainVaultImpl(), address(0));
+        assertEq(vault.investorApprovedMainVaultImpl(), address(0));
     }
 
-    function testUpgradeAuthorization_InvalidImplementation() public {
-        address correctImplementation = address(new MainVaultV2());
-        address wrongImplementation = address(new MainVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
+    function testUpgradeAuthorization_OnlyAdminOrInvestorCanUpgrade() public {
+        address newImplementation = address(new MainVaultV2());
 
-        IMainVault.FutureMainVaultImplementation memory futureImplementation =
-            IMainVault.FutureMainVaultImplementation({implementation: correctImplementation, deadline: deadline});
+        // Both approve
+        vm.prank(admin);
+        vault.approveMainVaultUpgrade(newImplementation);
 
-        bytes memory signature = _generateMainVaultImplementationSignature(correctImplementation, deadline, 123456);
+        vm.prank(mainInvestor);
+        vault.approveMainVaultUpgrade(newImplementation);
 
-        vm.startPrank(admin);
-        vault.setFutureMainVaultImplementation(futureImplementation, signature);
+        // User cannot upgrade
+        vm.prank(user1);
+        vm.expectRevert(MainVault.AccessDenied.selector);
+        UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
 
-        vm.expectRevert(MainVault.InvalidImplementationAddress.selector);
-        UUPSUpgradeable(address(vault)).upgradeToAndCall(wrongImplementation, "");
+        // Admin can upgrade
+        vm.prank(admin);
+        UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
+    }
 
-        vm.stopPrank();
+    function testUpgradeAuthorization_InvestorCanAlsoUpgrade() public {
+        address newImplementation = address(new MainVaultV2());
+
+        // Both approve
+        vm.prank(admin);
+        vault.approveMainVaultUpgrade(newImplementation);
+
+        vm.prank(mainInvestor);
+        vault.approveMainVaultUpgrade(newImplementation);
+
+        // Investor can upgrade
+        vm.prank(mainInvestor);
+        UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
+    }
+
+    function testUpgradeAuthorization_DifferentApprovals() public {
+        address implementation1 = address(new MainVaultV2());
+        address implementation2 = address(new MainVaultV2());
+
+        // Admin approves one
+        vm.prank(admin);
+        vault.approveMainVaultUpgrade(implementation1);
+
+        // Investor approves different one
+        vm.prank(mainInvestor);
+        vault.approveMainVaultUpgrade(implementation2);
+
+        // Cannot upgrade to either
+        vm.prank(admin);
+        vm.expectRevert(MainVault.ImplementationNotApprovedByInvestor.selector);
+        UUPSUpgradeable(address(vault)).upgradeToAndCall(implementation1, "");
+
+        vm.prank(admin);
+        vm.expectRevert(MainVault.ImplementationNotApprovedByAdmin.selector);
+        UUPSUpgradeable(address(vault)).upgradeToAndCall(implementation2, "");
     }
 
     function testUpgradeAuthorization_ExpiredDeadline() public {
         address newImplementation = address(new MainVaultV2());
-        uint64 deadline = uint64(block.timestamp + 1 days);
 
-        IMainVault.FutureMainVaultImplementation memory futureImplementation =
-            IMainVault.FutureMainVaultImplementation({implementation: newImplementation, deadline: deadline});
+        // Both approve
+        vm.prank(admin);
+        vault.approveMainVaultUpgrade(newImplementation);
 
-        bytes memory signature = _generateMainVaultImplementationSignature(newImplementation, deadline, 123456);
+        vm.prank(mainInvestor);
+        vault.approveMainVaultUpgrade(newImplementation);
 
-        vm.startPrank(admin);
-        vault.setFutureMainVaultImplementation(futureImplementation, signature);
+        // Warp past deadline
+        vm.warp(block.timestamp + vault.UPGRADE_TIME_LIMIT() + 1);
 
-        vm.warp(deadline + 1);
-
-        vm.expectRevert(MainVault.InvalidImplementationDeadline.selector);
+        vm.prank(admin);
+        vm.expectRevert(MainVault.UpgradeDeadlineExpired.selector);
         UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
-
-        vm.stopPrank();
     }
 
-    function testUpgradeAuthorization_NoFutureImplementation() public {
+    function testUpgradeAuthorization_NoApprovals() public {
         address newImplementation = address(new MainVaultV2());
 
-        vm.startPrank(admin);
-        vm.expectRevert(MainVault.InvalidImplementationAddress.selector);
+        vm.prank(admin);
+        vm.expectRevert(MainVault.ImplementationNotApprovedByAdmin.selector);
         UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
-        vm.stopPrank();
     }
 
-    function testDeployInvestmentVault_ZeroImplementation() public {
-        vm.startPrank(mainInvestor);
-        token.approve(address(vault), DEPOSIT_AMOUNT);
-        vault.deposit(token, DEPOSIT_AMOUNT);
-        vm.stopPrank();
+    function testUpgradeAuthorization_OnlyAdminApproved() public {
+        address newImplementation = address(new MainVaultV2());
 
-        vm.startPrank(admin);
-        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
-        assets[0] = DataTypes.AssetInitData({
-            token: IERC20(address(token)),
-            shareMV: Constants.SHARE_DENOMINATOR,
-            step: 300,
-            strategy: DataTypes.Strategy.Zero
-        });
+        // Only admin approves
+        vm.prank(admin);
+        vault.approveMainVaultUpgrade(newImplementation);
 
-        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
-            mainVault: DataTypesIMainVault(address(vault)),
-            tokenMI: IERC20(address(token)),
-            tokenMV: IERC20(address(token)),
-            initDeposit: DEPOSIT_AMOUNT / 2,
-            shareMI: Constants.SHARE_DENOMINATOR,
-            step: 5 * 10 ** 16,
-            assets: assets
-        });
-
-        // Set future implementation to zero address first
-        uint64 deadline = uint64(block.timestamp + 1 days);
-        IMainVault.FutureInvestorVaultImplementation memory futureImplementation =
-            IMainVault.FutureInvestorVaultImplementation({implementation: address(0), deadline: deadline});
-
-        bytes memory signature = _generateInvestorVaultImplementationSignature(address(0), deadline, 123456);
-        vault.setFutureInvestorVaultImplementation(futureImplementation, signature);
-
-        // Now set current implementation to zero
-        vault.setCurrentImplementationOfInvestmentVault(address(0));
-
-        vm.expectRevert(MainVault.InvalidImplementationAddress.selector);
-        vault.deployInvestmentVault(initData);
-        vm.stopPrank();
+        vm.prank(admin);
+        vm.expectRevert(MainVault.ImplementationNotApprovedByInvestor.selector);
+        UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
     }
+
+    function testUpgradeAuthorization_OnlyInvestorApproved() public {
+        address newImplementation = address(new MainVaultV2());
+
+        // Only investor approves
+        vm.prank(mainInvestor);
+        vault.approveMainVaultUpgrade(newImplementation);
+
+        vm.prank(mainInvestor);
+        vm.expectRevert(MainVault.ImplementationNotApprovedByAdmin.selector);
+        UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
+    }
+
+    // Test removed: testDeployInvestmentVault_ZeroImplementation
+    // This test is no longer applicable because:
+    // 1. Zero address cannot be approved via approveInvestorVaultUpgrade (checks for InvalidUpgradeAddress)
+    // 2. Without approval, zero address cannot be set as currentImplementationOfInvestmentVault
+    // 3. The zero address validation now happens at the approval stage, not deployment stage
+    // Zero address validation is now tested in testApproveInvestorVaultUpgrade_ZeroAddress
 
     function testDeployInvestmentVault_TokenNotAvailable() public {
         vm.startPrank(mainInvestor);
