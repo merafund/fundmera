@@ -548,6 +548,10 @@ contract FactoryTest is Test {
         // Test emergencyInvestor
         vm.expectRevert(IFactory.ZeroAddress.selector);
         factory.createMainVault(mainInvestor, backupInvestor, address(0), profitWallet, referralCode);
+
+        // Test profitWallet
+        vm.expectRevert(IFactory.ZeroAddress.selector);
+        factory.createMainVault(mainInvestor, backupInvestor, emergencyInvestor, address(0), referralCode);
     }
 
     function test_SetMeraPriceOracle() public {

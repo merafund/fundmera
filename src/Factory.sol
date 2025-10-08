@@ -117,6 +117,7 @@ contract Factory is IFactory, Ownable {
         require(mainInvestor != address(0), ZeroAddress());
         require(backupInvestor != address(0), ZeroAddress());
         require(emergencyInvestor != address(0), ZeroAddress());
+        require(profitWallet != address(0), ZeroAddress());
 
         // Get profit wallet from referral code or use default
         address feeWallet = referralToAgentDistribution[referralCode];
@@ -170,6 +171,7 @@ contract Factory is IFactory, Ownable {
         require(mainInvestor != address(0), ZeroAddress());
         require(backupInvestor != address(0), ZeroAddress());
         require(emergencyInvestor != address(0), ZeroAddress());
+        require(profitWallet != address(0), ZeroAddress());
 
         // Get profit wallet from referral code or use default
         address feeWallet = referralToAgentDistribution[referralCode];
