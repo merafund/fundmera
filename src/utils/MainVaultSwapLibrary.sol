@@ -90,10 +90,7 @@ library MainVaultSwapLibrary {
 
         // Set token allowance if needed
         IERC20 inputToken = IERC20(params.tokenIn);
-        uint256 currentAllowance = inputToken.allowance(address(this), router);
-        if (currentAllowance < params.amountIn) {
-            inputToken.safeIncreaseAllowance(router, type(uint256).max);
-        }
+        inputToken.safeIncreaseAllowance(router, params.amountIn);
 
         if (params.deadline == 0) {
             amountOut = ISwapRouterBase(router).exactInputSingle(
@@ -168,10 +165,7 @@ library MainVaultSwapLibrary {
 
         // Set token allowance if needed
         IERC20 inputToken = IERC20(firstToken);
-        uint256 currentAllowance = inputToken.allowance(address(this), router);
-        if (currentAllowance < params.amountIn) {
-            inputToken.safeIncreaseAllowance(router, type(uint256).max);
-        }
+        inputToken.safeIncreaseAllowance(router, params.amountIn);
 
         if (params.deadline == 0) {
             amountOut = ISwapRouterBase(router).exactInput(
@@ -223,10 +217,7 @@ library MainVaultSwapLibrary {
 
         // Set token allowance if needed
         IERC20 inputToken = IERC20(params.tokenIn);
-        uint256 currentAllowance = inputToken.allowance(address(this), router);
-        if (currentAllowance < params.amountInMaximum) {
-            inputToken.safeIncreaseAllowance(router, type(uint256).max);
-        }
+        inputToken.safeIncreaseAllowance(router, params.amountInMaximum);
 
         if (params.deadline == 0) {
             amountIn = ISwapRouterBase(router).exactOutputSingle(
@@ -301,10 +292,7 @@ library MainVaultSwapLibrary {
 
         // Set token allowance if needed
         IERC20 inputToken = IERC20(firstToken);
-        uint256 currentAllowance = inputToken.allowance(address(this), router);
-        if (currentAllowance < params.amountInMaximum) {
-            inputToken.safeIncreaseAllowance(router, type(uint256).max);
-        }
+        inputToken.safeIncreaseAllowance(router, params.amountInMaximum);
 
         if (params.deadline == 0) {
             amountIn = ISwapRouterBase(router).exactOutput(
@@ -356,10 +344,7 @@ library MainVaultSwapLibrary {
 
         // Check and set token allowance if needed
         IERC20 inputToken = IERC20(firstToken);
-        uint256 currentAllowance = inputToken.allowance(address(this), router);
-        if (currentAllowance < amountIn) {
-            inputToken.safeIncreaseAllowance(router, type(uint256).max);
-        }
+        inputToken.safeIncreaseAllowance(router, amountIn);
 
         // Execute the swap
         amounts = IUniswapV2Router02(router).swapExactTokensForTokens(
@@ -402,10 +387,7 @@ library MainVaultSwapLibrary {
 
         // Check and set token allowance if needed
         IERC20 inputToken = IERC20(path[0]);
-        uint256 currentAllowance = inputToken.allowance(address(this), router);
-        if (currentAllowance < amountInMax) {
-            inputToken.safeIncreaseAllowance(router, type(uint256).max);
-        }
+        inputToken.safeIncreaseAllowance(router, amountInMax);
         // Execute the swap
         amounts = IUniswapV2Router02(router).swapTokensForExactTokens(
             amountOut,
@@ -451,10 +433,7 @@ library MainVaultSwapLibrary {
 
         // Set token allowance if needed
         IERC20 inputToken = IERC20(params.tokenIn);
-        uint256 currentAllowance = inputToken.allowance(address(this), router);
-        if (currentAllowance < params.amountIn) {
-            inputToken.safeIncreaseAllowance(router, type(uint256).max);
-        }
+        inputToken.safeIncreaseAllowance(router, params.amountIn);
 
         // Execute the swap
         amountOut = IQuickswapV3Router(router).exactInputSingle(quickswapParams);
@@ -516,10 +495,7 @@ library MainVaultSwapLibrary {
 
         // Set token allowance if needed
         IERC20 inputToken = IERC20(firstToken);
-        uint256 currentAllowance = inputToken.allowance(address(this), router);
-        if (currentAllowance < params.amountIn) {
-            inputToken.safeIncreaseAllowance(router, type(uint256).max);
-        }
+        inputToken.safeIncreaseAllowance(router, params.amountIn);
 
         // Execute the swap
         amountOut = IQuickswapV3Router(router).exactInput(quickswapParams);
@@ -561,10 +537,7 @@ library MainVaultSwapLibrary {
 
         // Set token allowance if needed
         IERC20 inputToken = IERC20(params.tokenIn);
-        uint256 currentAllowance = inputToken.allowance(address(this), router);
-        if (currentAllowance < params.amountInMaximum) {
-            inputToken.safeIncreaseAllowance(router, type(uint256).max);
-        }
+        inputToken.safeIncreaseAllowance(router, params.amountInMaximum);
 
         // Execute the swap
         amountIn = IQuickswapV3Router(router).exactOutputSingle(quickswapParams);
@@ -626,10 +599,7 @@ library MainVaultSwapLibrary {
 
         // Set token allowance if needed
         IERC20 inputToken = IERC20(firstToken);
-        uint256 currentAllowance = inputToken.allowance(address(this), router);
-        if (currentAllowance < params.amountInMaximum) {
-            inputToken.safeIncreaseAllowance(router, type(uint256).max);
-        }
+        inputToken.safeIncreaseAllowance(router, params.amountInMaximum);
 
         // Execute the swap
         amountIn = IQuickswapV3Router(router).exactOutput(quickswapParams);
