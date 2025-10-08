@@ -24,6 +24,7 @@ library Constants {
     uint256 public constant PAUSE_AFTER_UPDATE_ACCESS = 4 hours; // Pause period after access update
     uint256 public constant WITHDRAW_COMMIT_MIN_DELAY = 1 hours; // Minimum delay for withdraw commit
     uint256 public constant WITHDRAW_COMMIT_MAX_DELAY = 1 days; // Maximum delay for withdraw commit
+    uint256 public constant WITHDRAWAL_PROFIT_LOCK_PERIOD = 7 days; // Lock period for withdrawals and profit lock
 
     // Percentage constants
     uint256 public constant MAX_PERCENT = 10000; // Represents 100.00% - fee percentage can't exceed this value
