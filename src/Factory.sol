@@ -58,6 +58,8 @@ contract Factory is IFactory, Ownable {
         require(params.agentDistributionImplementation != address(0), ZeroAddress());
         require(params.fundWallet != address(0), ZeroAddress());
         require(params.defaultAgentWallet != address(0), ZeroAddress());
+        require(params.meraCapitalWallet != address(0), ZeroAddress());
+        require(params.meraPriceOracle != address(0), ZeroAddress());
 
         mainVaultImplementation = params.mainVaultImplementation;
         investmentVaultImplementation = params.investmentVaultImplementation;

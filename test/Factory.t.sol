@@ -83,8 +83,9 @@ contract FactoryTest is Test {
         agentDistributionImpl = address(agentDistributionImplementation);
 
         // Prepare constructor parameters
+        address meraPriceOracle = makeAddr("meraPriceOracle");
         IFactory.ConstructorParams memory params = IFactory.ConstructorParams({
-            meraPriceOracle: address(0),
+            meraPriceOracle: meraPriceOracle,
             mainVaultImplementation: mainVaultImpl,
             investmentVaultImplementation: investmentVaultImpl,
             manager: manager,
@@ -418,8 +419,9 @@ contract FactoryTest is Test {
     }
 
     function test_RevertConstructorWithZeroAddresses() public {
+        address meraPriceOracle = makeAddr("meraPriceOracle");
         IFactory.ConstructorParams memory params = IFactory.ConstructorParams({
-            meraPriceOracle: address(0),
+            meraPriceOracle: meraPriceOracle,
             mainVaultImplementation: mainVaultImpl,
             investmentVaultImplementation: investmentVaultImpl,
             manager: manager,
@@ -491,6 +493,18 @@ contract FactoryTest is Test {
         vm.expectRevert(IFactory.ZeroAddress.selector);
         new Factory(params);
         params.defaultAgentWallet = defaultAgentWallet;
+
+        // Test meraCapitalWallet
+        params.meraCapitalWallet = address(0);
+        vm.expectRevert(IFactory.ZeroAddress.selector);
+        new Factory(params);
+        params.meraCapitalWallet = meraCapitalWallet;
+
+        // Test meraPriceOracle
+        params.meraPriceOracle = address(0);
+        vm.expectRevert(IFactory.ZeroAddress.selector);
+        new Factory(params);
+        params.meraPriceOracle = meraPriceOracle;
     }
 
     function test_RevertCreateAgentDistributionWithZeroAddresses() public {
