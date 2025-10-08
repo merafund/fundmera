@@ -2925,4 +2925,190 @@ contract MainVaultTest is Test {
         vault.setCurrentMeraPriceOracle();
         vm.stopPrank();
     }
+
+    // ============================= Initialize Lock Period Tests =============================
+
+    function testExistingVault_InitializedWithZeroLockPeriod_AutoRenewDisabled() public {
+        // Verify that the existing vault in setUp() has auto-renewal disabled
+        // because it was initialized with lockPeriod: 0
+        assertFalse(
+            vault.autoRenewWithdrawalLock(),
+            "Existing vault should have auto-renewal disabled when initialized with lockPeriod: 0"
+        );
+        assertEq(
+            vault.withdrawalLockedUntil(),
+            uint64(block.timestamp),
+            "Existing vault should have withdrawal lock set to current timestamp"
+        );
+    }
+
+    function testInitialize_WithZeroLockPeriod_AutoRenewDisabled() public {
+        // Create a new vault with zero lock period
+        MainVault newImplementation = new MainVault();
+
+        IMainVault.InitParams memory initParams = IMainVault.InitParams({
+            mainInvestor: mainInvestor,
+            backupInvestor: backupInvestor,
+            emergencyInvestor: emergencyInvestor,
+            manager: manager,
+            admin: admin,
+            backupAdmin: backupAdmin,
+            emergencyAdmin: emergencyAdmin,
+            feeWallet: feeWallet,
+            profitWallet: profitWallet,
+            feePercentage: FEE_PERCENTAGE,
+            currentImplementationOfInvestmentVault: address(investmentVaultImplementation),
+            pauserList: address(pauserList),
+            meraPriceOracle: address(0),
+            lockPeriod: 0 // Zero lock period
+        });
+
+        bytes memory initData = abi.encodeWithSelector(MainVault.initialize.selector, initParams);
+        ERC1967Proxy newProxy = new ERC1967Proxy(address(newImplementation), initData);
+        MainVault newVault = MainVault(address(newProxy));
+
+        // Verify that auto-renewal is disabled when lock period is 0
+        assertFalse(newVault.autoRenewWithdrawalLock(), "Auto-renewal should be disabled when lock period is 0");
+        assertEq(
+            newVault.withdrawalLockedUntil(),
+            uint64(block.timestamp),
+            "Withdrawal lock should be set to current timestamp"
+        );
+    }
+
+    function testInitialize_WithPositiveLockPeriod_AutoRenewEnabled() public {
+        // Create a new vault with positive lock period
+        MainVault newImplementation = new MainVault();
+
+        IMainVault.InitParams memory initParams = IMainVault.InitParams({
+            mainInvestor: mainInvestor,
+            backupInvestor: backupInvestor,
+            emergencyInvestor: emergencyInvestor,
+            manager: manager,
+            admin: admin,
+            backupAdmin: backupAdmin,
+            emergencyAdmin: emergencyAdmin,
+            feeWallet: feeWallet,
+            profitWallet: profitWallet,
+            feePercentage: FEE_PERCENTAGE,
+            currentImplementationOfInvestmentVault: address(investmentVaultImplementation),
+            pauserList: address(pauserList),
+            meraPriceOracle: address(0),
+            lockPeriod: 365 days // Positive lock period
+        });
+
+        bytes memory initData = abi.encodeWithSelector(MainVault.initialize.selector, initParams);
+        ERC1967Proxy newProxy = new ERC1967Proxy(address(newImplementation), initData);
+        MainVault newVault = MainVault(address(newProxy));
+
+        // Verify that auto-renewal is enabled when lock period > 0
+        assertTrue(newVault.autoRenewWithdrawalLock(), "Auto-renewal should be enabled when lock period > 0");
+        assertEq(
+            newVault.withdrawalLockedUntil(),
+            uint64(block.timestamp + 365 days),
+            "Withdrawal lock should be set correctly"
+        );
+    }
+
+    function testInitialize_WithTenMinutesLockPeriod_AutoRenewEnabled() public {
+        // Create a new vault with 10 minutes lock period
+        MainVault newImplementation = new MainVault();
+
+        IMainVault.InitParams memory initParams = IMainVault.InitParams({
+            mainInvestor: mainInvestor,
+            backupInvestor: backupInvestor,
+            emergencyInvestor: emergencyInvestor,
+            manager: manager,
+            admin: admin,
+            backupAdmin: backupAdmin,
+            emergencyAdmin: emergencyAdmin,
+            feeWallet: feeWallet,
+            profitWallet: profitWallet,
+            feePercentage: FEE_PERCENTAGE,
+            currentImplementationOfInvestmentVault: address(investmentVaultImplementation),
+            pauserList: address(pauserList),
+            meraPriceOracle: address(0),
+            lockPeriod: 10 minutes // 10 minutes lock period
+        });
+
+        bytes memory initData = abi.encodeWithSelector(MainVault.initialize.selector, initParams);
+        ERC1967Proxy newProxy = new ERC1967Proxy(address(newImplementation), initData);
+        MainVault newVault = MainVault(address(newProxy));
+
+        // Verify that auto-renewal is enabled when lock period > 0
+        assertTrue(newVault.autoRenewWithdrawalLock(), "Auto-renewal should be enabled when lock period > 0");
+        assertEq(
+            newVault.withdrawalLockedUntil(),
+            uint64(block.timestamp + 10 minutes),
+            "Withdrawal lock should be set correctly"
+        );
+    }
+
+    function testInitialize_WithThreeYearsLockPeriod_AutoRenewEnabled() public {
+        // Create a new vault with 3 years lock period
+        MainVault newImplementation = new MainVault();
+
+        IMainVault.InitParams memory initParams = IMainVault.InitParams({
+            mainInvestor: mainInvestor,
+            backupInvestor: backupInvestor,
+            emergencyInvestor: emergencyInvestor,
+            manager: manager,
+            admin: admin,
+            backupAdmin: backupAdmin,
+            emergencyAdmin: emergencyAdmin,
+            feeWallet: feeWallet,
+            profitWallet: profitWallet,
+            feePercentage: FEE_PERCENTAGE,
+            currentImplementationOfInvestmentVault: address(investmentVaultImplementation),
+            pauserList: address(pauserList),
+            meraPriceOracle: address(0),
+            lockPeriod: 365 days * 3 // 3 years lock period
+        });
+
+        bytes memory initData = abi.encodeWithSelector(MainVault.initialize.selector, initParams);
+        ERC1967Proxy newProxy = new ERC1967Proxy(address(newImplementation), initData);
+        MainVault newVault = MainVault(address(newProxy));
+
+        // Verify that auto-renewal is enabled when lock period > 0
+        assertTrue(newVault.autoRenewWithdrawalLock(), "Auto-renewal should be enabled when lock period > 0");
+        assertEq(
+            newVault.withdrawalLockedUntil(),
+            uint64(block.timestamp + 365 days * 3),
+            "Withdrawal lock should be set correctly"
+        );
+    }
+
+    function testInitialize_WithFiveYearsLockPeriod_AutoRenewEnabled() public {
+        // Create a new vault with 5 years lock period
+        MainVault newImplementation = new MainVault();
+
+        IMainVault.InitParams memory initParams = IMainVault.InitParams({
+            mainInvestor: mainInvestor,
+            backupInvestor: backupInvestor,
+            emergencyInvestor: emergencyInvestor,
+            manager: manager,
+            admin: admin,
+            backupAdmin: backupAdmin,
+            emergencyAdmin: emergencyAdmin,
+            feeWallet: feeWallet,
+            profitWallet: profitWallet,
+            feePercentage: FEE_PERCENTAGE,
+            currentImplementationOfInvestmentVault: address(investmentVaultImplementation),
+            pauserList: address(pauserList),
+            meraPriceOracle: address(0),
+            lockPeriod: 365 days * 5 // 5 years lock period
+        });
+
+        bytes memory initData = abi.encodeWithSelector(MainVault.initialize.selector, initParams);
+        ERC1967Proxy newProxy = new ERC1967Proxy(address(newImplementation), initData);
+        MainVault newVault = MainVault(address(newProxy));
+
+        // Verify that auto-renewal is enabled when lock period > 0
+        assertTrue(newVault.autoRenewWithdrawalLock(), "Auto-renewal should be enabled when lock period > 0");
+        assertEq(
+            newVault.withdrawalLockedUntil(),
+            uint64(block.timestamp + 365 days * 5),
+            "Withdrawal lock should be set correctly"
+        );
+    }
 }

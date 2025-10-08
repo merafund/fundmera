@@ -217,6 +217,10 @@ contract MainVault is
         //set lock
         require(availableLock[params.lockPeriod], LockPeriodNotAvailable());
         withdrawalLockedUntil = uint64(block.timestamp + params.lockPeriod);
+
+        if (params.lockPeriod > 0) {
+            autoRenewWithdrawalLock = true;
+        }
     }
 
     /// @inheritdoc IMainVault
