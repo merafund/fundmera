@@ -500,7 +500,7 @@ contract MainVault is
 
     /**
      * @dev Deploys a new Investment Vault
-     * Only the main investor can call this function
+     * Only the admin can call this function
      */
     function deployInvestmentVault(DataTypes.InvestmentVaultInitData calldata initData)
         external
