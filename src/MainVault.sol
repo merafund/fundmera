@@ -363,7 +363,8 @@ contract MainVault is
         profitWallet = wallet;
 
         // Set profit locked until at least 7 days from now
-        profitLockedUntil = uint64(Math.max(profitLockedUntil, block.timestamp + Constants.WITHDRAWAL_PROFIT_LOCK_PERIOD));
+        profitLockedUntil =
+            uint64(Math.max(profitLockedUntil, block.timestamp + Constants.WITHDRAWAL_PROFIT_LOCK_PERIOD));
 
         emit ProfitWalletSet(oldWallet, wallet);
     }
@@ -708,7 +709,8 @@ contract MainVault is
     {
         // Set lock for 7 days when assigning MAIN_INVESTOR_ROLE
         if (role == MAIN_INVESTOR_ROLE) {
-            withdrawalLockedUntil = uint64(Math.max(withdrawalLockedUntil, block.timestamp + Constants.WITHDRAWAL_PROFIT_LOCK_PERIOD));
+            withdrawalLockedUntil =
+                uint64(Math.max(withdrawalLockedUntil, block.timestamp + Constants.WITHDRAWAL_PROFIT_LOCK_PERIOD));
         }
 
         // If emergency investor equals backup admin, remove lock and disable auto-renewal
