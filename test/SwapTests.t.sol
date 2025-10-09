@@ -97,7 +97,7 @@ contract SwapTests is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
@@ -504,7 +504,7 @@ contract SwapTests is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: 0,
+            capitalOfMi: 0,
             shareMI: 0,
             step: 5 * 10 ** 16,
             assets: emptyAssets
@@ -601,7 +601,7 @@ contract SwapTests is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: 0, // No initial deposit to prevent auto-swap initialization
+            capitalOfMi: 0, // No initial deposit to prevent auto-swap initialization
             shareMI: 0,
             step: 5 * 10 ** 16,
             assets: emptyAssets
@@ -719,7 +719,7 @@ contract SwapTests is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: 0,
+            capitalOfMi: 0,
             shareMI: 0,
             step: 5 * 10 ** 16,
             assets: emptyAssets

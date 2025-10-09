@@ -162,7 +162,7 @@ describe("InvestmentVault Upgrade Tests", function () {
       mainVault: mainVaultProxyAddress,
       tokenMI: await tokenMI.getAddress(),
       tokenMV: await tokenMV.getAddress(),
-      initDeposit: ethers.parseEther("1000"),
+      capitalOfMi: ethers.parseEther("1000"),
       shareMI: ethers.parseEther("0.5"),
       step: ethers.parseEther("0.1"),
       assets: []

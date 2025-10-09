@@ -157,7 +157,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         tokenData = DataTypes.TokenData({
             tokenMI: initData.tokenMI,
             tokenMV: initData.tokenMV,
-            initDeposit: initData.initDeposit,
+            capitalOfMi: initData.capitalOfMi,
             mvBought: 0,
             shareMI: initData.shareMI,
             depositInMv: 0,
@@ -210,8 +210,8 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         }
         if (initData.tokenMI == initData.tokenMV) {
             require(initData.shareMI == Constants.SHARE_DENOMINATOR, InvalidShareMi());
-            tokenData.mvBought = initData.initDeposit;
-            tokenData.depositInMv = initData.initDeposit;
+            tokenData.mvBought = initData.capitalOfMi;
+            tokenData.depositInMv = initData.capitalOfMi;
             vaultState.swapInitState = DataTypes.SwapInitState.MiToMvInitialized;
         }
 
@@ -226,7 +226,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         whenNotPaused
         returns (uint256 amountOut)
     {
-        require(tokenData.tokenMI.balanceOf(address(this)) >= tokenData.initDeposit, NotEnoughBalance());
+        require(tokenData.tokenMI.balanceOf(address(this)) >= tokenData.capitalOfMi, NotEnoughBalance());
 
         (address tokenIn, address tokenOut) = extractTokenInAndOut(miToMvPath);
         require(tokenIn == address(tokenData.tokenMI), InvalidMiInPath());
@@ -237,7 +237,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
 
         require(tokenData.mvBought == 0, AssetAlreadyBought());
 
-        uint256 amountIn = tokenData.initDeposit * tokenData.shareMI / Constants.SHARE_DENOMINATOR;
+        uint256 amountIn = tokenData.capitalOfMi * tokenData.shareMI / Constants.SHARE_DENOMINATOR;
 
         amountOut = _performSwapAndValidate(miToMvPath, amountIn, deadline, tokenIn, tokenOut);
 
@@ -372,7 +372,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
     function setShareMi(uint256 newShareMI) external OnlyAdmin whenNotPaused {
         require(newShareMI <= Constants.SHARE_DENOMINATOR, ShareExceedsMaximum());
         require(
-            newShareMI <= tokenData.depositInMv * Constants.SHARE_DENOMINATOR / tokenData.initDeposit,
+            newShareMI <= tokenData.depositInMv * Constants.SHARE_DENOMINATOR / tokenData.capitalOfMi,
             ShareMustBeLessThanOrEqualToDeposit()
         );
 
@@ -427,9 +427,9 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         require(!vaultState.closed, PositionAlreadyClosed());
 
         uint256 finalBalance = tokenData.tokenMI.balanceOf(address(this));
-        require(finalBalance >= tokenData.initDeposit, NoProfit());
+        require(finalBalance >= tokenData.capitalOfMi, NoProfit());
 
-        uint256 totalProfit = finalBalance - tokenData.initDeposit
+        uint256 totalProfit = finalBalance - tokenData.capitalOfMi
             - (profitData.earntProfitTotal - profitData.withdrawnProfitInvestor - profitData.withdrawnProfitFee);
         if (tokenData.profitType == DataTypes.ProfitType.Dynamic) {
             uint256 feePercent = mainVault.feePercentage();
@@ -443,7 +443,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
             uint256 currentFixedProfitPercent = mainVault.currentFixedProfitPercent();
             uint256 daysSinceStart = (block.timestamp - tokenData.timestampOfStartInvestment) / 1 days;
             uint256 fixedProfit =
-                currentFixedProfitPercent * daysSinceStart * tokenData.initDeposit / (365 * Constants.MAX_PERCENT);
+                currentFixedProfitPercent * daysSinceStart * tokenData.capitalOfMi / (365 * Constants.MAX_PERCENT);
 
             if (fixedProfit < profitData.earntProfitTotal) {
                 uint256 mustEarntProfitFee = profitData.earntProfitTotal - fixedProfit;
@@ -459,12 +459,12 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
             }
         }
 
-        tokenData.tokenMI.safeTransfer(address(mainVault), tokenData.initDeposit);
+        tokenData.tokenMI.safeTransfer(address(mainVault), tokenData.capitalOfMi);
 
         vaultState.closed = true;
 
         emit PositionClosed(
-            tokenData.initDeposit, finalBalance, totalProfit, profitData.earntProfitInvestor, profitData.earntProfitFee
+            tokenData.capitalOfMi, finalBalance, totalProfit, profitData.earntProfitInvestor, profitData.earntProfitFee
         );
     }
 

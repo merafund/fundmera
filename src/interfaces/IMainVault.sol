@@ -118,7 +118,7 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
 
     /// @dev Emitted when a new Investment Vault is deployed
     event InvestmentVaultDeployed(
-        address indexed vaultAddress, address indexed tokenMI, uint256 initDeposit, uint256 vaultId
+        address indexed vaultAddress, address indexed tokenMI, uint256 capitalOfMi, uint256 vaultId
     );
 
     /// @dev Emitted when exactInputSingle is executed
@@ -424,7 +424,7 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @dev Deploys a new Investment Vault using the current implementation
     /// Only admin can call this function
     /// Uses the current implementation to deploy a proxy
-    /// Transfers tokenMI in the amount of initDeposit to the new vault
+    /// Transfers tokenMI in the amount of capitalOfMi to the new vault
     /// Initializes the vault with the provided data
     ///
     /// @param initData Initialization data for the new Investment Vault

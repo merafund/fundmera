@@ -514,10 +514,10 @@ contract MainVault is
 
         require(address(initData.mainVault) == address(this), InvalidMainVaultAddress());
 
-        require(initData.initDeposit > 0, ZeroAmountNotAllowed());
+        require(initData.capitalOfMi > 0, ZeroAmountNotAllowed());
 
         uint256 balance = initData.tokenMI.balanceOf(address(this));
-        require(balance >= initData.initDeposit, InsufficientBalance());
+        require(balance >= initData.capitalOfMi, InsufficientBalance());
 
         bytes memory initializationData = abi.encodeWithSelector(IInvestmentVault.initialize.selector, initData);
 
@@ -529,9 +529,9 @@ contract MainVault is
         investmentVaults[vaultId] = vaultAddress;
         investmentVaultsCount++;
 
-        initData.tokenMI.safeTransfer(vaultAddress, initData.initDeposit);
+        initData.tokenMI.safeTransfer(vaultAddress, initData.capitalOfMi);
 
-        emit InvestmentVaultDeployed(vaultAddress, address(initData.tokenMI), initData.initDeposit, vaultId);
+        emit InvestmentVaultDeployed(vaultAddress, address(initData.tokenMI), initData.capitalOfMi, vaultId);
     }
 
     /// @inheritdoc IMainVault

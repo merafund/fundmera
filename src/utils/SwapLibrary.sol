@@ -154,7 +154,7 @@ library SwapLibrary {
                 uint256 currentFixedProfitPercent = mainVault.currentFixedProfitPercent();
                 uint256 daysSinceStart = (block.timestamp - tokenData.timestampOfStartInvestment) / 1 days;
                 uint256 fixedProfit =
-                    currentFixedProfitPercent * daysSinceStart * tokenData.initDeposit / 365 / Constants.MAX_PERCENT;
+                    currentFixedProfitPercent * daysSinceStart * tokenData.capitalOfMi / 365 / Constants.MAX_PERCENT;
 
                 if (fixedProfit < profitData.earntProfitTotal) {
                     uint256 mustEarntProfitFee = profitData.earntProfitTotal - fixedProfit;
@@ -207,7 +207,7 @@ library SwapLibrary {
             uint256 currentFixedProfitPercent = mainVault.currentFixedProfitPercent();
             uint256 daysSinceStart = (block.timestamp - tokenData.timestampOfStartInvestment) / 1 days;
             uint256 fixedProfit =
-                currentFixedProfitPercent * daysSinceStart * tokenData.initDeposit / 365 / Constants.MAX_PERCENT;
+                currentFixedProfitPercent * daysSinceStart * tokenData.capitalOfMi / 365 / Constants.MAX_PERCENT;
 
             if (fixedProfit < profitData.earntProfitTotal) {
                 uint256 mustEarntProfitFee = profitData.earntProfitTotal - fixedProfit;
@@ -261,7 +261,7 @@ library SwapLibrary {
         );
 
         require(
-            tokenData.mvBought * tokenData.step * tokenData.initDeposit
+            tokenData.mvBought * tokenData.step * tokenData.capitalOfMi
                 / (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) >= mvReceived,
             AssetBoughtTooMuch()
         );
@@ -321,7 +321,7 @@ library SwapLibrary {
         require(currentSellPrice > averageBuyPrice, PriceDidNotIncreaseEnough());
 
         // Calculate new deposit after the sale
-        uint256 initialDeposit = tokenData.initDeposit * tokenData.shareMI / Constants.SHARE_DENOMINATOR; // Using init deposit instead of capital
+        uint256 initialDeposit = tokenData.capitalOfMi * tokenData.shareMI / Constants.SHARE_DENOMINATOR; // Using init deposit instead of capital
 
         uint256 profit = 0;
 
@@ -341,7 +341,7 @@ library SwapLibrary {
 
         // Calculate the minimum required MV tokens that should remain after the sale
         uint256 remainingTokens = tokenData.mvBought;
-        uint256 minRequiredTokens = (tokenData.initDeposit * tokenData.shareMI) / currentSellPrice;
+        uint256 minRequiredTokens = (tokenData.capitalOfMi * tokenData.shareMI) / currentSellPrice;
 
         // Ensure we still hold enough MV tokens
         require(remainingTokens >= minRequiredTokens, InsufficientTokensRemaining());
@@ -1017,7 +1017,7 @@ library SwapLibrary {
                 uint256 currentFixedProfitPercent = mainVault.currentFixedProfitPercent();
                 uint256 daysSinceStart = (block.timestamp - tokenData.timestampOfStartInvestment) / 1 days;
                 uint256 fixedProfit =
-                    (currentFixedProfitPercent * daysSinceStart * tokenData.initDeposit) / 365 / Constants.MAX_PERCENT;
+                    (currentFixedProfitPercent * daysSinceStart * tokenData.capitalOfMi) / 365 / Constants.MAX_PERCENT;
 
                 if (fixedProfit < profitData.earntProfitTotal) {
                     uint256 mustEarntProfitFee = profitData.earntProfitTotal - fixedProfit;

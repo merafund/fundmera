@@ -74,7 +74,7 @@ library DataTypes {
     struct TokenData {
         IERC20 tokenMI; // Main investment token
         IERC20 tokenMV; // Main vault token
-        uint256 initDeposit; // Initial deposit
+        uint256 capitalOfMi; // Initial deposit
         uint256 mvBought; // Amount of MV tokens bought
         uint256 shareMI; // Share of MI tokens for swap
         uint256 depositInMv; // Deposit in MV tokens
@@ -100,7 +100,7 @@ library DataTypes {
         IMainVault mainVault;
         IERC20 tokenMI;
         IERC20 tokenMV;
-        uint256 initDeposit;
+        uint256 capitalOfMi;
         uint256 shareMI;
         uint256 step;
         AssetInitData[] assets;

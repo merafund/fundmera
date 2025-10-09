@@ -97,7 +97,7 @@ contract SwapTestsSingleToken is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(mainToken)), // Same token as MV
             tokenMV: IERC20(address(mainToken)), // Same token as MI
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: 10 ** 18,
             step: STEP,
             assets: assets

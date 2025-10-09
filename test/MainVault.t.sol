@@ -189,7 +189,7 @@ contract MainVaultTest is Test {
             mainVault: DataTypesIMainVault(address(vault)),
             tokenMI: IERC20(address(token)),
             tokenMV: IERC20(address(token)),
-            initDeposit: DEPOSIT_AMOUNT / 2,
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
             shareMI: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
@@ -246,7 +246,7 @@ contract MainVaultTest is Test {
             mainVault: DataTypesIMainVault(address(vault)),
             tokenMI: IERC20(address(fourthToken)),
             tokenMV: IERC20(address(thirdToken)),
-            initDeposit: DEPOSIT_AMOUNT / 2,
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
             shareMI: 5000,
             step: 5 * 10 ** 16,
             assets: assets
@@ -925,7 +925,7 @@ contract MainVaultTest is Test {
             mainVault: DataTypesIMainVault(address(vault)),
             tokenMI: IERC20(address(token)),
             tokenMV: IERC20(address(token)),
-            initDeposit: DEPOSIT_AMOUNT / 2,
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
             shareMI: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
@@ -1031,7 +1031,7 @@ contract MainVaultTest is Test {
             mainVault: DataTypesIMainVault(address(vault)),
             tokenMI: IERC20(address(token)),
             tokenMV: IERC20(address(token)),
-            initDeposit: DEPOSIT_AMOUNT / 2,
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
             shareMI: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
@@ -1086,7 +1086,7 @@ contract MainVaultTest is Test {
             mainVault: DataTypesIMainVault(address(vault)),
             tokenMI: IERC20(address(token)),
             tokenMV: IERC20(address(token)),
-            initDeposit: DEPOSIT_AMOUNT / 2,
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
             shareMI: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
@@ -1098,7 +1098,7 @@ contract MainVaultTest is Test {
             mainVault: DataTypesIMainVault(address(vault)),
             tokenMI: IERC20(address(token)),
             tokenMV: IERC20(address(token)),
-            initDeposit: DEPOSIT_AMOUNT / 2,
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
             shareMI: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
@@ -1868,7 +1868,7 @@ contract MainVaultTest is Test {
             mainVault: DataTypesIMainVault(address(vault)),
             tokenMI: IERC20(address(token)),
             tokenMV: IERC20(address(token)),
-            initDeposit: DEPOSIT_AMOUNT / 2,
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
             shareMI: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
@@ -1907,7 +1907,7 @@ contract MainVaultTest is Test {
             mainVault: DataTypesIMainVault(address(0)), // Set invalid main vault address
             tokenMI: IERC20(address(token)),
             tokenMV: IERC20(address(token)),
-            initDeposit: DEPOSIT_AMOUNT / 2,
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
             shareMI: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
@@ -1918,7 +1918,7 @@ contract MainVaultTest is Test {
         vm.stopPrank();
     }
 
-    function testDeployInvestmentVault_ZeroInitDeposit() public {
+    function testDeployInvestmentVault_ZerocapitalOfMi() public {
         vm.startPrank(mainInvestor);
         token.approve(address(vault), DEPOSIT_AMOUNT);
         vault.deposit(token, DEPOSIT_AMOUNT);
@@ -1937,7 +1937,7 @@ contract MainVaultTest is Test {
             mainVault: DataTypesIMainVault(address(vault)),
             tokenMI: IERC20(address(token)),
             tokenMV: IERC20(address(token)),
-            initDeposit: 0, // Set zero init deposit
+            capitalOfMi: 0, // Set zero init deposit
             shareMI: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
@@ -1967,7 +1967,7 @@ contract MainVaultTest is Test {
             mainVault: DataTypesIMainVault(address(vault)),
             tokenMI: IERC20(address(token)),
             tokenMV: IERC20(address(token)),
-            initDeposit: DEPOSIT_AMOUNT * 2, // Request more than available balance
+            capitalOfMi: DEPOSIT_AMOUNT * 2, // Request more than available balance
             shareMI: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets

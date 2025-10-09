@@ -136,7 +136,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMI)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
@@ -192,7 +192,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
@@ -254,7 +254,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
@@ -314,7 +314,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMI)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
@@ -334,10 +334,10 @@ contract InvestmentVaultTest is Test {
     function testInitializationSameTokens() public {
         setUp_SameTokens();
 
-        (IERC20 tMI, IERC20 tMV, uint256 initDeposit, uint256 mvBought, uint256 shareMI,,,,,,) = vault.tokenData();
+        (IERC20 tMI, IERC20 tMV, uint256 capitalOfMi, uint256 mvBought, uint256 shareMI,,,,,,) = vault.tokenData();
 
         assertEq(address(tMI), address(tMV), "MI and MV tokens should be the same");
-        assertEq(initDeposit, INITIAL_BALANCE, "Initial deposit should match");
+        assertEq(capitalOfMi, INITIAL_BALANCE, "Initial deposit should match");
         assertEq(mvBought, INITIAL_BALANCE, "MV bought should equal initial deposit for same tokens");
         assertEq(shareMI, Constants.SHARE_DENOMINATOR, "Share MI should be 100% for same tokens");
 
@@ -352,11 +352,11 @@ contract InvestmentVaultTest is Test {
     function testInitializationDifferentTokens() public {
         setUp_DifferentTokens();
 
-        (IERC20 tMI, IERC20 tMV, uint256 initDeposit, uint256 mvBought, uint256 shareMI,,,,,,) = vault.tokenData();
+        (IERC20 tMI, IERC20 tMV, uint256 capitalOfMi, uint256 mvBought, uint256 shareMI,,,,,,) = vault.tokenData();
 
         assertEq(address(tMI), address(tokenMI), "MI token should match");
         assertEq(address(tMV), address(tokenMV), "MV token should match");
-        assertEq(initDeposit, INITIAL_BALANCE, "Initial deposit should match");
+        assertEq(capitalOfMi, INITIAL_BALANCE, "Initial deposit should match");
         assertEq(mvBought, 0, "MV bought should be 0 initially");
         assertEq(shareMI, 7 * 10 ** 17, "Share MI should be 70%");
 
@@ -1943,7 +1943,7 @@ contract InvestmentVaultTest is Test {
         setUp_SameTokens_FixedProfit();
         (, uint256 earntProfitInvestorBefore, uint256 earntProfitFeeBefore, uint256 earntProfitTotalBefore,,) =
             vault.profitData();
-        (,, uint256 initDepositBefore,,,,,,,,) = vault.tokenData();
+        (,, uint256 capitalOfMiBefore,,,,,,,,) = vault.tokenData();
 
         vm.startPrank(owner);
 
@@ -1951,7 +1951,7 @@ contract InvestmentVaultTest is Test {
         vm.warp(block.timestamp + 365 days);
 
         // Add small profit (less than fixed)
-        uint256 profit = initDepositBefore * 10 / 100; // 110% of initDeposit
+        uint256 profit = capitalOfMiBefore * 10 / 100; // 110% of capitalOfMi
         tokenMI.mint(address(vault), profit);
 
         vault.closePosition();
@@ -1976,7 +1976,7 @@ contract InvestmentVaultTest is Test {
         setUp_SameTokens_FixedProfit();
         (, uint256 earntProfitInvestorBefore, uint256 earntProfitFeeBefore, uint256 earntProfitTotalBefore,,) =
             vault.profitData();
-        (,, uint256 initDepositBefore,,,,,,,,) = vault.tokenData();
+        (,, uint256 capitalOfMiBefore,,,,,,,,) = vault.tokenData();
 
         vm.startPrank(owner);
 
@@ -1984,7 +1984,7 @@ contract InvestmentVaultTest is Test {
         vm.warp(block.timestamp + 365 days);
 
         // Add large profit (more than fixed)
-        uint256 profit = initDepositBefore * 30 / 100; // 30% of initDeposit
+        uint256 profit = capitalOfMiBefore * 30 / 100; // 30% of capitalOfMi
         tokenMI.mint(address(vault), profit);
 
         vault.closePosition();
@@ -1994,7 +1994,7 @@ contract InvestmentVaultTest is Test {
 
         (, uint256 earntProfitInvestor, uint256 earntProfitFee, uint256 earntProfitTotal,,) = vault.profitData();
 
-        // Expected fixed profit for half year = 20% * 0.5 * initDeposit = 10% * initDeposit
+        // Expected fixed profit for half year = 20% * 0.5 * capitalOfMi = 10% * capitalOfMi
         uint256 expectedFixedProfit = INITIAL_BALANCE * 20 / 100;
         uint256 expectedFee = profit - expectedFixedProfit;
 
@@ -2923,7 +2923,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: 7 * 10 ** 17,
             step: Constants.MAX_STEP + 1,
             assets: assets
@@ -2976,7 +2976,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: 7 * 10 ** 17,
             step: Constants.MIN_STEP - 1,
             assets: assets
@@ -3029,7 +3029,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: Constants.SHARE_INITIAL_MAX + 1,
             step: 5 * 10 ** 16,
             assets: assets
@@ -3082,7 +3082,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
@@ -3138,7 +3138,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
@@ -3191,7 +3191,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
@@ -3244,7 +3244,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
@@ -3297,7 +3297,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
@@ -3350,7 +3350,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
@@ -3401,7 +3401,7 @@ contract InvestmentVaultTest is Test {
             mainVault: IMainVault(address(mainVault)),
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMI)),
-            initDeposit: INITIAL_BALANCE,
+            capitalOfMi: INITIAL_BALANCE,
             shareMI: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
