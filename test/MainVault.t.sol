@@ -93,6 +93,8 @@ contract MainVaultTest is Test {
     event AutoRenewWithdrawalLockSet(bool autoRenewEnabled, bool newAutoRenewValue);
     event ProposedMeraPriceOracleByAdminSet(address newOracle);
     event MeraPriceOracleSet(address oldOracle, address newOracle);
+    event InvestmentVaultAvailabilityForWithdrawChanged(uint256 indexed vaultIndex, bool isAvailable);
+    event WithdrawnFromInvestmentVault(address indexed vault, address indexed token, uint256 amount, address indexed receiver);
 
     function setUp() public {
         vm.startPrank(owner);
@@ -3017,5 +3019,832 @@ contract MainVaultTest is Test {
             uint64(block.timestamp + 365 days * 5),
             "Withdrawal lock should be set correctly"
         );
+    }
+
+    // ============================= Investment Vault Availability for Withdraw Tests =============================
+
+    function testSetAvailableInvestmentVaultForWithdraw_BasicFunctionality() public {
+        // Deploy an investment vault first
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT);
+        vault.deposit(token, DEPOSIT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vault.deployInvestmentVault(initData);
+        vm.stopPrank();
+
+        // Test setting availability to true
+        vm.startPrank(admin);
+        vm.expectEmit(true, false, false, true);
+        emit InvestmentVaultAvailabilityForWithdrawChanged(0, true);
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        assertTrue(vault.availableInvestmentVaultForWithdraw(0), "Vault should be available for withdraw");
+
+        // Test setting availability to false
+        vm.expectEmit(true, false, false, true);
+        emit InvestmentVaultAvailabilityForWithdrawChanged(0, false);
+        vault.setAvailableInvestmentVaultForWithdraw(0, false);
+        assertFalse(vault.availableInvestmentVaultForWithdraw(0), "Vault should not be available for withdraw");
+        vm.stopPrank();
+    }
+
+    function testSetAvailableInvestmentVaultForWithdraw_OnlyAdminCanCall() public {
+        // Deploy an investment vault first
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT);
+        vault.deposit(token, DEPOSIT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vault.deployInvestmentVault(initData);
+        vm.stopPrank();
+
+        // Test that non-admin addresses cannot call the function
+        vm.startPrank(user1);
+        vm.expectRevert();
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        vm.stopPrank();
+
+        vm.startPrank(mainInvestor);
+        vm.expectRevert();
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        vm.stopPrank();
+
+        vm.startPrank(backupAdmin);
+        vm.expectRevert();
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        vm.stopPrank();
+
+        // Admin should be able to call it
+        vm.startPrank(admin);
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        assertTrue(vault.availableInvestmentVaultForWithdraw(0), "Admin should be able to set availability");
+        vm.stopPrank();
+    }
+
+    function testSetAvailableInvestmentVaultForWithdraw_InvalidVaultIndex() public {
+        // Deploy an investment vault first
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT);
+        vault.deposit(token, DEPOSIT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vault.deployInvestmentVault(initData);
+        vm.stopPrank();
+
+        // Test with invalid vault index (should be less than investmentVaultsCount)
+        vm.startPrank(admin);
+        vm.expectRevert(MainVault.InvalidVaultIndex.selector);
+        vault.setAvailableInvestmentVaultForWithdraw(1, true); // Only vault 0 exists
+
+        vm.expectRevert(MainVault.InvalidVaultIndex.selector);
+        vault.setAvailableInvestmentVaultForWithdraw(999, true); // Non-existent vault
+
+        // Test with valid vault index (should work)
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        assertTrue(vault.availableInvestmentVaultForWithdraw(0), "Valid vault index should work");
+        vm.stopPrank();
+    }
+
+    function testSetAvailableInvestmentVaultForWithdraw_MultipleVaults() public {
+        // Deploy multiple investment vaults
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT * 3);
+        vault.deposit(token, DEPOSIT_AMOUNT * 3);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        // Deploy first vault
+        DataTypes.InvestmentVaultInitData memory initData1 = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+        vault.deployInvestmentVault(initData1);
+
+        // Deploy second vault
+        DataTypes.InvestmentVaultInitData memory initData2 = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+        vault.deployInvestmentVault(initData2);
+
+        // Deploy third vault
+        DataTypes.InvestmentVaultInitData memory initData3 = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+        vault.deployInvestmentVault(initData3);
+        vm.stopPrank();
+
+        assertEq(vault.investmentVaultsCount(), 3, "Should have 3 investment vaults");
+
+        // Test setting availability for each vault
+        vm.startPrank(admin);
+        
+        // Set vault 0 to available
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        assertTrue(vault.availableInvestmentVaultForWithdraw(0), "Vault 0 should be available");
+
+        // Set vault 1 to unavailable
+        vault.setAvailableInvestmentVaultForWithdraw(1, false);
+        assertFalse(vault.availableInvestmentVaultForWithdraw(1), "Vault 1 should not be available");
+
+        // Set vault 2 to available
+        vault.setAvailableInvestmentVaultForWithdraw(2, true);
+        assertTrue(vault.availableInvestmentVaultForWithdraw(2), "Vault 2 should be available");
+
+        // Test that vault 0 can be changed to unavailable
+        vault.setAvailableInvestmentVaultForWithdraw(0, false);
+        assertFalse(vault.availableInvestmentVaultForWithdraw(0), "Vault 0 should now be unavailable");
+
+        // Test that vault 1 can be changed to available
+        vault.setAvailableInvestmentVaultForWithdraw(1, true);
+        assertTrue(vault.availableInvestmentVaultForWithdraw(1), "Vault 1 should now be available");
+        vm.stopPrank();
+    }
+
+    function testSetAvailableInvestmentVaultForWithdraw_EmitsEvent() public {
+        // Deploy an investment vault first
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT);
+        vault.deposit(token, DEPOSIT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vault.deployInvestmentVault(initData);
+        vm.stopPrank();
+
+        // Test that event is emitted correctly
+        vm.startPrank(admin);
+        
+        vm.expectEmit(true, false, false, true);
+        emit InvestmentVaultAvailabilityForWithdrawChanged(0, true);
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+
+        vm.expectEmit(true, false, false, true);
+        emit InvestmentVaultAvailabilityForWithdrawChanged(0, false);
+        vault.setAvailableInvestmentVaultForWithdraw(0, false);
+        vm.stopPrank();
+    }
+
+    function testSetAvailableInvestmentVaultForWithdraw_NoVaultsDeployed() public {
+        // Test with no vaults deployed (investmentVaultsCount = 0)
+        vm.startPrank(admin);
+        
+        // Any vault index should fail since there are no vaults
+        vm.expectRevert(MainVault.InvalidVaultIndex.selector);
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+
+        vm.expectRevert(MainVault.InvalidVaultIndex.selector);
+        vault.setAvailableInvestmentVaultForWithdraw(1, true);
+        vm.stopPrank();
+    }
+
+    function testSetAvailableInvestmentVaultForWithdraw_EdgeCaseVaultIndex() public {
+        // Deploy an investment vault first
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT);
+        vault.deposit(token, DEPOSIT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vault.deployInvestmentVault(initData);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        
+        // Test with vault index exactly equal to investmentVaultsCount (should fail)
+        uint256 vaultCount = vault.investmentVaultsCount();
+        vm.expectRevert(MainVault.InvalidVaultIndex.selector);
+        vault.setAvailableInvestmentVaultForWithdraw(vaultCount, true);
+
+        // Test with vault index one less than investmentVaultsCount (should work)
+        vault.setAvailableInvestmentVaultForWithdraw(vaultCount - 1, true);
+        assertTrue(vault.availableInvestmentVaultForWithdraw(0), "Vault 0 should be available");
+        vm.stopPrank();
+    }
+
+    function testSetAvailableInvestmentVaultForWithdraw_StatePersistence() public {
+        // Deploy an investment vault first
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT);
+        vault.deposit(token, DEPOSIT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vault.deployInvestmentVault(initData);
+        vm.stopPrank();
+
+        // Test that state persists across multiple calls
+        vm.startPrank(admin);
+        
+        // Initially should be false (default value)
+        assertFalse(vault.availableInvestmentVaultForWithdraw(0), "Initial state should be false");
+
+        // Set to true
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        assertTrue(vault.availableInvestmentVaultForWithdraw(0), "Should be true after setting");
+
+        // Set to false
+        vault.setAvailableInvestmentVaultForWithdraw(0, false);
+        assertFalse(vault.availableInvestmentVaultForWithdraw(0), "Should be false after setting");
+
+        // Set to true again
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        assertTrue(vault.availableInvestmentVaultForWithdraw(0), "Should be true after setting again");
+        vm.stopPrank();
+    }
+
+    // ============================= Withdraw From Investment Vaults If Available Tests =============================
+
+    function testWithdrawFromInvestmentVaultsIfWithdrawAvailable_BasicFunctionality() public {
+        // Deploy investment vault and deposit tokens
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT);
+        vault.deposit(token, DEPOSIT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vault.deployInvestmentVault(initData);
+        vm.stopPrank();
+
+        // Set vault as available for withdrawal
+        vm.startPrank(admin);
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        vm.stopPrank();
+
+        // Wait for initial lock period to expire (7 days)
+        vm.warp(block.timestamp + 7 days + 1);
+
+        vm.startPrank(mainInvestor);
+
+        IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
+        withdrawals[0] =
+            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+
+        uint256 balanceBefore = token.balanceOf(address(vault));
+
+        // Execute withdrawal
+        vault.withdrawFromInvestmentVaultsIfWithdrawAvailable(withdrawals);
+
+        // Verify balance increased
+        assertEq(
+            token.balanceOf(address(vault)),
+            balanceBefore + DEPOSIT_AMOUNT / 4,
+            "Main vault balance should increase after withdrawal"
+        );
+
+        vm.stopPrank();
+    }
+
+    function testWithdrawFromInvestmentVaultsIfWithdrawAvailable_VaultNotAvailable() public {
+        // Deploy investment vault and deposit tokens
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT);
+        vault.deposit(token, DEPOSIT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vault.deployInvestmentVault(initData);
+        vm.stopPrank();
+
+        // Don't set vault as available for withdrawal (default is false)
+
+        // Wait for initial lock period to expire (7 days)
+        vm.warp(block.timestamp + 7 days + 1);
+
+        vm.startPrank(mainInvestor);
+
+        IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
+        withdrawals[0] =
+            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+
+        // Should revert because vault is not available for withdrawal
+        vm.expectRevert(MainVault.InvestmentVaultNotAvailableForWithdraw.selector);
+        vault.withdrawFromInvestmentVaultsIfWithdrawAvailable(withdrawals);
+
+        vm.stopPrank();
+    }
+
+    function testWithdrawFromInvestmentVaultsIfWithdrawAvailable_InvalidVaultIndex() public {
+        // Deploy investment vault and deposit tokens
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT);
+        vault.deposit(token, DEPOSIT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vault.deployInvestmentVault(initData);
+        vm.stopPrank();
+
+        // Wait for initial lock period to expire (7 days)
+        vm.warp(block.timestamp + 7 days + 1);
+
+        vm.startPrank(mainInvestor);
+
+        IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
+        withdrawals[0] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 999, // Non-existent vault index
+            token: IERC20(address(token)),
+            amount: DEPOSIT_AMOUNT / 4
+        });
+
+        // Should revert because vault index is invalid
+        vm.expectRevert(MainVault.InvalidVaultIndex.selector);
+        vault.withdrawFromInvestmentVaultsIfWithdrawAvailable(withdrawals);
+
+        vm.stopPrank();
+    }
+
+    function testWithdrawFromInvestmentVaultsIfWithdrawAvailable_OnlyMainInvestorCanCall() public {
+        // Deploy investment vault and deposit tokens
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT);
+        vault.deposit(token, DEPOSIT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vault.deployInvestmentVault(initData);
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        vm.stopPrank();
+
+        // Wait for initial lock period to expire (7 days)
+        vm.warp(block.timestamp + 7 days + 1);
+
+        IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
+        withdrawals[0] =
+            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+
+        // Test that non-main-investor addresses cannot call the function
+        vm.startPrank(user1);
+        vm.expectRevert();
+        vault.withdrawFromInvestmentVaultsIfWithdrawAvailable(withdrawals);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        vm.expectRevert();
+        vault.withdrawFromInvestmentVaultsIfWithdrawAvailable(withdrawals);
+        vm.stopPrank();
+
+        // Main investor should be able to call it
+        vm.startPrank(mainInvestor);
+        vault.withdrawFromInvestmentVaultsIfWithdrawAvailable(withdrawals);
+        vm.stopPrank();
+    }
+
+    function testWithdrawFromInvestmentVaultsIfWithdrawAvailable_MultipleVaults() public {
+        // Deploy multiple investment vaults
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT * 3);
+        vault.deposit(token, DEPOSIT_AMOUNT * 3);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        // Deploy first vault
+        DataTypes.InvestmentVaultInitData memory initData1 = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+        vault.deployInvestmentVault(initData1);
+
+        // Deploy second vault
+        DataTypes.InvestmentVaultInitData memory initData2 = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+        vault.deployInvestmentVault(initData2);
+
+        // Deploy third vault
+        DataTypes.InvestmentVaultInitData memory initData3 = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+        vault.deployInvestmentVault(initData3);
+
+        // Set vaults 0 and 2 as available for withdrawal, but not vault 1
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        vault.setAvailableInvestmentVaultForWithdraw(1, false);
+        vault.setAvailableInvestmentVaultForWithdraw(2, true);
+        vm.stopPrank();
+
+        // Wait for initial lock period to expire (7 days)
+        vm.warp(block.timestamp + 7 days + 1);
+
+        vm.startPrank(mainInvestor);
+
+        IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](2);
+        withdrawals[0] =
+            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+        withdrawals[1] =
+            IMainVault.WithdrawFromVaultData({vaultIndex: 2, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+
+        uint256 balanceBefore = token.balanceOf(address(vault));
+
+        // Execute withdrawals from available vaults
+        vault.withdrawFromInvestmentVaultsIfWithdrawAvailable(withdrawals);
+
+        // Verify balance increased from both withdrawals
+        assertEq(
+            token.balanceOf(address(vault)),
+            balanceBefore + DEPOSIT_AMOUNT / 2,
+            "Main vault balance should increase after withdrawals from available vaults"
+        );
+
+        vm.stopPrank();
+    }
+
+    function testWithdrawFromInvestmentVaultsIfWithdrawAvailable_MixedAvailability() public {
+        // Deploy multiple investment vaults
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT * 2);
+        vault.deposit(token, DEPOSIT_AMOUNT * 2);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        // Deploy first vault
+        DataTypes.InvestmentVaultInitData memory initData1 = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+        vault.deployInvestmentVault(initData1);
+
+        // Deploy second vault
+        DataTypes.InvestmentVaultInitData memory initData2 = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+        vault.deployInvestmentVault(initData2);
+
+        // Set only vault 0 as available for withdrawal
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        // vault 1 remains unavailable (default false)
+        vm.stopPrank();
+
+        // Wait for initial lock period to expire (7 days)
+        vm.warp(block.timestamp + 7 days + 1);
+
+        vm.startPrank(mainInvestor);
+
+        IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](2);
+        withdrawals[0] =
+            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+        withdrawals[1] =
+            IMainVault.WithdrawFromVaultData({vaultIndex: 1, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+
+        // Should revert because vault 1 is not available for withdrawal
+        vm.expectRevert(MainVault.InvestmentVaultNotAvailableForWithdraw.selector);
+        vault.withdrawFromInvestmentVaultsIfWithdrawAvailable(withdrawals);
+
+        vm.stopPrank();
+    }
+
+    function testWithdrawFromInvestmentVaultsIfWithdrawAvailable_NoWithdrawalLockRequired() public {
+        // Deploy investment vault and deposit tokens
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT);
+        vault.deposit(token, DEPOSIT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vault.deployInvestmentVault(initData);
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        vm.stopPrank();
+
+        // Set withdrawal lock (should not affect this function)
+        vm.startPrank(mainInvestor);
+        vault.setWithdrawalLock(10 minutes);
+        vm.stopPrank();
+
+        // Try to withdraw immediately (should work because this function doesn't check withdrawal lock)
+        vm.startPrank(mainInvestor);
+
+        IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
+        withdrawals[0] =
+            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+
+        uint256 balanceBefore = token.balanceOf(address(vault));
+
+        // Should work even with withdrawal lock active
+        vault.withdrawFromInvestmentVaultsIfWithdrawAvailable(withdrawals);
+
+        // Verify balance increased
+        assertEq(
+            token.balanceOf(address(vault)),
+            balanceBefore + DEPOSIT_AMOUNT / 4,
+            "Main vault balance should increase even with withdrawal lock active"
+        );
+
+        vm.stopPrank();
+    }
+
+    function testWithdrawFromInvestmentVaultsIfWithdrawAvailable_EmitsEvent() public {
+        // Deploy investment vault and deposit tokens
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT);
+        vault.deposit(token, DEPOSIT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMI: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vault.deployInvestmentVault(initData);
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        vm.stopPrank();
+
+        // Wait for initial lock period to expire (7 days)
+        vm.warp(block.timestamp + 7 days + 1);
+
+        vm.startPrank(mainInvestor);
+
+        IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
+        withdrawals[0] =
+            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+
+        // Test that event is emitted
+        vm.expectEmit(true, true, true, true);
+        emit WithdrawnFromInvestmentVault(vault.investmentVaults(0), address(token), DEPOSIT_AMOUNT / 4, mainInvestor);
+        vault.withdrawFromInvestmentVaultsIfWithdrawAvailable(withdrawals);
+
+        vm.stopPrank();
     }
 }

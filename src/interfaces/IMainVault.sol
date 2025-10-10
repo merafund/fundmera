@@ -181,6 +181,9 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @dev Emitted when MeraPriceOracle is updated by main investor
     event MeraPriceOracleSet(address oldOracle, address newOracle);
 
+    /// @dev Emitted when investment vault availability for withdraw is changed
+    event InvestmentVaultAvailabilityForWithdrawChanged(uint256 indexed vaultIndex, bool isAvailable);
+
     /// @dev Initialization struct to prevent stack too deep errors
     struct InitParams {
         address mainInvestor;
@@ -447,6 +450,14 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @param withdrawals Array of withdrawal requests containing vault index, token, and amount
     function withdrawFromInvestmentVaults(WithdrawFromVaultData[] calldata withdrawals) external;
 
+    /// @dev Withdraws tokens from investment vaults if they are available for withdrawal
+    /// Only the main investor can call this function
+    /// Each vault must be marked as available for withdrawal by admin
+    /// This function does not require withdrawal lock or commit timestamp checks
+    ///
+    /// @param withdrawals Array of withdrawal requests containing vault index, token, and amount
+    function withdrawFromInvestmentVaultsIfWithdrawAvailable(WithdrawFromVaultData[] calldata withdrawals) external;
+
     /// @dev Swaps an exact amount of `tokenIn` for as much as possible of `tokenOut`, receiving tokens to this contract
     /// @param params The simplified parameters necessary for the swap
     /// @return amountOut The amount of the received token
@@ -557,4 +568,15 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @dev Get profit type
     /// @return profitType Profit type
     function profitType() external view returns (DataTypes.ProfitType);
+
+    /// @dev Get investment vault availability for withdraw
+    /// @param vaultIndex Investment vault index
+    /// @return isAvailable True if vault is available for withdraw
+    function availableInvestmentVaultForWithdraw(uint256 vaultIndex) external view returns (bool);
+
+    /// @dev Set investment vault availability for withdraw
+    /// Only admin can call this function
+    /// @param vaultIndex Investment vault index (must be less than investmentVaultsCount)
+    /// @param isAvailable Whether the vault is available for withdraw
+    function setAvailableInvestmentVaultForWithdraw(uint256 vaultIndex, bool isAvailable) external;
 }

@@ -63,6 +63,7 @@ contract MainVault is
     error ImplementationNotApprovedByInvestor();
     error UpgradeDeadlineExpired();
     error AccessDenied();
+    error InvestmentVaultNotAvailableForWithdraw();
     // Role definitions
     // Each role is represented by a unique bytes32 value computed from the role name
 
@@ -123,6 +124,8 @@ contract MainVault is
 
     IPauserList public pauserList;
     IMeraPriceOracle public meraPriceOracle;
+    
+    mapping(uint256 => bool) public availableInvestmentVaultForWithdraw;
 
     modifier isNotLocked() {
         require(!_isLock(), WithdrawalLocked());
@@ -561,6 +564,30 @@ contract MainVault is
         }
     }
 
+    /// @notice Withdraws tokens from investment vaults if they are available for withdrawal
+    /// @dev Only the main investor can call this function
+    /// @dev Each vault must be marked as available for withdrawal by admin
+    /// @dev This function does not require withdrawal lock or commit timestamp checks
+    /// @param withdrawals Array of withdrawal requests containing vault index, token, and amount
+    function withdrawFromInvestmentVaultsIfWithdrawAvailable(WithdrawFromVaultData[] calldata withdrawals)
+        external
+        onlyRole(MAIN_INVESTOR_ROLE)
+    {
+        for (uint256 i = 0; i < withdrawals.length; i++) {
+            WithdrawFromVaultData calldata withdrawal = withdrawals[i];
+
+            require(withdrawal.vaultIndex < investmentVaultsCount, InvalidVaultIndex());
+            require(availableInvestmentVaultForWithdraw[withdrawal.vaultIndex], InvestmentVaultNotAvailableForWithdraw());
+
+            address vaultAddress = investmentVaults[withdrawal.vaultIndex];
+
+            IInvestmentVault vault = IInvestmentVault(vaultAddress);
+            vault.withdraw(withdrawal.token, withdrawal.amount, address(this));
+
+            emit WithdrawnFromInvestmentVault(vaultAddress, address(withdrawal.token), withdrawal.amount, msg.sender);
+        }
+    }
+
     /// @notice Commits to withdraw from investment vaults after a delay
     /// @dev Sets the withdraw commit timestamp that will be checked in withdrawFromInvestmentVaults
     function commitWithdrawFromInvestmentVault() external onlyRole(MAIN_INVESTOR_ROLE) {
@@ -689,6 +716,15 @@ contract MainVault is
     /// @inheritdoc IMainVault
     function setAdminIsCanceledOracleCheck(bool value) external onlyRole(ADMIN_ROLE) {
         adminIsCanceledOracleCheck = value;
+    }
+
+    /// @inheritdoc IMainVault
+    function setAvailableInvestmentVaultForWithdraw(uint256 vaultIndex, bool isAvailable) external onlyRole(ADMIN_ROLE) {
+        require(vaultIndex < investmentVaultsCount, InvalidVaultIndex());
+        
+        availableInvestmentVaultForWithdraw[vaultIndex] = isAvailable;
+        
+        emit InvestmentVaultAvailabilityForWithdrawChanged(vaultIndex, isAvailable);
     }
 
     /// @inheritdoc IMainVault
