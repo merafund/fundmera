@@ -399,9 +399,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         uint256 remainingInvestorProfit = profitData.earntProfitInvestor - profitData.withdrawnProfitInvestor;
         uint256 remainingFeeProfit = profitData.earntProfitFee - profitData.withdrawnProfitFee;
 
-        if (remainingInvestorProfit == 0 && remainingFeeProfit == 0) {
-            revert NoProfitToWithdraw();
-        }
+        require(remainingInvestorProfit > 0 || remainingFeeProfit > 0, NoProfitToWithdraw());
 
         bool profitLockExpired = block.timestamp > mainVault.profitLockedUntil();
 
