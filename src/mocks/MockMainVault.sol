@@ -12,8 +12,9 @@ pragma solidity ^0.8.29;
 import {DataTypes} from "../utils/DataTypes.sol";
 
 contract MockMainVault {
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant MAIN_INVESTOR_ROLE = keccak256("MAIN_INVESTOR_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     mapping(address => bool) public roles;
     mapping(address => bool) public availableRouters;

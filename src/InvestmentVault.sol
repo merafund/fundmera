@@ -39,6 +39,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
     error OnlyMainVaultError();
     error OnlyAdminError();
     error OnlyManagerError();
+    error AccessDenied();
     error TokenNotAvailable();
     error RouterNotAvailable();
     error ZeroAmountNotAllowed();
@@ -396,6 +397,13 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
             uint256 feeProfitAmount
         )
     {
+        require(
+            mainVault.hasRole(mainVault.MAIN_INVESTOR_ROLE(), msg.sender) ||
+            mainVault.hasRole(mainVault.MANAGER_ROLE(), msg.sender) ||
+            mainVault.hasRole(mainVault.ADMIN_ROLE(), msg.sender),
+            AccessDenied()
+        );
+
         uint256 remainingInvestorProfit = profitData.earntProfitInvestor - profitData.withdrawnProfitInvestor;
         uint256 remainingFeeProfit = profitData.earntProfitFee - profitData.withdrawnProfitFee;
 
