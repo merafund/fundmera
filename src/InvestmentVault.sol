@@ -234,6 +234,8 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
 
         require(mainVault.availableRouterByAdmin(miToMvPath.router), RouterNotAvailable());
         require(mainVault.availableRouterByAdmin(miToMvPath.quouter), QuoterNotAvailable());
+        require(mainVault.availableRouterByInvestor(miToMvPath.router), RouterNotAvailable());
+        require(mainVault.availableRouterByInvestor(miToMvPath.quouter), QuoterNotAvailable());
 
         require(tokenData.mvBought == 0, AssetAlreadyBought());
 
@@ -280,6 +282,8 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         for (uint256 i = 0; i < mvToTokenPaths.length; i++) {
             require(mainVault.availableRouterByAdmin(mvToTokenPaths[i].router), RouterNotAvailable());
             require(mainVault.availableRouterByAdmin(mvToTokenPaths[i].quouter), QuoterNotAvailable());
+            require(mainVault.availableRouterByInvestor(mvToTokenPaths[i].router), RouterNotAvailable());
+            require(mainVault.availableRouterByInvestor(mvToTokenPaths[i].quouter), QuoterNotAvailable());
 
             (address tokenIn, address tokenOut) = extractTokenInAndOut(mvToTokenPaths[i]);
             require(tokenIn == address(tokenData.tokenMV), InvalidMVToken());
@@ -472,7 +476,8 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
     function increaseRouterAllowance(IERC20 token, address router, uint256 amount) external OnlyAdmin whenNotPaused {
         require(mainVault.availableTokensByAdmin(address(token)), TokenNotAvailable());
         require(mainVault.availableRouterByAdmin(router), RouterNotAvailable());
-
+        require(mainVault.availableTokensByInvestor(address(token)), TokenNotAvailable());
+        require(mainVault.availableRouterByInvestor(router), RouterNotAvailable());
         token.safeIncreaseAllowance(router, amount);
 
         emit TokenAllowanceIncreased(address(token), router, amount);

@@ -1381,6 +1381,80 @@ contract InvestmentVaultTest is Test {
         vm.stopPrank();
     }
 
+    function testInitMiToMvSwap_RouterNotAvailableByInvestor() public {
+        setUp_DifferentTokens();
+
+        vm.startPrank(owner);
+        (,, uint256 pauseToTimestamp,) = vault.vaultState();
+        vm.warp(pauseToTimestamp + 1);
+
+        // Approve tokens for router from vault
+        vm.stopPrank();
+        vm.startPrank(address(vault));
+        tokenMI.approve(address(router), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(owner);
+
+        // Set router as unavailable for investors (but available for admin)
+        mainVault.setAvailableRouter(address(router), false);
+
+        bytes memory pathBytes = abi.encodePacked(address(tokenMI), uint24(3000), address(tokenMV));
+
+        DataTypes.InitSwapsData memory data = DataTypes.InitSwapsData({
+            quouter: address(router),
+            router: address(router),
+            path: new address[](2),
+            pathBytes: pathBytes,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        data.path[0] = address(tokenMI);
+        data.path[1] = address(tokenMV);
+
+        vm.expectRevert(InvestmentVault.RouterNotAvailable.selector);
+        vault.initMiToMvSwap(data, block.timestamp + 1);
+        vm.stopPrank();
+    }
+
+    function testInitMiToMvSwap_QuoterNotAvailableByInvestor() public {
+        setUp_DifferentTokens();
+
+        vm.startPrank(owner);
+        (,, uint256 pauseToTimestamp,) = vault.vaultState();
+        vm.warp(pauseToTimestamp + 1);
+
+        // Approve tokens for router from vault
+        vm.stopPrank();
+        vm.startPrank(address(vault));
+        tokenMI.approve(address(router), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(owner);
+
+        // Set router as available for admin but quoter as unavailable for investors
+        mainVault.setAvailableRouter(address(router), true);
+        address unavailableQuoter = address(0x123);
+        mainVault.setAvailableRouter(unavailableQuoter, false);
+
+        bytes memory pathBytes = abi.encodePacked(address(tokenMI), uint24(3000), address(tokenMV));
+
+        DataTypes.InitSwapsData memory data = DataTypes.InitSwapsData({
+            quouter: unavailableQuoter,
+            router: address(router),
+            path: new address[](2),
+            pathBytes: pathBytes,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        data.path[0] = address(tokenMI);
+        data.path[1] = address(tokenMV);
+
+        vm.expectRevert(InvestmentVault.QuoterNotAvailable.selector);
+        vault.initMiToMvSwap(data, block.timestamp + 1);
+        vm.stopPrank();
+    }
+
     function testInitMvToTokensSwaps_QuoterNotAvailable() public {
         setUp_DifferentTokens();
 
@@ -1413,6 +1487,140 @@ contract InvestmentVaultTest is Test {
         vault.initMiToMvSwap(miToMvData, block.timestamp + 1);
 
         // Set quoter as unavailable
+        address unavailableQuoter = address(0x123);
+        mainVault.setAvailableRouter(unavailableQuoter, false);
+
+        // Prepare MV to Tokens swaps data
+        DataTypes.InitSwapsData[] memory mvToTokenPaths = new DataTypes.InitSwapsData[](2);
+
+        mvToTokenPaths[0] = DataTypes.InitSwapsData({
+            quouter: unavailableQuoter,
+            router: address(router),
+            path: new address[](2),
+            pathBytes: pathBytesMiMv,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        mvToTokenPaths[0].path[0] = address(tokenMV);
+        mvToTokenPaths[0].path[1] = address(assetToken1);
+
+        mvToTokenPaths[1] = DataTypes.InitSwapsData({
+            quouter: address(router),
+            router: address(router),
+            path: new address[](2),
+            pathBytes: pathBytesMiMv,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        mvToTokenPaths[1].path[0] = address(tokenMV);
+        mvToTokenPaths[1].path[1] = address(assetToken2);
+
+        vm.expectRevert(InvestmentVault.QuoterNotAvailable.selector);
+        vault.initMvToTokensSwaps(mvToTokenPaths, block.timestamp + 1);
+        vm.stopPrank();
+    }
+
+    function testInitMvToTokensSwaps_RouterNotAvailableByInvestor() public {
+        setUp_DifferentTokens();
+
+        vm.startPrank(owner);
+        (,, uint256 pauseToTimestamp,) = vault.vaultState();
+        vm.warp(pauseToTimestamp + 1);
+
+        // First initialize MI to MV swap
+        bytes memory pathBytesMiMv = abi.encodePacked(address(tokenMI), uint24(3000), address(tokenMV));
+
+        DataTypes.InitSwapsData memory miToMvData = DataTypes.InitSwapsData({
+            quouter: address(router),
+            router: address(router),
+            path: new address[](2),
+            pathBytes: pathBytesMiMv,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        miToMvData.path[0] = address(tokenMI);
+        miToMvData.path[1] = address(tokenMV);
+
+        // Approve tokens for router from vault
+        vm.stopPrank();
+        vm.startPrank(address(vault));
+        tokenMI.approve(address(router), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(owner);
+
+        vault.initMiToMvSwap(miToMvData, block.timestamp + 1);
+
+        // Set router as unavailable for investors
+        address unavailableRouter = address(0x123);
+        mainVault.setAvailableRouter(unavailableRouter, false);
+
+        // Prepare MV to Tokens swaps data
+        DataTypes.InitSwapsData[] memory mvToTokenPaths = new DataTypes.InitSwapsData[](2);
+
+        mvToTokenPaths[0] = DataTypes.InitSwapsData({
+            quouter: address(router),
+            router: unavailableRouter,
+            path: new address[](2),
+            pathBytes: pathBytesMiMv,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        mvToTokenPaths[0].path[0] = address(tokenMV);
+        mvToTokenPaths[0].path[1] = address(assetToken1);
+
+        mvToTokenPaths[1] = DataTypes.InitSwapsData({
+            quouter: address(router),
+            router: address(router),
+            path: new address[](2),
+            pathBytes: pathBytesMiMv,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        mvToTokenPaths[1].path[0] = address(tokenMV);
+        mvToTokenPaths[1].path[1] = address(assetToken2);
+
+        vm.expectRevert(InvestmentVault.RouterNotAvailable.selector);
+        vault.initMvToTokensSwaps(mvToTokenPaths, block.timestamp + 1);
+        vm.stopPrank();
+    }
+
+    function testInitMvToTokensSwaps_QuoterNotAvailableByInvestor() public {
+        setUp_DifferentTokens();
+
+        vm.startPrank(owner);
+        (,, uint256 pauseToTimestamp,) = vault.vaultState();
+        vm.warp(pauseToTimestamp + 1);
+
+        // First initialize MI to MV swap
+        bytes memory pathBytesMiMv = abi.encodePacked(address(tokenMI), uint24(3000), address(tokenMV));
+
+        DataTypes.InitSwapsData memory miToMvData = DataTypes.InitSwapsData({
+            quouter: address(router),
+            router: address(router),
+            path: new address[](2),
+            pathBytes: pathBytesMiMv,
+            amountOutMin: 0,
+            capital: INITIAL_BALANCE,
+            routerType: DataTypes.Router.UniswapV2
+        });
+        miToMvData.path[0] = address(tokenMI);
+        miToMvData.path[1] = address(tokenMV);
+
+        // Approve tokens for router from vault
+        vm.stopPrank();
+        vm.startPrank(address(vault));
+        tokenMI.approve(address(router), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(owner);
+
+        vault.initMiToMvSwap(miToMvData, block.timestamp + 1);
+
+        // Set quoter as unavailable for investors
         address unavailableQuoter = address(0x123);
         mainVault.setAvailableRouter(unavailableQuoter, false);
 
