@@ -94,7 +94,9 @@ contract MainVaultTest is Test {
     event ProposedMeraPriceOracleByAdminSet(address newOracle);
     event MeraPriceOracleSet(address oldOracle, address newOracle);
     event InvestmentVaultAvailabilityForWithdrawChanged(uint256 indexed vaultIndex, bool isAvailable);
-    event WithdrawnFromInvestmentVault(address indexed vault, address indexed token, uint256 amount, address indexed receiver);
+    event WithdrawnFromInvestmentVault(
+        address indexed vault, address indexed token, uint256 amount, address indexed receiver
+    );
 
     function setUp() public {
         vm.startPrank(owner);
@@ -3219,7 +3221,7 @@ contract MainVaultTest is Test {
 
         // Test setting availability for each vault
         vm.startPrank(admin);
-        
+
         // Set vault 0 to available
         vault.setAvailableInvestmentVaultForWithdraw(0, true);
         assertTrue(vault.availableInvestmentVaultForWithdraw(0), "Vault 0 should be available");
@@ -3273,7 +3275,7 @@ contract MainVaultTest is Test {
 
         // Test that event is emitted correctly
         vm.startPrank(admin);
-        
+
         vm.expectEmit(true, false, false, true);
         emit InvestmentVaultAvailabilityForWithdrawChanged(0, true);
         vault.setAvailableInvestmentVaultForWithdraw(0, true);
@@ -3287,7 +3289,7 @@ contract MainVaultTest is Test {
     function testSetAvailableInvestmentVaultForWithdraw_NoVaultsDeployed() public {
         // Test with no vaults deployed (investmentVaultsCount = 0)
         vm.startPrank(admin);
-        
+
         // Any vault index should fail since there are no vaults
         vm.expectRevert(MainVault.InvalidVaultIndex.selector);
         vault.setAvailableInvestmentVaultForWithdraw(0, true);
@@ -3327,7 +3329,7 @@ contract MainVaultTest is Test {
         vm.stopPrank();
 
         vm.startPrank(admin);
-        
+
         // Test with vault index exactly equal to investmentVaultsCount (should fail)
         uint256 vaultCount = vault.investmentVaultsCount();
         vm.expectRevert(MainVault.InvalidVaultIndex.selector);
@@ -3370,7 +3372,7 @@ contract MainVaultTest is Test {
 
         // Test that state persists across multiple calls
         vm.startPrank(admin);
-        
+
         // Initially should be false (default value)
         assertFalse(vault.availableInvestmentVaultForWithdraw(0), "Initial state should be false");
 

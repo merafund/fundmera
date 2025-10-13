@@ -124,7 +124,7 @@ contract MainVault is
 
     IPauserList public pauserList;
     IMeraPriceOracle public meraPriceOracle;
-    
+
     mapping(uint256 => bool) public availableInvestmentVaultForWithdraw;
 
     modifier isNotLocked() {
@@ -577,7 +577,9 @@ contract MainVault is
             WithdrawFromVaultData calldata withdrawal = withdrawals[i];
 
             require(withdrawal.vaultIndex < investmentVaultsCount, InvalidVaultIndex());
-            require(availableInvestmentVaultForWithdraw[withdrawal.vaultIndex], InvestmentVaultNotAvailableForWithdraw());
+            require(
+                availableInvestmentVaultForWithdraw[withdrawal.vaultIndex], InvestmentVaultNotAvailableForWithdraw()
+            );
 
             address vaultAddress = investmentVaults[withdrawal.vaultIndex];
 
@@ -719,11 +721,14 @@ contract MainVault is
     }
 
     /// @inheritdoc IMainVault
-    function setAvailableInvestmentVaultForWithdraw(uint256 vaultIndex, bool isAvailable) external onlyRole(ADMIN_ROLE) {
+    function setAvailableInvestmentVaultForWithdraw(uint256 vaultIndex, bool isAvailable)
+        external
+        onlyRole(ADMIN_ROLE)
+    {
         require(vaultIndex < investmentVaultsCount, InvalidVaultIndex());
-        
+
         availableInvestmentVaultForWithdraw[vaultIndex] = isAvailable;
-        
+
         emit InvestmentVaultAvailabilityForWithdrawChanged(vaultIndex, isAvailable);
     }
 

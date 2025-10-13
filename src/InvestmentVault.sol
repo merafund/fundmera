@@ -398,9 +398,9 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         )
     {
         require(
-            mainVault.hasRole(mainVault.MAIN_INVESTOR_ROLE(), msg.sender) ||
-            mainVault.hasRole(mainVault.MANAGER_ROLE(), msg.sender) ||
-            mainVault.hasRole(mainVault.ADMIN_ROLE(), msg.sender),
+            mainVault.hasRole(mainVault.MAIN_INVESTOR_ROLE(), msg.sender)
+                || mainVault.hasRole(mainVault.MANAGER_ROLE(), msg.sender)
+                || mainVault.hasRole(mainVault.ADMIN_ROLE(), msg.sender),
             AccessDenied()
         );
 

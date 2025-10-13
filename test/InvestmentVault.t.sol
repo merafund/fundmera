@@ -432,7 +432,7 @@ contract InvestmentVaultTest is Test {
         testClosePositionWithProfit();
 
         vm.startPrank(owner);
-        
+
         // Give owner the MAIN_INVESTOR_ROLE
         mainVault.setRole(owner, true);
 
@@ -465,7 +465,7 @@ contract InvestmentVaultTest is Test {
     function testWithdrawProfit_NoProfitToWithdraw() public {
         setUp_SameTokens();
         vm.startPrank(owner);
-        
+
         // Give owner the MAIN_INVESTOR_ROLE
         mainVault.setRole(owner, true);
 
@@ -477,13 +477,13 @@ contract InvestmentVaultTest is Test {
 
     function testWithdrawProfit_AccessDenied() public {
         setUp_SameTokens();
-        
+
         // Try to call without any role
         vm.startPrank(user1);
         vm.expectRevert(InvestmentVault.AccessDenied.selector);
         vault.withdrawProfit();
         vm.stopPrank();
-        
+
         // Try to call with user2 (no role)
         vm.startPrank(user2);
         vm.expectRevert(InvestmentVault.AccessDenied.selector);
@@ -493,11 +493,11 @@ contract InvestmentVaultTest is Test {
 
     function testWithdrawProfit_WithValidRole() public {
         setUp_SameTokens();
-        
+
         // Give owner the MAIN_INVESTOR_ROLE
         vm.startPrank(owner);
         mainVault.setRole(owner, true);
-        
+
         // This should not revert with AccessDenied, but with NoProfitToWithdraw
         vm.expectRevert(InvestmentVault.NoProfitToWithdraw.selector);
         vault.withdrawProfit();
