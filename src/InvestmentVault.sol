@@ -681,7 +681,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         if (price1 > price2) {
             return true;
         } else {
-            priceDiff = ((price2 - price1) * Constants.PRICE_DIFF_MULTIPLIER * Constants.SHARE_DENOMINATOR) / price2;
+            priceDiff = ((price2 - price1) * Constants.PRICE_DIFF_MULTIPLIER * Constants.SHARE_DENOMINATOR) / price1;
         }
 
         return priceDiff <= Constants.MAX_PRICE_DEVIATION;
