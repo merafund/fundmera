@@ -336,6 +336,7 @@ contract MainVault is
     function setCurrentFixedProfitPercent() external onlyRole(MAIN_INVESTOR_ROLE) {
         uint32 oldPercent = currentFixedProfitPercent;
         currentFixedProfitPercent = proposedFixedProfitPercentByAdmin;
+        proposedFixedProfitPercentByAdmin = 0;
 
         emit CurrentFixedProfitPercentSet(oldPercent, currentFixedProfitPercent);
     }
