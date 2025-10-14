@@ -66,7 +66,6 @@ library DataTypes {
         IERC20 toToken; // Token being bought
         uint256 firstBalanceBefore; // Balance of fromToken before swap
         uint256 secondBalanceBefore; // Balance of toToken before swap
-        uint256 feePercent; // Fee percentage
         SwapType swapType; // Swap type
     }
 

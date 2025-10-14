@@ -77,13 +77,12 @@ library SwapLibrary {
     /// @param tokenData Storage for token data
     /// @param profitData Storage for profit data
     /// @param assetsData Mapping of asset data
-    /// @param feePercentage Function to get the fee percentage
+    /// @param mainVault Reference to the main vault for getting fee percentage
     function computeDataSwap(
         DataTypes.SwapParams memory swapParams,
         DataTypes.TokenData storage tokenData,
         DataTypes.ProfitData storage profitData,
         mapping(IERC20 => DataTypes.AssetData) storage assetsData,
-        function() external view returns (uint256) feePercentage,
         IMainVault mainVault
     ) internal {
         require(swapParams.fromToken != swapParams.toToken, InvalidTokensInSwap());
@@ -93,7 +92,7 @@ library SwapLibrary {
                 swapParams.fromToken == tokenData.tokenMV && swapParams.toToken == tokenData.tokenMI,
                 InvalidTokensInSwap()
             );
-            handleProfitMvToProfitMiSwap(swapParams, tokenData, profitData, feePercentage, mainVault);
+            handleProfitMvToProfitMiSwap(swapParams, tokenData, profitData, mainVault);
             return;
         }
 
@@ -103,7 +102,7 @@ library SwapLibrary {
         }
         // Case 2: MV to MI swap (selling MV for MI)
         else if (swapParams.fromToken == tokenData.tokenMV && swapParams.toToken == tokenData.tokenMI) {
-            handleMvToMiSwap(swapParams, tokenData, profitData, feePercentage);
+            handleMvToMiSwap(swapParams, tokenData, profitData, mainVault);
         }
         // Case 3: MV to Asset swap (buying asset with MV)
         else if (swapParams.fromToken == tokenData.tokenMV && assetsData[swapParams.toToken].decimals > 0) {
@@ -116,15 +115,15 @@ library SwapLibrary {
         // Case 4: Asset to MV swap (selling asset for MV)
         else if (swapParams.toToken == tokenData.tokenMV && assetsData[swapParams.fromToken].decimals > 0) {
             if (assetsData[swapParams.fromToken].strategy == DataTypes.Strategy.Zero) {
-                handleZeroStrategySell(swapParams, assetsData, tokenData, profitData, feePercentage, mainVault);
+                handleZeroStrategySell(swapParams, assetsData, tokenData, profitData, mainVault);
             } else if (assetsData[swapParams.fromToken].strategy == DataTypes.Strategy.First) {
-                checkFirstStrategySell(swapParams, assetsData, tokenData, profitData, feePercentage, mainVault);
+                checkFirstStrategySell(swapParams, assetsData, tokenData, profitData, mainVault);
             }
         }
         // Case 5: Asset to MI swap (selling asset for MI directly) for Zero strategy
         else if (swapParams.toToken == tokenData.tokenMI && assetsData[swapParams.fromToken].decimals > 0) {
             if (assetsData[swapParams.fromToken].strategy == DataTypes.Strategy.Zero) {
-                handleZeroStrategySellToMi(swapParams, assetsData, tokenData, profitData, feePercentage, mainVault);
+                handleZeroStrategySellToMi(swapParams, assetsData, tokenData, profitData, mainVault);
             }
         } else {
             revert InvalidSwap();
@@ -135,14 +134,13 @@ library SwapLibrary {
         DataTypes.TokenData storage tokenData,
         DataTypes.ProfitData storage profitData,
         uint256 mvProfit,
-        function() external view returns (uint256) feePercentage,
         IMainVault mainVault
     ) internal {
         profitData.profitMV += mvProfit;
 
         if (address(tokenData.tokenMI) == address(tokenData.tokenMV)) {
             if (tokenData.profitType == DataTypes.ProfitType.Dynamic) {
-                uint256 feePercent = feePercentage();
+                uint256 feePercent = mainVault.feePercentage();
                 uint256 feeAmount = (mvProfit * feePercent) / Constants.MAX_PERCENT;
                 uint256 investorProfit = mvProfit - feeAmount;
 
@@ -177,7 +175,6 @@ library SwapLibrary {
         DataTypes.SwapParams memory swapParams,
         DataTypes.TokenData storage tokenData,
         DataTypes.ProfitData storage profitData,
-        function() external view returns (uint256) feePercentage,
         IMainVault mainVault
     ) internal {
         uint256 miReceived = IERC20(swapParams.toToken).balanceOf(address(this)) - swapParams.secondBalanceBefore;
@@ -195,7 +192,7 @@ library SwapLibrary {
         profitData.profitMV -= mvSpent;
 
         if (tokenData.profitType == DataTypes.ProfitType.Dynamic) {
-            uint256 feePercent = feePercentage();
+            uint256 feePercent = mainVault.feePercentage();
             uint256 feeAmount = (miReceived * feePercent) / Constants.MAX_PERCENT;
             uint256 investorProfit = miReceived - feeAmount;
 
@@ -288,7 +285,7 @@ library SwapLibrary {
         DataTypes.SwapParams memory swapParams,
         DataTypes.TokenData storage tokenData,
         DataTypes.ProfitData storage profitData,
-        function() external view returns (uint256) feePercentage
+        IMainVault mainVault
     ) internal {
         // Average purchase price (MI per MV) before selling
         uint256 averageBuyPrice = (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) / tokenData.mvBought;
@@ -348,7 +345,7 @@ library SwapLibrary {
 
         // If there is profit, distribute it between investor and fee wallets
         if (profit > 0) {
-            uint256 feePercent = feePercentage();
+            uint256 feePercent = mainVault.feePercentage();
             uint256 feeAmount = (profit * feePercent) / Constants.MAX_PERCENT;
             uint256 investorProfit = profit - feeAmount;
 
@@ -422,7 +419,6 @@ library SwapLibrary {
         mapping(IERC20 => DataTypes.AssetData) storage assetsData,
         DataTypes.TokenData storage tokenData,
         DataTypes.ProfitData storage profitData,
-        function() external view returns (uint256) feePercentage,
         IMainVault mainVault
     ) internal {
         // Logic for selling tokens with Zero strategy
@@ -450,7 +446,7 @@ library SwapLibrary {
         if (newDeposit < int256(initialDeposit)) {
             uint256 profit = uint256(int256(initialDeposit) - newDeposit);
             assetData.deposit = int256(initialDeposit);
-            addMvProfit(tokenData, profitData, profit, feePercentage, mainVault);
+            addMvProfit(tokenData, profitData, profit, mainVault);
         } else {
             assetData.deposit = newDeposit;
         }
@@ -532,7 +528,6 @@ library SwapLibrary {
         mapping(IERC20 => DataTypes.AssetData) storage assetsData,
         DataTypes.TokenData storage tokenData,
         DataTypes.ProfitData storage profitData,
-        function() external view returns (uint256) feePercentage,
         IMainVault mainVault
     ) internal {
         // Get asset data
@@ -549,7 +544,7 @@ library SwapLibrary {
             assetData.deposit -= int256(mvReceived);
             require(assetData.deposit < 0, NoProfit());
             uint256 profit = uint256(-assetData.deposit);
-            addMvProfit(tokenData, profitData, profit, feePercentage, mainVault);
+            addMvProfit(tokenData, profitData, profit, mainVault);
             assetData.deposit = int256(0);
             assetData.tokenBought = 0;
             emit ProfitCalculated(address(swapParams.fromToken), address(swapParams.toToken), profit);
@@ -570,7 +565,7 @@ library SwapLibrary {
 
         uint256 profit = mvReceived - workingOrderDeposit;
         // Add to profit
-        addMvProfit(tokenData, profitData, profit, feePercentage, mainVault);
+        addMvProfit(tokenData, profitData, profit, mainVault);
 
         // Update deposit and balance
         assetData.deposit -= int256(workingOrderDeposit);
@@ -666,13 +661,11 @@ library SwapLibrary {
                 toToken: IERC20(lastToken),
                 firstBalanceBefore: firstBalanceBefore,
                 secondBalanceBefore: secondBalanceBefore,
-                feePercent: mainVault.feePercentage(),
                 swapType: params.swapType
             }),
             tokenData,
             profitData,
             assetsData,
-            mainVault.feePercentage,
             mainVault
         );
 
@@ -753,13 +746,11 @@ library SwapLibrary {
                 toToken: outputToken,
                 firstBalanceBefore: firstBalanceBefore,
                 secondBalanceBefore: secondBalanceBefore,
-                feePercent: mainVault.feePercentage(),
                 swapType: params.swapType
             }),
             tokenData,
             profitData,
             assetsData,
-            mainVault.feePercentage,
             mainVault
         );
 
@@ -819,13 +810,11 @@ library SwapLibrary {
                 toToken: IERC20(path[path.length - 1]),
                 firstBalanceBefore: firstBalanceBefore,
                 secondBalanceBefore: secondBalanceBefore,
-                feePercent: mainVault.feePercentage(),
                 swapType: DataTypes.SwapType.Default
             }),
             tokenData,
             profitData,
             assetsData,
-            mainVault.feePercentage,
             mainVault
         );
 
@@ -891,13 +880,11 @@ library SwapLibrary {
                 toToken: outputToken,
                 firstBalanceBefore: firstBalanceBefore,
                 secondBalanceBefore: secondBalanceBefore,
-                feePercent: mainVault.feePercentage(),
                 swapType: params.swapType
             }),
             tokenData,
             profitData,
             assetsData,
-            mainVault.feePercentage,
             mainVault
         );
 
@@ -962,13 +949,11 @@ library SwapLibrary {
                 toToken: IERC20(lastToken),
                 firstBalanceBefore: firstBalanceBefore,
                 secondBalanceBefore: secondBalanceBefore,
-                feePercent: mainVault.feePercentage(),
                 swapType: params.swapType
             }),
             tokenData,
             profitData,
             assetsData,
-            mainVault.feePercentage,
             mainVault
         );
 
@@ -984,7 +969,6 @@ library SwapLibrary {
         mapping(IERC20 => DataTypes.AssetData) storage assetsData,
         DataTypes.TokenData storage tokenData,
         DataTypes.ProfitData storage profitData,
-        function() external view returns (uint256) feePercentage,
         IMainVault mainVault
     ) internal {
         // Calculate amounts spent and received
@@ -1025,7 +1009,7 @@ library SwapLibrary {
         // Distribute profit (if any) between investor and fee wallets
         if (profit > 0) {
             if (tokenData.profitType == DataTypes.ProfitType.Dynamic) {
-                uint256 feePercent = feePercentage();
+                uint256 feePercent = mainVault.feePercentage();
                 uint256 feeAmount = (profit * feePercent) / Constants.MAX_PERCENT;
                 uint256 investorProfit = profit - feeAmount;
 
