@@ -617,14 +617,18 @@ library SwapLibrary {
         IMainVault mainVault
     ) external returns (uint256 amountOut) {
         // Verify router and tokens are available
-        require(mainVault.availableRouterByInvestor(router), RouterNotAvailable());
+        require(
+            mainVault.availableRouterByInvestor(router) && mainVault.availableRouterByAdmin(router),
+            RouterNotAvailable()
+        );
 
         // Extract first and last token from the path
         (address firstToken, address lastToken) = extractTokensFromPath(params.path);
 
         // Verify the tokens are available
         require(
-            mainVault.availableTokensByInvestor(firstToken) && mainVault.availableTokensByInvestor(lastToken),
+            mainVault.availableTokensByInvestor(firstToken) && mainVault.availableTokensByInvestor(lastToken)
+                && mainVault.availableTokensByAdmin(firstToken) && mainVault.availableTokensByAdmin(lastToken),
             TokenNotAvailable()
         );
 
@@ -695,9 +699,13 @@ library SwapLibrary {
         IMainVault mainVault
     ) external returns (uint256 amountOut) {
         // Verify router and tokens are available
-        require(mainVault.availableRouterByInvestor(router), RouterNotAvailable());
         require(
-            mainVault.availableTokensByInvestor(params.tokenIn) && mainVault.availableTokensByInvestor(params.tokenOut),
+            mainVault.availableRouterByInvestor(router) && mainVault.availableRouterByAdmin(router),
+            RouterNotAvailable()
+        );
+        require(
+            mainVault.availableTokensByInvestor(params.tokenIn) && mainVault.availableTokensByInvestor(params.tokenOut)
+                && mainVault.availableTokensByAdmin(params.tokenIn) && mainVault.availableTokensByAdmin(params.tokenOut),
             TokenNotAvailable()
         );
 
@@ -784,11 +792,15 @@ library SwapLibrary {
         IMainVault mainVault
     ) external returns (uint256[] memory amounts) {
         // Verify router and tokens are available
-        require(mainVault.availableRouterByInvestor(router), RouterNotAvailable());
+        require(
+            mainVault.availableRouterByInvestor(router) && mainVault.availableRouterByAdmin(router),
+            RouterNotAvailable()
+        );
 
         // Verify tokens are available
         require(
-            mainVault.availableTokensByInvestor(path[0]) && mainVault.availableTokensByInvestor(path[path.length - 1]),
+            mainVault.availableTokensByInvestor(path[0]) && mainVault.availableTokensByInvestor(path[path.length - 1])
+                && mainVault.availableTokensByAdmin(path[0]) && mainVault.availableTokensByAdmin(path[path.length - 1]),
             TokenNotAvailable()
         );
 
@@ -840,9 +852,13 @@ library SwapLibrary {
         IMainVault mainVault
     ) external returns (uint256 amountOut) {
         // Verify router and tokens are available
-        require(mainVault.availableRouterByInvestor(router), RouterNotAvailable());
         require(
-            mainVault.availableTokensByInvestor(params.tokenIn) && mainVault.availableTokensByInvestor(params.tokenOut),
+            mainVault.availableRouterByInvestor(router) && mainVault.availableRouterByAdmin(router),
+            RouterNotAvailable()
+        );
+        require(
+            mainVault.availableTokensByInvestor(params.tokenIn) && mainVault.availableTokensByInvestor(params.tokenOut)
+                && mainVault.availableTokensByAdmin(params.tokenIn) && mainVault.availableTokensByAdmin(params.tokenOut),
             TokenNotAvailable()
         );
 
@@ -908,14 +924,18 @@ library SwapLibrary {
         IMainVault mainVault
     ) external returns (uint256 amountOut) {
         // Verify router and tokens are available
-        require(mainVault.availableRouterByInvestor(router), RouterNotAvailable());
+        require(
+            mainVault.availableRouterByInvestor(router) && mainVault.availableRouterByAdmin(router),
+            RouterNotAvailable()
+        );
 
         // Extract first and last token from the path
         (address firstToken, address lastToken) = extractTokensFromPath(params.path);
 
         // Verify tokens are available
         require(
-            mainVault.availableTokensByInvestor(firstToken) && mainVault.availableTokensByInvestor(lastToken),
+            mainVault.availableTokensByInvestor(firstToken) && mainVault.availableTokensByInvestor(lastToken)
+                && mainVault.availableTokensByAdmin(firstToken) && mainVault.availableTokensByAdmin(lastToken),
             TokenNotAvailable()
         );
 

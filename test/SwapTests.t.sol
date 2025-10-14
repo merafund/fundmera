@@ -2484,4 +2484,246 @@ contract SwapTests is Test {
 
         vm.stopPrank();
     }
+
+    // ============ Admin Restriction Tests ============
+
+    function testExactInputSingle_RouterNotAvailableByAdmin() public {
+        vm.startPrank(manager);
+
+        // Set router as available for investor but not for admin
+        mainVault.setAvailableRouter(address(uniswapV3Router), true);
+        mainVault.setAvailableRouter(address(uniswapV3Router), false); // Disable for admin
+
+        DataTypes.DelegateExactInputSingleParams memory params = DataTypes.DelegateExactInputSingleParams({
+            router: address(uniswapV3Router),
+            tokenIn: address(tokenMV),
+            tokenOut: address(assetToken1),
+            fee: 3000,
+            deadline: block.timestamp + 1,
+            amountIn: SWAP_AMOUNT,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(InvestmentVault.RouterNotAvailable.selector);
+        vault.exactInputSingle(params);
+
+        vm.stopPrank();
+    }
+
+    function testExactInputSingle_TokenNotAvailableByAdmin() public {
+        vm.startPrank(manager);
+
+        // Set tokens as available for investor but not for admin
+        mainVault.setAvailableToken(address(tokenMV), true);
+        mainVault.setAvailableToken(address(assetToken1), true);
+        mainVault.setAvailableToken(address(tokenMV), false); // Disable MV for admin
+        mainVault.setAvailableToken(address(assetToken1), false); // Disable Asset1 for admin
+
+        DataTypes.DelegateExactInputSingleParams memory params = DataTypes.DelegateExactInputSingleParams({
+            router: address(uniswapV3Router),
+            tokenIn: address(tokenMV),
+            tokenOut: address(assetToken1),
+            fee: 3000,
+            deadline: block.timestamp + 1,
+            amountIn: SWAP_AMOUNT,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(InvestmentVault.TokenNotAvailable.selector);
+        vault.exactInputSingle(params);
+
+        vm.stopPrank();
+    }
+
+    function testExactInput_RouterNotAvailableByAdmin() public {
+        vm.startPrank(manager);
+
+        // Set router as available for investor but not for admin
+        mainVault.setAvailableRouter(address(uniswapV3Router), true);
+        mainVault.setAvailableRouter(address(uniswapV3Router), false); // Disable for admin
+
+        bytes memory pathBytes = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+
+        DataTypes.DelegateExactInputParams memory params = DataTypes.DelegateExactInputParams({
+            router: address(uniswapV3Router),
+            path: pathBytes,
+            deadline: block.timestamp + 1,
+            amountIn: SWAP_AMOUNT,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(InvestmentVault.RouterNotAvailable.selector);
+        vault.exactInput(params);
+
+        vm.stopPrank();
+    }
+
+    function testExactInput_TokenNotAvailableByAdmin() public {
+        vm.startPrank(manager);
+
+        // Set tokens as available for investor but not for admin
+        mainVault.setAvailableToken(address(tokenMV), true);
+        mainVault.setAvailableToken(address(assetToken1), true);
+        mainVault.setAvailableToken(address(tokenMV), false); // Disable MV for admin
+        mainVault.setAvailableToken(address(assetToken1), false); // Disable Asset1 for admin
+
+        bytes memory pathBytes = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+
+        DataTypes.DelegateExactInputParams memory params = DataTypes.DelegateExactInputParams({
+            router: address(uniswapV3Router),
+            path: pathBytes,
+            deadline: block.timestamp + 1,
+            amountIn: SWAP_AMOUNT,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(InvestmentVault.TokenNotAvailable.selector);
+        vault.exactInput(params);
+
+        vm.stopPrank();
+    }
+
+    function testSwapExactTokensForTokens_RouterNotAvailableByAdmin() public {
+        vm.startPrank(manager);
+
+        // Set router as available for investor but not for admin
+        mainVault.setAvailableRouter(address(uniswapV2Router), true);
+        mainVault.setAvailableRouter(address(uniswapV2Router), false); // Disable for admin
+
+        address[] memory path = new address[](2);
+        path[0] = address(tokenMV);
+        path[1] = address(assetToken1);
+
+        vm.expectRevert(InvestmentVault.RouterNotAvailable.selector);
+        vault.swapExactTokensForTokens(address(uniswapV2Router), SWAP_AMOUNT, 0, path, block.timestamp + 1);
+
+        vm.stopPrank();
+    }
+
+    function testSwapExactTokensForTokens_TokenNotAvailableByAdmin() public {
+        vm.startPrank(manager);
+
+        // Set tokens as available for investor but not for admin
+        mainVault.setAvailableToken(address(tokenMV), true);
+        mainVault.setAvailableToken(address(assetToken1), true);
+        mainVault.setAvailableToken(address(tokenMV), false); // Disable MV for admin
+        mainVault.setAvailableToken(address(assetToken1), false); // Disable Asset1 for admin
+
+        address[] memory path = new address[](2);
+        path[0] = address(tokenMV);
+        path[1] = address(assetToken1);
+
+        vm.expectRevert(InvestmentVault.TokenNotAvailable.selector);
+        vault.swapExactTokensForTokens(address(uniswapV2Router), SWAP_AMOUNT, 0, path, block.timestamp + 1);
+
+        vm.stopPrank();
+    }
+
+    function testQuickswapExactInputSingle_RouterNotAvailableByAdmin() public {
+        vm.startPrank(manager);
+
+        // Set router as available for investor but not for admin
+        mainVault.setAvailableRouter(address(quickswapV3Router), true);
+        mainVault.setAvailableRouter(address(quickswapV3Router), false); // Disable for admin
+
+        DataTypes.DelegateQuickswapExactInputSingleParams memory params = DataTypes
+            .DelegateQuickswapExactInputSingleParams({
+            router: address(quickswapV3Router),
+            tokenIn: address(tokenMV),
+            tokenOut: address(assetToken1),
+            deadline: block.timestamp + 1,
+            amountIn: SWAP_AMOUNT,
+            amountOutMinimum: 0,
+            limitSqrtPrice: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(InvestmentVault.RouterNotAvailable.selector);
+        vault.quickswapExactInputSingle(params);
+
+        vm.stopPrank();
+    }
+
+    function testQuickswapExactInputSingle_TokenNotAvailableByAdmin() public {
+        vm.startPrank(manager);
+
+        // Set tokens as available for investor but not for admin
+        mainVault.setAvailableToken(address(tokenMV), true);
+        mainVault.setAvailableToken(address(assetToken1), true);
+        mainVault.setAvailableToken(address(tokenMV), false); // Disable MV for admin
+        mainVault.setAvailableToken(address(assetToken1), false); // Disable Asset1 for admin
+
+        DataTypes.DelegateQuickswapExactInputSingleParams memory params = DataTypes
+            .DelegateQuickswapExactInputSingleParams({
+            router: address(quickswapV3Router),
+            tokenIn: address(tokenMV),
+            tokenOut: address(assetToken1),
+            deadline: block.timestamp + 1,
+            amountIn: SWAP_AMOUNT,
+            amountOutMinimum: 0,
+            limitSqrtPrice: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(InvestmentVault.TokenNotAvailable.selector);
+        vault.quickswapExactInputSingle(params);
+
+        vm.stopPrank();
+    }
+
+    function testQuickswapExactInput_RouterNotAvailableByAdmin() public {
+        vm.startPrank(manager);
+
+        // Set router as available for investor but not for admin
+        mainVault.setAvailableRouter(address(quickswapV3Router), true);
+        mainVault.setAvailableRouter(address(quickswapV3Router), false); // Disable for admin
+
+        bytes memory pathBytes = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+
+        DataTypes.DelegateQuickswapExactInputParams memory params = DataTypes.DelegateQuickswapExactInputParams({
+            router: address(quickswapV3Router),
+            path: pathBytes,
+            deadline: block.timestamp + 1,
+            amountIn: SWAP_AMOUNT,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(InvestmentVault.RouterNotAvailable.selector);
+        vault.quickswapExactInput(params);
+
+        vm.stopPrank();
+    }
+
+    function testQuickswapExactInput_TokenNotAvailableByAdmin() public {
+        vm.startPrank(manager);
+
+        // Set tokens as available for investor but not for admin
+        mainVault.setAvailableToken(address(tokenMV), true);
+        mainVault.setAvailableToken(address(assetToken1), true);
+        mainVault.setAvailableToken(address(tokenMV), false); // Disable MV for admin
+        mainVault.setAvailableToken(address(assetToken1), false); // Disable Asset1 for admin
+
+        bytes memory pathBytes = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+
+        DataTypes.DelegateQuickswapExactInputParams memory params = DataTypes.DelegateQuickswapExactInputParams({
+            router: address(quickswapV3Router),
+            path: pathBytes,
+            deadline: block.timestamp + 1,
+            amountIn: SWAP_AMOUNT,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(InvestmentVault.TokenNotAvailable.selector);
+        vault.quickswapExactInput(params);
+
+        vm.stopPrank();
+    }
 }
