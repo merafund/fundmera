@@ -49,6 +49,7 @@ library SwapLibrary {
     error ProfitNotZero();
     error BadPriceAndTimeBetweenBuys();
     error AssetBoughtTooMuch();
+    error InvalidStrategy();
     // Calculation events
 
     event ProfitCalculated(address indexed fromToken, address indexed toToken, uint256 profitAmount);
@@ -109,7 +110,7 @@ library SwapLibrary {
             if (assetsData[swapParams.toToken].strategy == DataTypes.Strategy.Zero) {
                 handleZeroStrategyBuy(swapParams, assetsData, profitData);
             } else if (assetsData[swapParams.toToken].strategy == DataTypes.Strategy.First) {
-                checkFirstStrategyBuy(swapParams, assetsData, profitData);
+                handleFirstStrategyBuy(swapParams, assetsData, profitData);
             }
         }
         // Case 4: Asset to MV swap (selling asset for MV)
@@ -117,13 +118,15 @@ library SwapLibrary {
             if (assetsData[swapParams.fromToken].strategy == DataTypes.Strategy.Zero) {
                 handleZeroStrategySell(swapParams, assetsData, tokenData, profitData, mainVault);
             } else if (assetsData[swapParams.fromToken].strategy == DataTypes.Strategy.First) {
-                checkFirstStrategySell(swapParams, assetsData, tokenData, profitData, mainVault);
+                handleFirstStrategySell(swapParams, assetsData, tokenData, profitData, mainVault);
             }
         }
         // Case 5: Asset to MI swap (selling asset for MI directly) for Zero strategy
         else if (swapParams.toToken == tokenData.tokenMI && assetsData[swapParams.fromToken].decimals > 0) {
             if (assetsData[swapParams.fromToken].strategy == DataTypes.Strategy.Zero) {
                 handleZeroStrategySellToMi(swapParams, assetsData, tokenData, profitData, mainVault);
+            } else {
+                revert InvalidStrategy();
             }
         } else {
             revert InvalidSwap();
@@ -467,8 +470,8 @@ library SwapLibrary {
         }
     }
 
-    /// @dev Check First strategy buy logic
-    function checkFirstStrategyBuy(
+    /// @dev Handle First strategy buy logic
+    function handleFirstStrategyBuy(
         DataTypes.SwapParams memory swapParams,
         mapping(IERC20 => DataTypes.AssetData) storage assetsData,
         DataTypes.ProfitData storage profitData
@@ -522,8 +525,8 @@ library SwapLibrary {
         return true;
     }
 
-    /// @dev Check First strategy sell logic
-    function checkFirstStrategySell(
+    /// @dev Handle First strategy sell logic
+    function handleFirstStrategySell(
         DataTypes.SwapParams memory swapParams,
         mapping(IERC20 => DataTypes.AssetData) storage assetsData,
         DataTypes.TokenData storage tokenData,

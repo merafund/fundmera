@@ -2726,4 +2726,174 @@ contract SwapTests is Test {
 
         vm.stopPrank();
     }
+
+    function testInvalidStrategy_Asset2ToMiSwap() public {
+        vm.startPrank(manager);
+        vm.warp(block.timestamp + 31 days);
+
+        // Mint some assetToken2 to vault to simulate having it
+        vm.stopPrank();
+        vm.startPrank(owner);
+        assetToken2.mint(address(vault), 1000 * 10 ** 6); // 1000 tokens with 6 decimals
+        vm.stopPrank();
+        vm.startPrank(manager);
+
+        // Try to sell assetToken2 directly to MI (should fail with InvalidStrategy)
+        // This should trigger Case 5 in SwapLibrary: Asset to MI swap for First strategy
+        // Since tokenMI != tokenMV, this should go to Case 5, not Case 4
+        bytes memory pathBytesSell = abi.encodePacked(address(assetToken2), uint24(3000), address(tokenMI));
+        uniswapV3Router.setPrice(address(assetToken2), address(tokenMI), 2 * 10 ** 18);
+
+        uint256 amountInSell = 100 * 10 ** 6; // 100 tokens
+        DataTypes.DelegateExactInputParams memory paramsSell = DataTypes.DelegateExactInputParams({
+            router: address(uniswapV3Router),
+            path: pathBytesSell,
+            deadline: block.timestamp + 1,
+            amountIn: amountInSell,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(SwapLibrary.InvalidStrategy.selector);
+        vault.exactInput(paramsSell);
+
+        vm.stopPrank();
+    }
+
+    function testInvalidStrategy_Asset2ToMiSwap_ExactInputSingle() public {
+        vm.startPrank(manager);
+        vm.warp(block.timestamp + 31 days);
+
+        // Mint some assetToken2 to vault to simulate having it
+        vm.stopPrank();
+        vm.startPrank(owner);
+        assetToken2.mint(address(vault), 1000 * 10 ** 6); // 1000 tokens with 6 decimals
+        vm.stopPrank();
+        vm.startPrank(manager);
+
+        // Try to sell assetToken2 directly to MI using exactInputSingle (should fail with InvalidStrategy)
+        uniswapV3Router.setPrice(address(assetToken2), address(tokenMI), 2 * 10 ** 18);
+
+        uint256 amountInSell = 100 * 10 ** 6; // 100 tokens
+        DataTypes.DelegateExactInputSingleParams memory paramsSell = DataTypes.DelegateExactInputSingleParams({
+            router: address(uniswapV3Router),
+            tokenIn: address(assetToken2),
+            tokenOut: address(tokenMI),
+            fee: 3000,
+            deadline: block.timestamp + 1,
+            amountIn: amountInSell,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(SwapLibrary.InvalidStrategy.selector);
+        vault.exactInputSingle(paramsSell);
+
+        vm.stopPrank();
+    }
+
+    function testInvalidStrategy_Asset2ToMiSwap_Quickswap() public {
+        vm.startPrank(manager);
+        vm.warp(block.timestamp + 31 days);
+
+        // Mint some assetToken2 to vault to simulate having it
+        vm.stopPrank();
+        vm.startPrank(owner);
+        assetToken2.mint(address(vault), 1000 * 10 ** 6); // 1000 tokens with 6 decimals
+        // Mint tokens to router for the swap
+        tokenMI.mint(address(quickswapV3Router), 10000 * 10 ** 18);
+        vm.stopPrank();
+        vm.startPrank(address(vault));
+        assetToken2.approve(address(quickswapV3Router), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(manager);
+
+        // Try to sell assetToken2 directly to MI using quickswap (should fail with InvalidStrategy)
+        quickswapV3Router.setPrice(address(assetToken2), address(tokenMI), 2 * 10 ** 18);
+
+        uint256 amountInSell = 100 * 10 ** 6; // 100 tokens
+        DataTypes.DelegateQuickswapExactInputParams memory paramsSell = DataTypes.DelegateQuickswapExactInputParams({
+            router: address(quickswapV3Router),
+            path: abi.encodePacked(address(assetToken2), uint24(3000), address(tokenMI)),
+            deadline: block.timestamp + 1,
+            amountIn: amountInSell,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(SwapLibrary.InvalidStrategy.selector);
+        vault.quickswapExactInput(paramsSell);
+
+        vm.stopPrank();
+    }
+
+    function testInvalidStrategy_Asset2ToMiSwap_QuickswapSingle() public {
+        vm.startPrank(manager);
+        vm.warp(block.timestamp + 31 days);
+
+        // Mint some assetToken2 to vault to simulate having it
+        vm.stopPrank();
+        vm.startPrank(owner);
+        assetToken2.mint(address(vault), 1000 * 10 ** 6); // 1000 tokens with 6 decimals
+        // Mint tokens to router for the swap
+        tokenMI.mint(address(quickswapV3Router), 10000 * 10 ** 18);
+        vm.stopPrank();
+        vm.startPrank(address(vault));
+        assetToken2.approve(address(quickswapV3Router), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(manager);
+
+        // Try to sell assetToken2 directly to MI using quickswapExactInputSingle (should fail with InvalidStrategy)
+        quickswapV3Router.setPrice(address(assetToken2), address(tokenMI), 2 * 10 ** 18);
+
+        uint256 amountInSell = 100 * 10 ** 6; // 100 tokens
+        DataTypes.DelegateQuickswapExactInputSingleParams memory paramsSell = DataTypes
+            .DelegateQuickswapExactInputSingleParams({
+            router: address(quickswapV3Router),
+            tokenIn: address(assetToken2),
+            tokenOut: address(tokenMI),
+            amountIn: amountInSell,
+            amountOutMinimum: 0,
+            limitSqrtPrice: 0,
+            deadline: block.timestamp + 1,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(SwapLibrary.InvalidStrategy.selector);
+        vault.quickswapExactInputSingle(paramsSell);
+
+        vm.stopPrank();
+    }
+
+    function testInvalidStrategy_Asset2ToMiSwap_UniswapV2() public {
+        vm.startPrank(manager);
+        vm.warp(block.timestamp + 31 days);
+
+        // Mint some assetToken2 to vault to simulate having it
+        vm.stopPrank();
+        vm.startPrank(owner);
+        assetToken2.mint(address(vault), 1000 * 10 ** 6); // 1000 tokens with 6 decimals
+        // Mint tokens to router for the swap
+        tokenMI.mint(address(uniswapV2Router), 10000 * 10 ** 18);
+        vm.stopPrank();
+        vm.startPrank(address(vault));
+        assetToken2.approve(address(uniswapV2Router), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(manager);
+
+        // Try to sell assetToken2 directly to MI using UniswapV2 (should fail with InvalidStrategy)
+        uniswapV2Router.setPrice(address(assetToken2), address(tokenMI), 2 * 10 ** 18);
+
+        address[] memory path = new address[](2);
+        path[0] = address(assetToken2);
+        path[1] = address(tokenMI);
+
+        uint256 amountInSell = 100 * 10 ** 6; // 100 tokens
+
+        vm.expectRevert(SwapLibrary.InvalidStrategy.selector);
+        vault.swapExactTokensForTokens(address(uniswapV2Router), amountInSell, 0, path, block.timestamp + 1);
+
+        vm.stopPrank();
+    }
 }
