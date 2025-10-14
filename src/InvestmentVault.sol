@@ -744,6 +744,8 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         uint256 decreasedAmountIn = amountIn / Constants.PRICE_CHECK_DENOMINATOR;
         uint256 decreasedAmountOut;
 
+        uint256 balanceBefore = IERC20(tokenOut).balanceOf(address(this));
+
         if (initSwapsData.routerType == DataTypes.Router.UniswapV3) {
             ISwapRouter router = ISwapRouter(initSwapsData.router);
             IQuoterV2 quoter = IQuoterV2(initSwapsData.quouter);
@@ -758,7 +760,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
                 amountOutMinimum: initSwapsData.amountOutMin
             });
             if (deadline == 0) {
-                amountOut = ISwapRouterBase(address(router)).exactInput(
+                ISwapRouterBase(address(router)).exactInput(
                     ISwapRouterBase.ExactInputParams({
                         path: initSwapsData.pathBytes,
                         recipient: address(this),
@@ -767,7 +769,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
                     })
                 );
             } else {
-                amountOut = router.exactInput(params);
+                router.exactInput(params);
             }
         } else if (initSwapsData.routerType == DataTypes.Router.QuickswapV3) {
             IQuickswapV3Router router = IQuickswapV3Router(initSwapsData.router);
@@ -782,18 +784,20 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
                 amountIn: amountIn,
                 amountOutMinimum: initSwapsData.amountOutMin
             });
-            amountOut = router.exactInput(params);
+            router.exactInput(params);
         } else {
             IUniswapV2Router02 router = IUniswapV2Router02(initSwapsData.router);
 
             uint256[] memory decreasedAmountsOut = router.getAmountsOut(decreasedAmountIn, initSwapsData.path);
             decreasedAmountOut = decreasedAmountsOut[decreasedAmountsOut.length - 1];
 
-            uint256[] memory amounts = router.swapExactTokensForTokens(
+            router.swapExactTokensForTokens(
                 amountIn, initSwapsData.amountOutMin, initSwapsData.path, address(this), deadline
             );
-            amountOut = amounts[amounts.length - 1];
         }
+
+        uint256 balanceAfter = IERC20(tokenOut).balanceOf(address(this));
+        amountOut = balanceAfter - balanceBefore;
         require(
             _validatePriceDeviationFromOracle(tokenIn, tokenOut, decreasedAmountIn, decreasedAmountOut),
             BigDeviationOracle()
