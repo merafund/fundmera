@@ -497,10 +497,6 @@ library SwapLibrary {
         // Calculate current purchase price (MV per Asset)
         uint256 currentPrice = (mvSpent * Constants.SHARE_DENOMINATOR) / assetReceived;
 
-        // Calculate average purchase price before this transaction
-        uint256 averagePurchasePrice =
-            (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) / assetData.tokenBought;
-
         uint256 workingOrderDeposit = (assetData.capital * assetData.shareMV * assetData.step)
             / (Constants.SHARE_DENOMINATOR * (Constants.SHARE_DENOMINATOR + assetData.step));
 
@@ -512,6 +508,10 @@ library SwapLibrary {
 
         assetData.deposit += int256(mvSpent);
         assetData.tokenBought += assetReceived;
+
+        // Calculate average purchase price before this transaction
+        uint256 averagePurchasePrice =
+            (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) / assetData.tokenBought;
 
         // Update last buy price according to strategy requirements
         if (currentPrice < assetData.lastBuyPrice) {
