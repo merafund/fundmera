@@ -185,12 +185,12 @@ library SwapLibrary {
 
         require(miReceived > 0, NoTokensReceived());
 
-        uint256 currentPrice = (mvSpent * Constants.SHARE_DENOMINATOR) / miReceived;
+        uint256 currentPrice = (miReceived * Constants.SHARE_DENOMINATOR) / mvSpent; // MI per MV
 
-        uint256 averagePriceBefore = (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) / tokenData.mvBought;
+        uint256 averagePriceBefore = (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) / tokenData.mvBought; // MI per MV
         tokenData.lastBuyPrice = averagePriceBefore;
 
-        require(averagePriceBefore > currentPrice, NonAdvantageousPurchasePrice());
+        require(currentPrice > averagePriceBefore, NonAdvantageousPurchasePrice());
 
         profitData.profitMV -= mvSpent;
 
