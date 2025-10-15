@@ -49,13 +49,11 @@ contract SwapTestsSingleToken is Test {
     // Helper function to set up router-quoter pairs
     function _setupRouterQuoterPairs(address router, address quoter) internal {
         DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
-        pairs[0] = DataTypes.RouterQuoterPair({
-            router: router,
-            quoter: quoter
-        });
+        pairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
         mainVault.setRouterQuoterPairAvailabilityByInvestor(pairs);
         mainVault.setRouterQuoterPairAvailabilityByAdmin(pairs);
     }
+
     uint256 public constant STEP = 5 * 10 ** 16;
 
     function setUp() public {
@@ -78,7 +76,7 @@ contract SwapTestsSingleToken is Test {
         mainVault.setAvailableToken(address(mainToken), true);
         mainVault.setAvailableToken(address(assetToken1), true);
         mainVault.setAvailableToken(address(assetToken2), true);
-        
+
         // Set up router-quoter pairs
         _setupRouterQuoterPairs(address(uniswapV3Router), address(quoterV2));
         _setupRouterQuoterPairs(address(quickswapV3Router), address(quoterQuickswap));

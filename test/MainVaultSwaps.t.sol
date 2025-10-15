@@ -28,7 +28,7 @@ contract MainVaultSwapsTest is Test {
     UniswapV2Mock public uniswapV2;
     UniswapV3Mock public uniswapV3;
     QuickswapV3Mock public quickswapV3;
-    
+
     // Quoters (using same addresses as routers for simplicity in tests)
     address public quoterV2;
     address public quoterQuickswap;
@@ -47,7 +47,7 @@ contract MainVaultSwapsTest is Test {
         uniswapV2 = new UniswapV2Mock();
         uniswapV3 = new UniswapV3Mock();
         quickswapV3 = new QuickswapV3Mock();
-        
+
         // Initialize quoters (using same addresses as routers for simplicity)
         quoterV2 = address(uniswapV2);
         quoterQuickswap = address(quickswapV3);

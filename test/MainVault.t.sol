@@ -313,7 +313,9 @@ contract MainVaultTest is Test {
         vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
 
         assertTrue(vault.availableRouterByAdmin(router), "Router should be initially available");
-        assertTrue(vault.availableRouterQuoterPairByAdmin(router, quoter), "Router-Quoter pair should be initially available");
+        assertTrue(
+            vault.availableRouterQuoterPairByAdmin(router, quoter), "Router-Quoter pair should be initially available"
+        );
 
         vm.stopPrank();
     }
@@ -346,7 +348,10 @@ contract MainVaultTest is Test {
         vm.startPrank(admin);
         vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
         assertTrue(vault.availableRouterByAdmin(router), "Router should be available when set by admin");
-        assertTrue(vault.availableRouterQuoterPairByAdmin(router, quoter), "Router-Quoter pair should be available when set by admin");
+        assertTrue(
+            vault.availableRouterQuoterPairByAdmin(router, quoter),
+            "Router-Quoter pair should be available when set by admin"
+        );
         vm.stopPrank();
     }
 
@@ -358,7 +363,10 @@ contract MainVaultTest is Test {
 
         vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
         assertTrue(vault.availableRouterByAdmin(address(0)), "Zero address router should be settable");
-        assertTrue(vault.availableRouterQuoterPairByAdmin(address(0), address(0)), "Zero address router-quoter pair should be settable");
+        assertTrue(
+            vault.availableRouterQuoterPairByAdmin(address(0), address(0)),
+            "Zero address router-quoter pair should be settable"
+        );
 
         vm.stopPrank();
     }
@@ -727,8 +735,12 @@ contract MainVaultTest is Test {
 
         assertTrue(vault.availableRouterByInvestor(router1), "Router1 should be available");
         assertTrue(vault.availableRouterByInvestor(router2), "Router2 should be available");
-        assertTrue(vault.availableRouterQuoterPairByInvestor(router1, quoter1), "Router1-Quoter1 pair should be available");
-        assertTrue(vault.availableRouterQuoterPairByInvestor(router2, quoter2), "Router2-Quoter2 pair should be available");
+        assertTrue(
+            vault.availableRouterQuoterPairByInvestor(router1, quoter1), "Router1-Quoter1 pair should be available"
+        );
+        assertTrue(
+            vault.availableRouterQuoterPairByInvestor(router2, quoter2), "Router2-Quoter2 pair should be available"
+        );
 
         vm.stopPrank();
     }
@@ -761,7 +773,10 @@ contract MainVaultTest is Test {
         vm.startPrank(mainInvestor);
         vault.setRouterQuoterPairAvailabilityByInvestor(pairs);
         assertTrue(vault.availableRouterByInvestor(router), "Router should be available when set by main investor");
-        assertTrue(vault.availableRouterQuoterPairByInvestor(router, quoter), "Router-Quoter pair should be available when set by main investor");
+        assertTrue(
+            vault.availableRouterQuoterPairByInvestor(router, quoter),
+            "Router-Quoter pair should be available when set by main investor"
+        );
         vm.stopPrank();
     }
 
@@ -773,7 +788,10 @@ contract MainVaultTest is Test {
 
         vault.setRouterQuoterPairAvailabilityByInvestor(pairs);
         assertTrue(vault.availableRouterByInvestor(address(0)), "Zero address router should be settable");
-        assertTrue(vault.availableRouterQuoterPairByInvestor(address(0), address(0)), "Zero address router-quoter pair should be settable");
+        assertTrue(
+            vault.availableRouterQuoterPairByInvestor(address(0), address(0)),
+            "Zero address router-quoter pair should be settable"
+        );
 
         vm.stopPrank();
     }
@@ -802,7 +820,10 @@ contract MainVaultTest is Test {
         );
 
         assertTrue(vault.availableRouterByInvestor(router), "Router should be available despite lock");
-        assertTrue(vault.availableRouterQuoterPairByInvestor(router, quoter), "Router-Quoter pair should be available despite lock");
+        assertTrue(
+            vault.availableRouterQuoterPairByInvestor(router, quoter),
+            "Router-Quoter pair should be available despite lock"
+        );
 
         vm.stopPrank();
     }
@@ -837,7 +858,15 @@ contract MainVaultTest is Test {
             );
             assertTrue(
                 vault.availableRouterQuoterPairByInvestor(pairs[i].router, pairs[i].quoter),
-                string(abi.encodePacked("Router-Quoter pair ", pairs[i].router, "-", pairs[i].quoter, " should be available despite lock"))
+                string(
+                    abi.encodePacked(
+                        "Router-Quoter pair ",
+                        pairs[i].router,
+                        "-",
+                        pairs[i].quoter,
+                        " should be available despite lock"
+                    )
+                )
             );
         }
 

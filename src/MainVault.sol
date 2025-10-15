@@ -282,7 +282,6 @@ contract MainVault is
         }
     }
 
-
     /// @inheritdoc IMainVault
     function setTokenAvailabilityByAdmin(TokenAvailability[] calldata configs) external onlyRole(ADMIN_ROLE) {
         for (uint256 i = 0; i < configs.length; i++) {
@@ -292,10 +291,12 @@ contract MainVault is
         }
     }
 
-
     /// @dev Set router-quoter pair availability by investor
     /// @param pairs Array of router-quoter pairs to set availability
-    function setRouterQuoterPairAvailabilityByInvestor(DataTypes.RouterQuoterPair[] calldata pairs) external onlyRole(MAIN_INVESTOR_ROLE) {
+    function setRouterQuoterPairAvailabilityByInvestor(DataTypes.RouterQuoterPair[] calldata pairs)
+        external
+        onlyRole(MAIN_INVESTOR_ROLE)
+    {
         if (_isLock()) {
             pauseToTimestamp = uint64(block.timestamp + Constants.PAUSE_AFTER_UPDATE_ACCESS);
         }
@@ -303,7 +304,7 @@ contract MainVault is
             // Set both router and router-quoter pair as available
             availableRouterByInvestor[pairs[i].router] = true;
             availableRouterQuoterPairByInvestor[pairs[i].router][pairs[i].quoter] = true;
-            
+
             emit RouterAvailabilityByInvestorChanged(pairs[i].router, true);
             emit RouterQuoterPairAvailabilityByInvestorChanged(pairs[i].router, pairs[i].quoter, true);
         }
@@ -311,12 +312,15 @@ contract MainVault is
 
     /// @dev Set router-quoter pair availability by admin
     /// @param pairs Array of router-quoter pairs to set availability
-    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPair[] calldata pairs) external onlyRole(ADMIN_ROLE) {
+    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPair[] calldata pairs)
+        external
+        onlyRole(ADMIN_ROLE)
+    {
         for (uint256 i = 0; i < pairs.length; i++) {
             // Set both router and router-quoter pair as available
             availableRouterByAdmin[pairs[i].router] = true;
             availableRouterQuoterPairByAdmin[pairs[i].router][pairs[i].quoter] = true;
-            
+
             emit RouterAvailabilityByAdminChanged(pairs[i].router, true);
             emit RouterQuoterPairAvailabilityByAdminChanged(pairs[i].router, pairs[i].quoter, true);
         }

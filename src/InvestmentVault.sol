@@ -234,7 +234,9 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         require(tokenOut == address(tokenData.tokenMV), InvalidMvInPath());
 
         require(mainVault.availableRouterQuoterPairByAdmin(miToMvPath.router, miToMvPath.quouter), RouterNotAvailable());
-        require(mainVault.availableRouterQuoterPairByInvestor(miToMvPath.router, miToMvPath.quouter), RouterNotAvailable());
+        require(
+            mainVault.availableRouterQuoterPairByInvestor(miToMvPath.router, miToMvPath.quouter), RouterNotAvailable()
+        );
 
         require(tokenData.mvBought == 0, AssetAlreadyBought());
 
@@ -279,8 +281,14 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         uint256 availableMvCapital = tokenData.mvBought;
 
         for (uint256 i = 0; i < mvToTokenPaths.length; i++) {
-            require(mainVault.availableRouterQuoterPairByAdmin(mvToTokenPaths[i].router, mvToTokenPaths[i].quouter), RouterNotAvailable());
-            require(mainVault.availableRouterQuoterPairByInvestor(mvToTokenPaths[i].router, mvToTokenPaths[i].quouter), RouterNotAvailable());
+            require(
+                mainVault.availableRouterQuoterPairByAdmin(mvToTokenPaths[i].router, mvToTokenPaths[i].quouter),
+                RouterNotAvailable()
+            );
+            require(
+                mainVault.availableRouterQuoterPairByInvestor(mvToTokenPaths[i].router, mvToTokenPaths[i].quouter),
+                RouterNotAvailable()
+            );
 
             (address tokenIn, address tokenOut) = extractTokenInAndOut(mvToTokenPaths[i]);
             require(tokenIn == address(tokenData.tokenMV), InvalidMVToken());

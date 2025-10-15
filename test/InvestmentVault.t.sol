@@ -81,13 +81,11 @@ contract InvestmentVaultTest is Test {
     // Helper function to set up router-quoter pairs
     function _setupRouterQuoterPairs(address router, address quoter) internal {
         DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
-        pairs[0] = DataTypes.RouterQuoterPair({
-            router: router,
-            quoter: quoter
-        });
+        pairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
         mainVault.setRouterQuoterPairAvailabilityByInvestor(pairs);
         mainVault.setRouterQuoterPairAvailabilityByAdmin(pairs);
     }
+
     uint256 public constant INVEST_AMOUNT = 1000 * 10 ** 18;
 
     event MiToMvSwapInitialized(address router, uint256 amountIn, uint256 amountOut, uint256 timestamp);
@@ -179,7 +177,7 @@ contract InvestmentVaultTest is Test {
         mainVault.setAvailableToken(address(tokenMV), true);
         mainVault.setAvailableToken(address(assetToken1), true);
         mainVault.setAvailableToken(address(assetToken2), true);
-        
+
         // Set up router-quoter pairs (using router as both router and quoter for simplicity)
         _setupRouterQuoterPairs(address(router), address(router));
 
@@ -1533,13 +1531,10 @@ contract InvestmentVaultTest is Test {
         mainVault = new MockMainVault();
         // Set up router-quoter pairs only for admin, not for investor
         DataTypes.RouterQuoterPair[] memory adminPairs = new DataTypes.RouterQuoterPair[](1);
-        adminPairs[0] = DataTypes.RouterQuoterPair({
-            router: address(router),
-            quoter: address(router)
-        });
+        adminPairs[0] = DataTypes.RouterQuoterPair({router: address(router), quoter: address(router)});
         mainVault.setRouterQuoterPairAvailabilityByAdmin(adminPairs);
         // Don't set investor pairs
-        
+
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(tokenMV), true);
         mainVault.setAvailableToken(address(assetToken1), true);

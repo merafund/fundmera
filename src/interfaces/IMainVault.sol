@@ -62,7 +62,9 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     event RouterAvailabilityByAdminChanged(address indexed router, bool isAvailable);
 
     /// @dev Emitted when a router-quoter pair's availability is changed by an investor
-    event RouterQuoterPairAvailabilityByInvestorChanged(address indexed router, address indexed quoter, bool isAvailable);
+    event RouterQuoterPairAvailabilityByInvestorChanged(
+        address indexed router, address indexed quoter, bool isAvailable
+    );
 
     /// @dev Emitted when a router-quoter pair's availability is changed by an admin
     event RouterQuoterPairAvailabilityByAdminChanged(address indexed router, address indexed quoter, bool isAvailable);
@@ -214,7 +216,6 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
         bool isAvailable;
     }
 
-
     /// @dev Lock period availability configuration struct
     struct LockPeriodAvailability {
         uint256 period;
@@ -336,11 +337,9 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @param configs Array of token availability configurations
     function setTokenAvailabilityByInvestor(TokenAvailability[] calldata configs) external;
 
-
     /// @dev Sets availability status for multiple tokens by admin
     /// @param configs Array of token availability configurations
     function setTokenAvailabilityByAdmin(TokenAvailability[] calldata configs) external;
-
 
     /// @dev Sets availability status for multiple router-quoter pairs by investor
     /// @param pairs Array of router-quoter pairs to set availability

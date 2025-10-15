@@ -64,13 +64,10 @@ contract PriceValidationTest is Test {
         mainVault.setAvailableToken(address(tokenWETH), true);
         mainVault.setMeraPriceOracle(address(oracle));
         mainVault.setIsCanceledOracleCheck(false);
-        
+
         // Set up router-quoter pairs
         DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
-        pairs[0] = DataTypes.RouterQuoterPair({
-            router: address(router),
-            quoter: address(quoter)
-        });
+        pairs[0] = DataTypes.RouterQuoterPair({router: address(router), quoter: address(quoter)});
         mainVault.setRouterQuoterPairAvailabilityByInvestor(pairs);
         mainVault.setRouterQuoterPairAvailabilityByAdmin(pairs);
 
