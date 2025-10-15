@@ -70,7 +70,11 @@ library SwapLibrary {
     event PositionClosed(address indexed token);
 
     event SwapMvProfitToMiProfit(
-        address indexed fromToken, address indexed toToken, uint256 amountIn, uint256 amountOut, uint256 feeAmount
+        address indexed fromToken,
+        address indexed toToken,
+        uint256 miReceived,
+        uint256 investorProfit,
+        uint256 feeAmount
     );
 
     /// @dev Process swap data and update stored information
