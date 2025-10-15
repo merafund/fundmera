@@ -279,82 +279,86 @@ contract MainVaultTest is Test {
         vm.stopPrank();
     }
 
-    function testSetRouterAvailabilityByAdmin() public {
+    function testSetRouterQuoterPairAvailabilityByAdmin() public {
         address router1 = address(100);
+        address quoter1 = address(200);
         address router2 = address(101);
+        address quoter2 = address(201);
 
         vm.startPrank(admin);
 
-        IMainVault.RouterAvailability[] memory configs = new IMainVault.RouterAvailability[](2);
-        configs[0] = IMainVault.RouterAvailability({router: router1, isAvailable: true});
-        configs[1] = IMainVault.RouterAvailability({router: router2, isAvailable: false});
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](2);
+        pairs[0] = DataTypes.RouterQuoterPair({router: router1, quoter: quoter1});
+        pairs[1] = DataTypes.RouterQuoterPair({router: router2, quoter: quoter2});
 
         vm.recordLogs();
-        vault.setRouterAvailabilityByAdmin(configs);
+        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
 
         assertTrue(vault.availableRouterByAdmin(router1), "Router1 should be available");
-        assertFalse(vault.availableRouterByAdmin(router2), "Router2 should not be available");
+        assertTrue(vault.availableRouterByAdmin(router2), "Router2 should be available");
+        assertTrue(vault.availableRouterQuoterPairByAdmin(router1, quoter1), "Router1-Quoter1 pair should be available");
+        assertTrue(vault.availableRouterQuoterPairByAdmin(router2, quoter2), "Router2-Quoter2 pair should be available");
 
         vm.stopPrank();
     }
 
-    function testSetRouterAvailabilityByAdmin_UpdateExisting() public {
+    function testSetRouterQuoterPairAvailabilityByAdmin_UpdateExisting() public {
         address router = address(100);
+        address quoter = address(200);
 
         vm.startPrank(admin);
 
-        IMainVault.RouterAvailability[] memory configs = new IMainVault.RouterAvailability[](1);
-        configs[0] = IMainVault.RouterAvailability({router: router, isAvailable: true});
-        vault.setRouterAvailabilityByAdmin(configs);
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
+        pairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
+        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
 
         assertTrue(vault.availableRouterByAdmin(router), "Router should be initially available");
-
-        configs[0] = IMainVault.RouterAvailability({router: router, isAvailable: false});
-        vault.setRouterAvailabilityByAdmin(configs);
-
-        assertFalse(vault.availableRouterByAdmin(router), "Router should be unavailable after update");
+        assertTrue(vault.availableRouterQuoterPairByAdmin(router, quoter), "Router-Quoter pair should be initially available");
 
         vm.stopPrank();
     }
 
-    function testSetRouterAvailabilityByAdmin_EmptyArray() public {
+    function testSetRouterQuoterPairAvailabilityByAdmin_EmptyArray() public {
         vm.startPrank(admin);
 
-        IMainVault.RouterAvailability[] memory configs = new IMainVault.RouterAvailability[](0);
-        vault.setRouterAvailabilityByAdmin(configs);
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](0);
+        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
 
         vm.stopPrank();
     }
 
-    function testSetRouterAvailabilityByAdmin_OnlyAdminCanCall() public {
+    function testSetRouterQuoterPairAvailabilityByAdmin_OnlyAdminCanCall() public {
         address router = address(100);
-        IMainVault.RouterAvailability[] memory configs = new IMainVault.RouterAvailability[](1);
-        configs[0] = IMainVault.RouterAvailability({router: router, isAvailable: true});
+        address quoter = address(200);
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
+        pairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
 
         vm.startPrank(user1);
         vm.expectRevert();
-        vault.setRouterAvailabilityByAdmin(configs);
+        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
         vm.stopPrank();
 
         vm.startPrank(mainInvestor);
         vm.expectRevert();
-        vault.setRouterAvailabilityByAdmin(configs);
+        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
         vm.stopPrank();
 
         vm.startPrank(admin);
-        vault.setRouterAvailabilityByAdmin(configs);
+        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
         assertTrue(vault.availableRouterByAdmin(router), "Router should be available when set by admin");
+        assertTrue(vault.availableRouterQuoterPairByAdmin(router, quoter), "Router-Quoter pair should be available when set by admin");
         vm.stopPrank();
     }
 
-    function testSetRouterAvailabilityByAdmin_ZeroAddress() public {
+    function testSetRouterQuoterPairAvailabilityByAdmin_ZeroAddress() public {
         vm.startPrank(admin);
 
-        IMainVault.RouterAvailability[] memory configs = new IMainVault.RouterAvailability[](1);
-        configs[0] = IMainVault.RouterAvailability({router: address(0), isAvailable: true});
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
+        pairs[0] = DataTypes.RouterQuoterPair({router: address(0), quoter: address(0)});
 
-        vault.setRouterAvailabilityByAdmin(configs);
+        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
         assertTrue(vault.availableRouterByAdmin(address(0)), "Zero address router should be settable");
+        assertTrue(vault.availableRouterQuoterPairByAdmin(address(0), address(0)), "Zero address router-quoter pair should be settable");
 
         vm.stopPrank();
     }
@@ -706,69 +710,77 @@ contract MainVaultTest is Test {
         vm.stopPrank();
     }
 
-    function testSetRouterAvailabilityByInvestor() public {
+    function testSetRouterQuoterPairAvailabilityByInvestor() public {
         address router1 = address(100);
+        address quoter1 = address(200);
         address router2 = address(101);
+        address quoter2 = address(201);
 
         vm.startPrank(mainInvestor);
 
-        address[] memory routers = new address[](2);
-        routers[0] = router1;
-        routers[1] = router2;
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](2);
+        pairs[0] = DataTypes.RouterQuoterPair({router: router1, quoter: quoter1});
+        pairs[1] = DataTypes.RouterQuoterPair({router: router2, quoter: quoter2});
 
         vm.recordLogs();
-        vault.setRouterAvailabilityByInvestor(routers);
+        vault.setRouterQuoterPairAvailabilityByInvestor(pairs);
 
         assertTrue(vault.availableRouterByInvestor(router1), "Router1 should be available");
         assertTrue(vault.availableRouterByInvestor(router2), "Router2 should be available");
+        assertTrue(vault.availableRouterQuoterPairByInvestor(router1, quoter1), "Router1-Quoter1 pair should be available");
+        assertTrue(vault.availableRouterQuoterPairByInvestor(router2, quoter2), "Router2-Quoter2 pair should be available");
 
         vm.stopPrank();
     }
 
-    function testSetRouterAvailabilityByInvestor_EmptyArray() public {
+    function testSetRouterQuoterPairAvailabilityByInvestor_EmptyArray() public {
         vm.startPrank(mainInvestor);
 
-        address[] memory routers = new address[](0);
-        vault.setRouterAvailabilityByInvestor(routers);
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](0);
+        vault.setRouterQuoterPairAvailabilityByInvestor(pairs);
 
         vm.stopPrank();
     }
 
-    function testSetRouterAvailabilityByInvestor_OnlyMainInvestorCanCall() public {
+    function testSetRouterQuoterPairAvailabilityByInvestor_OnlyMainInvestorCanCall() public {
         address router = address(100);
-        address[] memory routers = new address[](1);
-        routers[0] = router;
+        address quoter = address(200);
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
+        pairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
 
         vm.startPrank(user1);
         vm.expectRevert();
-        vault.setRouterAvailabilityByInvestor(routers);
+        vault.setRouterQuoterPairAvailabilityByInvestor(pairs);
         vm.stopPrank();
 
         vm.startPrank(admin);
         vm.expectRevert();
-        vault.setRouterAvailabilityByInvestor(routers);
+        vault.setRouterQuoterPairAvailabilityByInvestor(pairs);
         vm.stopPrank();
 
         vm.startPrank(mainInvestor);
-        vault.setRouterAvailabilityByInvestor(routers);
+        vault.setRouterQuoterPairAvailabilityByInvestor(pairs);
         assertTrue(vault.availableRouterByInvestor(router), "Router should be available when set by main investor");
+        assertTrue(vault.availableRouterQuoterPairByInvestor(router, quoter), "Router-Quoter pair should be available when set by main investor");
         vm.stopPrank();
     }
 
-    function testSetRouterAvailabilityByInvestor_ZeroAddress() public {
+    function testSetRouterQuoterPairAvailabilityByInvestor_ZeroAddress() public {
         vm.startPrank(mainInvestor);
 
-        address[] memory routers = new address[](1);
-        routers[0] = address(0);
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
+        pairs[0] = DataTypes.RouterQuoterPair({router: address(0), quoter: address(0)});
 
-        vault.setRouterAvailabilityByInvestor(routers);
+        vault.setRouterQuoterPairAvailabilityByInvestor(pairs);
         assertTrue(vault.availableRouterByInvestor(address(0)), "Zero address router should be settable");
+        assertTrue(vault.availableRouterQuoterPairByInvestor(address(0), address(0)), "Zero address router-quoter pair should be settable");
 
         vm.stopPrank();
     }
 
-    function testSetRouterAvailabilityByInvestor_WithLock() public {
+    function testSetRouterQuoterPairAvailabilityByInvestor_WithLock() public {
         address router = address(100);
+        address quoter = address(200);
 
         vm.startPrank(mainInvestor);
 
@@ -778,10 +790,10 @@ contract MainVaultTest is Test {
 
         vm.warp(1000 + 5 minutes);
 
-        address[] memory routers = new address[](1);
-        routers[0] = router;
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
+        pairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
 
-        vault.setRouterAvailabilityByInvestor(routers);
+        vault.setRouterQuoterPairAvailabilityByInvestor(pairs);
 
         assertEq(
             vault.pauseToTimestamp(),
@@ -790,15 +802,16 @@ contract MainVaultTest is Test {
         );
 
         assertTrue(vault.availableRouterByInvestor(router), "Router should be available despite lock");
+        assertTrue(vault.availableRouterQuoterPairByInvestor(router, quoter), "Router-Quoter pair should be available despite lock");
 
         vm.stopPrank();
     }
 
-    function testSetRouterAvailabilityByInvestor_WithLockMultipleRouters() public {
-        address[] memory routers = new address[](3);
-        routers[0] = address(100);
-        routers[1] = address(101);
-        routers[2] = address(102);
+    function testSetRouterQuoterPairAvailabilityByInvestor_WithLockMultipleRouters() public {
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](3);
+        pairs[0] = DataTypes.RouterQuoterPair({router: address(100), quoter: address(200)});
+        pairs[1] = DataTypes.RouterQuoterPair({router: address(101), quoter: address(201)});
+        pairs[2] = DataTypes.RouterQuoterPair({router: address(102), quoter: address(202)});
 
         vm.startPrank(mainInvestor);
 
@@ -808,7 +821,7 @@ contract MainVaultTest is Test {
 
         vm.warp(1000 + 5 minutes);
 
-        vault.setRouterAvailabilityByInvestor(routers);
+        vault.setRouterQuoterPairAvailabilityByInvestor(pairs);
 
         assertEq(
             vault.pauseToTimestamp(),
@@ -816,11 +829,15 @@ contract MainVaultTest is Test {
             "Pause timestamp should be set correctly"
         );
 
-        // Verify all routers were set correctly
-        for (uint256 i = 0; i < routers.length; i++) {
+        // Verify all routers and pairs were set correctly
+        for (uint256 i = 0; i < pairs.length; i++) {
             assertTrue(
-                vault.availableRouterByInvestor(routers[i]),
-                string(abi.encodePacked("Router ", routers[i], " should be available despite lock"))
+                vault.availableRouterByInvestor(pairs[i].router),
+                string(abi.encodePacked("Router ", pairs[i].router, " should be available despite lock"))
+            );
+            assertTrue(
+                vault.availableRouterQuoterPairByInvestor(pairs[i].router, pairs[i].quoter),
+                string(abi.encodePacked("Router-Quoter pair ", pairs[i].router, "-", pairs[i].quoter, " should be available despite lock"))
             );
         }
 
@@ -2066,9 +2083,9 @@ contract MainVaultTest is Test {
         adminTokenConfigs[1] = IMainVault.TokenAvailability({token: address(secondToken), isAvailable: true});
         vault.setTokenAvailabilityByAdmin(adminTokenConfigs);
 
-        IMainVault.RouterAvailability[] memory adminRouterConfigs = new IMainVault.RouterAvailability[](1);
-        adminRouterConfigs[0] = IMainVault.RouterAvailability({router: routerAddress, isAvailable: true});
-        vault.setRouterAvailabilityByAdmin(adminRouterConfigs);
+        DataTypes.RouterQuoterPair[] memory adminRouterPairs = new DataTypes.RouterQuoterPair[](1);
+        adminRouterPairs[0] = DataTypes.RouterQuoterPair({router: routerAddress, quoter: routerAddress});
+        vault.setRouterQuoterPairAvailabilityByAdmin(adminRouterPairs);
         vm.stopPrank();
 
         vm.startPrank(mainInvestor);

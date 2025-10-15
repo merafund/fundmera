@@ -84,6 +84,10 @@ contract MainVault is
 
     mapping(address => bool) public availableTokensByAdmin;
     mapping(address => bool) public availableRouterByAdmin;
+
+    // Router-quoter pairs mappings
+    mapping(address => mapping(address => bool)) public availableRouterQuoterPairByInvestor;
+    mapping(address => mapping(address => bool)) public availableRouterQuoterPairByAdmin;
     mapping(uint256 => bool) public availableLock;
 
     mapping(uint256 => address) public investmentVaults;
@@ -278,18 +282,6 @@ contract MainVault is
         }
     }
 
-    /// @inheritdoc IMainVault
-    function setRouterAvailabilityByInvestor(address[] calldata routers) external onlyRole(MAIN_INVESTOR_ROLE) {
-        if (_isLock()) {
-            pauseToTimestamp = uint64(block.timestamp + Constants.PAUSE_AFTER_UPDATE_ACCESS);
-        }
-        // Process each router address in the array
-        for (uint256 i = 0; i < routers.length; i++) {
-            availableRouterByInvestor[routers[i]] = true;
-
-            emit RouterAvailabilityByInvestorChanged(routers[i], true);
-        }
-    }
 
     /// @inheritdoc IMainVault
     function setTokenAvailabilityByAdmin(TokenAvailability[] calldata configs) external onlyRole(ADMIN_ROLE) {
@@ -300,12 +292,33 @@ contract MainVault is
         }
     }
 
-    /// @inheritdoc IMainVault
-    function setRouterAvailabilityByAdmin(RouterAvailability[] calldata configs) external onlyRole(ADMIN_ROLE) {
-        for (uint256 i = 0; i < configs.length; i++) {
-            availableRouterByAdmin[configs[i].router] = configs[i].isAvailable;
 
-            emit RouterAvailabilityByAdminChanged(configs[i].router, configs[i].isAvailable);
+    /// @dev Set router-quoter pair availability by investor
+    /// @param pairs Array of router-quoter pairs to set availability
+    function setRouterQuoterPairAvailabilityByInvestor(DataTypes.RouterQuoterPair[] calldata pairs) external onlyRole(MAIN_INVESTOR_ROLE) {
+        if (_isLock()) {
+            pauseToTimestamp = uint64(block.timestamp + Constants.PAUSE_AFTER_UPDATE_ACCESS);
+        }
+        for (uint256 i = 0; i < pairs.length; i++) {
+            // Set both router and router-quoter pair as available
+            availableRouterByInvestor[pairs[i].router] = true;
+            availableRouterQuoterPairByInvestor[pairs[i].router][pairs[i].quoter] = true;
+            
+            emit RouterAvailabilityByInvestorChanged(pairs[i].router, true);
+            emit RouterQuoterPairAvailabilityByInvestorChanged(pairs[i].router, pairs[i].quoter, true);
+        }
+    }
+
+    /// @dev Set router-quoter pair availability by admin
+    /// @param pairs Array of router-quoter pairs to set availability
+    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPair[] calldata pairs) external onlyRole(ADMIN_ROLE) {
+        for (uint256 i = 0; i < pairs.length; i++) {
+            // Set both router and router-quoter pair as available
+            availableRouterByAdmin[pairs[i].router] = true;
+            availableRouterQuoterPairByAdmin[pairs[i].router][pairs[i].quoter] = true;
+            
+            emit RouterAvailabilityByAdminChanged(pairs[i].router, true);
+            emit RouterQuoterPairAvailabilityByAdminChanged(pairs[i].router, pairs[i].quoter, true);
         }
     }
 

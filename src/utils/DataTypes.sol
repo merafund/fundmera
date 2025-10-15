@@ -217,4 +217,10 @@ library DataTypes {
         uint256 pauseToTimestamp; // Pause timestamp
         DataTypes.SwapInitState swapInitState; // Swap initialization state
     }
+
+    /// @dev Structure for router-quoter pair
+    struct RouterQuoterPair {
+        address router; // Router address
+        address quoter; // Quoter address
+    }
 }

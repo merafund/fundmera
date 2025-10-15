@@ -28,6 +28,10 @@ contract MainVaultSwapsTest is Test {
     UniswapV2Mock public uniswapV2;
     UniswapV3Mock public uniswapV3;
     QuickswapV3Mock public quickswapV3;
+    
+    // Quoters (using same addresses as routers for simplicity in tests)
+    address public quoterV2;
+    address public quoterQuickswap;
 
     // Test addresses
     address public constant ALICE = address(0x1);
@@ -43,6 +47,10 @@ contract MainVaultSwapsTest is Test {
         uniswapV2 = new UniswapV2Mock();
         uniswapV3 = new UniswapV3Mock();
         quickswapV3 = new QuickswapV3Mock();
+        
+        // Initialize quoters (using same addresses as routers for simplicity)
+        quoterV2 = address(uniswapV2);
+        quoterQuickswap = address(quickswapV3);
 
         // Deploy vault implementation
         MainVault vaultImplementation = new MainVault();
@@ -78,20 +86,22 @@ contract MainVaultSwapsTest is Test {
         tokenAvailabilities[2] = IMainVault.TokenAvailability(address(token2), true);
         vault.setTokenAvailabilityByInvestor(tokenAvailabilities);
 
-        address[] memory routers = new address[](3);
-        routers[0] = address(uniswapV2);
-        routers[1] = address(uniswapV3);
-        routers[2] = address(quickswapV3);
-        vault.setRouterAvailabilityByInvestor(routers);
+        // Set up router-quoter pairs for investor
+        DataTypes.RouterQuoterPair[] memory investorPairs = new DataTypes.RouterQuoterPair[](3);
+        investorPairs[0] = DataTypes.RouterQuoterPair({router: address(uniswapV2), quoter: address(uniswapV2)});
+        investorPairs[1] = DataTypes.RouterQuoterPair({router: address(uniswapV3), quoter: address(quoterV2)});
+        investorPairs[2] = DataTypes.RouterQuoterPair({router: address(quickswapV3), quoter: address(quoterQuickswap)});
+        vault.setRouterQuoterPairAvailabilityByInvestor(investorPairs);
         vm.stopPrank();
 
         vm.startPrank(address(this));
         vault.setTokenAvailabilityByAdmin(tokenAvailabilities);
-        IMainVault.RouterAvailability[] memory routerAvailabilities = new IMainVault.RouterAvailability[](3);
-        routerAvailabilities[0] = IMainVault.RouterAvailability(address(uniswapV2), true);
-        routerAvailabilities[1] = IMainVault.RouterAvailability(address(uniswapV3), true);
-        routerAvailabilities[2] = IMainVault.RouterAvailability(address(quickswapV3), true);
-        vault.setRouterAvailabilityByAdmin(routerAvailabilities);
+        // Set up router-quoter pairs for admin
+        DataTypes.RouterQuoterPair[] memory adminPairs = new DataTypes.RouterQuoterPair[](3);
+        adminPairs[0] = DataTypes.RouterQuoterPair({router: address(uniswapV2), quoter: address(uniswapV2)});
+        adminPairs[1] = DataTypes.RouterQuoterPair({router: address(uniswapV3), quoter: address(quoterV2)});
+        adminPairs[2] = DataTypes.RouterQuoterPair({router: address(quickswapV3), quoter: address(quoterQuickswap)});
+        vault.setRouterQuoterPairAvailabilityByAdmin(adminPairs);
         vm.stopPrank();
 
         // Set prices in DEXes (1 token0 = 2 token1, 1 token1 = 3 token2)

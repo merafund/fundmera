@@ -233,10 +233,8 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         require(tokenIn == address(tokenData.tokenMI), InvalidMiInPath());
         require(tokenOut == address(tokenData.tokenMV), InvalidMvInPath());
 
-        require(mainVault.availableRouterByAdmin(miToMvPath.router), RouterNotAvailable());
-        require(mainVault.availableRouterByAdmin(miToMvPath.quouter), QuoterNotAvailable());
-        require(mainVault.availableRouterByInvestor(miToMvPath.router), RouterNotAvailable());
-        require(mainVault.availableRouterByInvestor(miToMvPath.quouter), QuoterNotAvailable());
+        require(mainVault.availableRouterQuoterPairByAdmin(miToMvPath.router, miToMvPath.quouter), RouterNotAvailable());
+        require(mainVault.availableRouterQuoterPairByInvestor(miToMvPath.router, miToMvPath.quouter), RouterNotAvailable());
 
         require(tokenData.mvBought == 0, AssetAlreadyBought());
 
@@ -281,10 +279,8 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         uint256 availableMvCapital = tokenData.mvBought;
 
         for (uint256 i = 0; i < mvToTokenPaths.length; i++) {
-            require(mainVault.availableRouterByAdmin(mvToTokenPaths[i].router), RouterNotAvailable());
-            require(mainVault.availableRouterByAdmin(mvToTokenPaths[i].quouter), QuoterNotAvailable());
-            require(mainVault.availableRouterByInvestor(mvToTokenPaths[i].router), RouterNotAvailable());
-            require(mainVault.availableRouterByInvestor(mvToTokenPaths[i].quouter), QuoterNotAvailable());
+            require(mainVault.availableRouterQuoterPairByAdmin(mvToTokenPaths[i].router, mvToTokenPaths[i].quouter), RouterNotAvailable());
+            require(mainVault.availableRouterQuoterPairByInvestor(mvToTokenPaths[i].router, mvToTokenPaths[i].quouter), RouterNotAvailable());
 
             (address tokenIn, address tokenOut) = extractTokenInAndOut(mvToTokenPaths[i]);
             require(tokenIn == address(tokenData.tokenMV), InvalidMVToken());

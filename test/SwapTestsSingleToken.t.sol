@@ -45,6 +45,17 @@ contract SwapTestsSingleToken is Test {
 
     uint256 public constant INITIAL_BALANCE = 10000 * 10 ** 18;
     uint256 public constant SWAP_AMOUNT = 1000 * 10 ** 18;
+
+    // Helper function to set up router-quoter pairs
+    function _setupRouterQuoterPairs(address router, address quoter) internal {
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
+        pairs[0] = DataTypes.RouterQuoterPair({
+            router: router,
+            quoter: quoter
+        });
+        mainVault.setRouterQuoterPairAvailabilityByInvestor(pairs);
+        mainVault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+    }
     uint256 public constant STEP = 5 * 10 ** 16;
 
     function setUp() public {
@@ -64,14 +75,14 @@ contract SwapTestsSingleToken is Test {
 
         // Deploy main vault
         mainVault = new MockMainVault();
-        mainVault.setAvailableRouter(address(uniswapV3Router), true);
-        mainVault.setAvailableRouter(address(quickswapV3Router), true);
-        mainVault.setAvailableRouter(address(quoterV2), true);
-        mainVault.setAvailableRouter(address(quoterQuickswap), true);
-        mainVault.setAvailableRouter(address(uniswapV2Router), true);
         mainVault.setAvailableToken(address(mainToken), true);
         mainVault.setAvailableToken(address(assetToken1), true);
         mainVault.setAvailableToken(address(assetToken2), true);
+        
+        // Set up router-quoter pairs
+        _setupRouterQuoterPairs(address(uniswapV3Router), address(quoterV2));
+        _setupRouterQuoterPairs(address(quickswapV3Router), address(quoterQuickswap));
+        _setupRouterQuoterPairs(address(uniswapV2Router), address(uniswapV2Router));
 
         // Deploy vault implementation
         implementation = new InvestmentVault();

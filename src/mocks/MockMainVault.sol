@@ -19,6 +19,7 @@ contract MockMainVault {
     mapping(address => bool) public roles;
     mapping(address => bool) public availableRouters;
     mapping(address => bool) public availableTokens;
+    mapping(address => mapping(address => bool)) public availableRouterQuoterPairs;
 
     bool public _paused;
     uint256 public feePercentage;
@@ -67,6 +68,20 @@ contract MockMainVault {
         availableRouters[router] = available;
     }
 
+    function setRouterQuoterPairAvailabilityByInvestor(DataTypes.RouterQuoterPair[] calldata pairs) external {
+        for (uint256 i = 0; i < pairs.length; i++) {
+            availableRouters[pairs[i].router] = true;
+            availableRouterQuoterPairs[pairs[i].router][pairs[i].quoter] = true;
+        }
+    }
+
+    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPair[] calldata pairs) external {
+        for (uint256 i = 0; i < pairs.length; i++) {
+            availableRouters[pairs[i].router] = true;
+            availableRouterQuoterPairs[pairs[i].router][pairs[i].quoter] = true;
+        }
+    }
+
     function availableRouterByAdmin(address router) external view returns (bool) {
         return availableRouters[router];
     }
@@ -113,5 +128,17 @@ contract MockMainVault {
 
     function setProfitType(DataTypes.ProfitType type_) external {
         profitType = type_;
+    }
+
+    function setAvailableRouterQuoterPair(address router, address quoter, bool available) external {
+        availableRouterQuoterPairs[router][quoter] = available;
+    }
+
+    function availableRouterQuoterPairByAdmin(address router, address quoter) external view returns (bool) {
+        return availableRouterQuoterPairs[router][quoter];
+    }
+
+    function availableRouterQuoterPairByInvestor(address router, address quoter) external view returns (bool) {
+        return availableRouterQuoterPairs[router][quoter];
     }
 }

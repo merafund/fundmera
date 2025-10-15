@@ -61,6 +61,12 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @dev Emitted when a router's availability is changed by an admin
     event RouterAvailabilityByAdminChanged(address indexed router, bool isAvailable);
 
+    /// @dev Emitted when a router-quoter pair's availability is changed by an investor
+    event RouterQuoterPairAvailabilityByInvestorChanged(address indexed router, address indexed quoter, bool isAvailable);
+
+    /// @dev Emitted when a router-quoter pair's availability is changed by an admin
+    event RouterQuoterPairAvailabilityByAdminChanged(address indexed router, address indexed quoter, bool isAvailable);
+
     /// @dev Emitted when a lock period's availability is changed
     event LockPeriodAvailabilityChanged(uint256 indexed period, bool isAvailable);
 
@@ -208,11 +214,6 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
         bool isAvailable;
     }
 
-    /// @dev Router availability configuration struct
-    struct RouterAvailability {
-        address router;
-        bool isAvailable;
-    }
 
     /// @dev Lock period availability configuration struct
     struct LockPeriodAvailability {
@@ -239,6 +240,18 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @param router Router address to check
     /// @return isAvailable True if router is available for admin
     function availableRouterByAdmin(address router) external view returns (bool);
+
+    /// @dev Get router-quoter pair availability by investor
+    /// @param router Router address to check
+    /// @param quoter Quoter address to check
+    /// @return isAvailable True if router-quoter pair is available for investor
+    function availableRouterQuoterPairByInvestor(address router, address quoter) external view returns (bool);
+
+    /// @dev Get router-quoter pair availability by admin
+    /// @param router Router address to check
+    /// @param quoter Quoter address to check
+    /// @return isAvailable True if router-quoter pair is available for admin
+    function availableRouterQuoterPairByAdmin(address router, address quoter) external view returns (bool);
 
     /// @dev Get lock period availability
     /// @param period Lock period to check
@@ -323,18 +336,19 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @param configs Array of token availability configurations
     function setTokenAvailabilityByInvestor(TokenAvailability[] calldata configs) external;
 
-    /// @dev Sets availability status for multiple routers by investor
-    /// Always sets availability to true, can't be set to false
-    /// @param routers Array of router addresses to enable
-    function setRouterAvailabilityByInvestor(address[] calldata routers) external;
 
     /// @dev Sets availability status for multiple tokens by admin
     /// @param configs Array of token availability configurations
     function setTokenAvailabilityByAdmin(TokenAvailability[] calldata configs) external;
 
-    /// @dev Sets availability status for multiple routers by admin
-    /// @param configs Array of router availability configurations
-    function setRouterAvailabilityByAdmin(RouterAvailability[] calldata configs) external;
+
+    /// @dev Sets availability status for multiple router-quoter pairs by investor
+    /// @param pairs Array of router-quoter pairs to set availability
+    function setRouterQuoterPairAvailabilityByInvestor(DataTypes.RouterQuoterPair[] calldata pairs) external;
+
+    /// @dev Sets availability status for multiple router-quoter pairs by admin
+    /// @param pairs Array of router-quoter pairs to set availability
+    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPair[] calldata pairs) external;
 
     /// @dev Sets availability status for multiple lock periods
     /// Only admin can call this function

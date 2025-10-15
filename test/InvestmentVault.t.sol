@@ -77,6 +77,17 @@ contract InvestmentVaultTest is Test {
     address public user2 = address(3);
 
     uint256 public constant INITIAL_BALANCE = 10000 * 10 ** 18;
+
+    // Helper function to set up router-quoter pairs
+    function _setupRouterQuoterPairs(address router, address quoter) internal {
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
+        pairs[0] = DataTypes.RouterQuoterPair({
+            router: router,
+            quoter: quoter
+        });
+        mainVault.setRouterQuoterPairAvailabilityByInvestor(pairs);
+        mainVault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+    }
     uint256 public constant INVEST_AMOUNT = 1000 * 10 ** 18;
 
     event MiToMvSwapInitialized(address router, uint256 amountIn, uint256 amountOut, uint256 timestamp);
@@ -108,7 +119,7 @@ contract InvestmentVaultTest is Test {
         router = new MockRouter();
 
         mainVault = new MockMainVault();
-        mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(assetToken1), true);
         mainVault.setAvailableToken(address(assetToken2), true);
@@ -163,11 +174,14 @@ contract InvestmentVaultTest is Test {
         router = new MockRouter();
 
         mainVault = new MockMainVault();
-        mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(tokenMV), true);
         mainVault.setAvailableToken(address(assetToken1), true);
         mainVault.setAvailableToken(address(assetToken2), true);
+        
+        // Set up router-quoter pairs (using router as both router and quoter for simplicity)
+        _setupRouterQuoterPairs(address(router), address(router));
 
         implementation = new InvestmentVault();
         mainVault.setCurrentImplementation(address(implementation));
@@ -226,6 +240,7 @@ contract InvestmentVaultTest is Test {
         mainVault = new MockMainVault();
         mainVault.setProfitType(DataTypes.ProfitType.Fixed);
         mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(tokenMV), true);
         mainVault.setAvailableToken(address(assetToken1), true);
@@ -287,6 +302,7 @@ contract InvestmentVaultTest is Test {
         mainVault = new MockMainVault();
         mainVault.setProfitType(DataTypes.ProfitType.Fixed);
         mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(assetToken1), true);
         mainVault.setAvailableToken(address(assetToken2), true);
@@ -978,6 +994,7 @@ contract InvestmentVaultTest is Test {
 
         // Set router and quoter as available in main vault
         mainVault.setAvailableRouter(address(uniswapV3Router), true);
+        _setupRouterQuoterPairs(address(uniswapV3Router), address(quoterV2));
         mainVault.setAvailableRouter(address(quoterV2), true);
 
         // Approve tokens for router from vault
@@ -1031,6 +1048,7 @@ contract InvestmentVaultTest is Test {
 
         // Set router and quoter as available in main vault
         mainVault.setAvailableRouter(address(quickswapV3Router), true);
+        _setupRouterQuoterPairs(address(quickswapV3Router), address(quoterQuickswap));
         mainVault.setAvailableRouter(address(quoterQuickswap), true);
 
         // Approve tokens for router from vault
@@ -1342,8 +1360,62 @@ contract InvestmentVaultTest is Test {
         vm.stopPrank();
     }
 
+    function setUp_DifferentTokens_NoRouterPairs() public {
+        vm.startPrank(owner);
+
+        tokenMI = new MockToken("MI Token", "MI", 18);
+        tokenMV = new MockToken("MV Token", "MV", 18);
+        assetToken1 = new MockToken("Asset Token 1", "AT1", 18);
+        assetToken2 = new MockToken("Asset Token 2", "AT2", 6);
+        router = new MockRouter();
+
+        mainVault = new MockMainVault();
+        // Don't set up router-quoter pairs - router should be unavailable
+        mainVault.setAvailableToken(address(tokenMI), true);
+        mainVault.setAvailableToken(address(tokenMV), true);
+        mainVault.setAvailableToken(address(assetToken1), true);
+        mainVault.setAvailableToken(address(assetToken2), true);
+
+        implementation = new InvestmentVault();
+        mainVault.setCurrentImplementation(address(implementation));
+
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](2);
+
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(assetToken1)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        assets[1] = DataTypes.AssetInitData({
+            token: IERC20(address(assetToken2)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: IMainVault(address(mainVault)),
+            tokenMI: IERC20(address(tokenMI)),
+            tokenMV: IERC20(address(tokenMV)),
+            capitalOfMi: INITIAL_BALANCE,
+            shareMI: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
+        vault = InvestmentVault(address(proxy));
+        vault.initialize(initData);
+
+        tokenMI.mint(address(vault), INITIAL_BALANCE);
+
+        vm.stopPrank();
+    }
+
     function testInitMiToMvSwap_RouterNotAvailable() public {
-        setUp_DifferentTokens();
+        setUp_DifferentTokens_NoRouterPairs();
 
         vm.startPrank(owner);
         (,, uint256 pauseToTimestamp,) = vault.vaultState();
@@ -1356,8 +1428,8 @@ contract InvestmentVaultTest is Test {
         vm.stopPrank();
         vm.startPrank(owner);
 
-        // Set router as unavailable
-        mainVault.setAvailableRouter(address(router), false);
+        // Set router as unavailable by not setting any pairs
+        // (No pairs are set, so router should be unavailable)
 
         bytes memory pathBytes = abi.encodePacked(address(tokenMI), uint24(3000), address(tokenMV));
 
@@ -1379,7 +1451,7 @@ contract InvestmentVaultTest is Test {
     }
 
     function testInitMiToMvSwap_QuoterNotAvailable() public {
-        setUp_DifferentTokens();
+        setUp_DifferentTokens_NoRouterPairs();
 
         vm.startPrank(owner);
         (,, uint256 pauseToTimestamp,) = vault.vaultState();
@@ -1392,10 +1464,8 @@ contract InvestmentVaultTest is Test {
         vm.stopPrank();
         vm.startPrank(owner);
 
-        // Set quoter as unavailable
-        mainVault.setAvailableRouter(address(router), true); // Ensure router is available
+        // Set quoter as unavailable by not setting any pairs
         address unavailableQuoter = address(0x123);
-        mainVault.setAvailableRouter(unavailableQuoter, false);
 
         bytes memory pathBytes = abi.encodePacked(address(tokenMI), uint24(3000), address(tokenMV));
 
@@ -1411,13 +1481,13 @@ contract InvestmentVaultTest is Test {
         data.path[0] = address(tokenMI);
         data.path[1] = address(tokenMV);
 
-        vm.expectRevert(InvestmentVault.QuoterNotAvailable.selector);
+        vm.expectRevert(InvestmentVault.RouterNotAvailable.selector);
         vault.initMiToMvSwap(data, block.timestamp + 1);
         vm.stopPrank();
     }
 
     function testInitMiToMvSwap_RouterNotAvailableByInvestor() public {
-        setUp_DifferentTokens();
+        setUp_DifferentTokens_NoRouterPairs();
 
         vm.startPrank(owner);
         (,, uint256 pauseToTimestamp,) = vault.vaultState();
@@ -1430,8 +1500,7 @@ contract InvestmentVaultTest is Test {
         vm.stopPrank();
         vm.startPrank(owner);
 
-        // Set router as unavailable for investors (but available for admin)
-        mainVault.setAvailableRouter(address(router), false);
+        // Set router as unavailable for investors by not setting any pairs
 
         bytes memory pathBytes = abi.encodePacked(address(tokenMI), uint24(3000), address(tokenMV));
 
@@ -1452,8 +1521,70 @@ contract InvestmentVaultTest is Test {
         vm.stopPrank();
     }
 
+    function setUp_DifferentTokens_AdminOnlyPairs() public {
+        vm.startPrank(owner);
+
+        tokenMI = new MockToken("MI Token", "MI", 18);
+        tokenMV = new MockToken("MV Token", "MV", 18);
+        assetToken1 = new MockToken("Asset Token 1", "AT1", 18);
+        assetToken2 = new MockToken("Asset Token 2", "AT2", 6);
+        router = new MockRouter();
+
+        mainVault = new MockMainVault();
+        // Set up router-quoter pairs only for admin, not for investor
+        DataTypes.RouterQuoterPair[] memory adminPairs = new DataTypes.RouterQuoterPair[](1);
+        adminPairs[0] = DataTypes.RouterQuoterPair({
+            router: address(router),
+            quoter: address(router)
+        });
+        mainVault.setRouterQuoterPairAvailabilityByAdmin(adminPairs);
+        // Don't set investor pairs
+        
+        mainVault.setAvailableToken(address(tokenMI), true);
+        mainVault.setAvailableToken(address(tokenMV), true);
+        mainVault.setAvailableToken(address(assetToken1), true);
+        mainVault.setAvailableToken(address(assetToken2), true);
+
+        implementation = new InvestmentVault();
+        mainVault.setCurrentImplementation(address(implementation));
+
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](2);
+
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(assetToken1)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        assets[1] = DataTypes.AssetInitData({
+            token: IERC20(address(assetToken2)),
+            shareMV: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: IMainVault(address(mainVault)),
+            tokenMI: IERC20(address(tokenMI)),
+            tokenMV: IERC20(address(tokenMV)),
+            capitalOfMi: INITIAL_BALANCE,
+            shareMI: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
+        vault = InvestmentVault(address(proxy));
+        vault.initialize(initData);
+
+        tokenMI.mint(address(vault), INITIAL_BALANCE);
+
+        vm.stopPrank();
+    }
+
     function testInitMiToMvSwap_QuoterNotAvailableByInvestor() public {
-        setUp_DifferentTokens();
+        setUp_DifferentTokens_AdminOnlyPairs();
 
         vm.startPrank(owner);
         (,, uint256 pauseToTimestamp,) = vault.vaultState();
@@ -1466,15 +1597,13 @@ contract InvestmentVaultTest is Test {
         vm.stopPrank();
         vm.startPrank(owner);
 
-        // Set router as available for admin but quoter as unavailable for investors
-        mainVault.setAvailableRouter(address(router), true);
+        // Use a different quoter that is not available for investor
         address unavailableQuoter = address(0x123);
-        mainVault.setAvailableRouter(unavailableQuoter, false);
 
         bytes memory pathBytes = abi.encodePacked(address(tokenMI), uint24(3000), address(tokenMV));
 
         DataTypes.InitSwapsData memory data = DataTypes.InitSwapsData({
-            quouter: unavailableQuoter,
+            quouter: unavailableQuoter, // Use unavailable quoter
             router: address(router),
             path: new address[](2),
             pathBytes: pathBytes,
@@ -1485,7 +1614,7 @@ contract InvestmentVaultTest is Test {
         data.path[0] = address(tokenMI);
         data.path[1] = address(tokenMV);
 
-        vm.expectRevert(InvestmentVault.QuoterNotAvailable.selector);
+        vm.expectRevert(InvestmentVault.RouterNotAvailable.selector);
         vault.initMiToMvSwap(data, block.timestamp + 1);
         vm.stopPrank();
     }
@@ -1521,15 +1650,11 @@ contract InvestmentVaultTest is Test {
 
         vault.initMiToMvSwap(miToMvData, block.timestamp + 1);
 
-        // Set quoter as unavailable
-        address unavailableQuoter = address(0x123);
-        mainVault.setAvailableRouter(unavailableQuoter, false);
-
         // Prepare MV to Tokens swaps data
         DataTypes.InitSwapsData[] memory mvToTokenPaths = new DataTypes.InitSwapsData[](2);
 
         mvToTokenPaths[0] = DataTypes.InitSwapsData({
-            quouter: unavailableQuoter,
+            quouter: address(0x123), // Use unavailable quoter
             router: address(router),
             path: new address[](2),
             pathBytes: pathBytesMiMv,
@@ -1552,7 +1677,7 @@ contract InvestmentVaultTest is Test {
         mvToTokenPaths[1].path[0] = address(tokenMV);
         mvToTokenPaths[1].path[1] = address(assetToken2);
 
-        vm.expectRevert(InvestmentVault.QuoterNotAvailable.selector);
+        vm.expectRevert(InvestmentVault.RouterNotAvailable.selector);
         vault.initMvToTokensSwaps(mvToTokenPaths, block.timestamp + 1);
         vm.stopPrank();
     }
@@ -1589,15 +1714,12 @@ contract InvestmentVaultTest is Test {
         vault.initMiToMvSwap(miToMvData, block.timestamp + 1);
 
         // Set router as unavailable for investors
-        address unavailableRouter = address(0x123);
-        mainVault.setAvailableRouter(unavailableRouter, false);
-
         // Prepare MV to Tokens swaps data
         DataTypes.InitSwapsData[] memory mvToTokenPaths = new DataTypes.InitSwapsData[](2);
 
         mvToTokenPaths[0] = DataTypes.InitSwapsData({
             quouter: address(router),
-            router: unavailableRouter,
+            router: address(0x123), // Use unavailable router
             path: new address[](2),
             pathBytes: pathBytesMiMv,
             amountOutMin: 0,
@@ -1656,14 +1778,11 @@ contract InvestmentVaultTest is Test {
         vault.initMiToMvSwap(miToMvData, block.timestamp + 1);
 
         // Set quoter as unavailable for investors
-        address unavailableQuoter = address(0x123);
-        mainVault.setAvailableRouter(unavailableQuoter, false);
-
         // Prepare MV to Tokens swaps data
         DataTypes.InitSwapsData[] memory mvToTokenPaths = new DataTypes.InitSwapsData[](2);
 
         mvToTokenPaths[0] = DataTypes.InitSwapsData({
-            quouter: unavailableQuoter,
+            quouter: address(0x123), // Use unavailable quoter
             router: address(router),
             path: new address[](2),
             pathBytes: pathBytesMiMv,
@@ -1686,7 +1805,7 @@ contract InvestmentVaultTest is Test {
         mvToTokenPaths[1].path[0] = address(tokenMV);
         mvToTokenPaths[1].path[1] = address(assetToken2);
 
-        vm.expectRevert(InvestmentVault.QuoterNotAvailable.selector);
+        vm.expectRevert(InvestmentVault.RouterNotAvailable.selector);
         vault.initMvToTokensSwaps(mvToTokenPaths, block.timestamp + 1);
         vm.stopPrank();
     }
@@ -1932,6 +2051,7 @@ contract InvestmentVaultTest is Test {
 
         // Set router and quoter as available in main vault
         mainVault.setAvailableRouter(address(uniswapV3Router), true);
+        _setupRouterQuoterPairs(address(uniswapV3Router), address(quoterV2));
         mainVault.setAvailableRouter(address(quoterV2), true);
 
         // Approve tokens for router from vault
@@ -3137,7 +3257,7 @@ contract InvestmentVaultTest is Test {
         router = new MockRouter();
 
         mainVault = new MockMainVault();
-        mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(tokenMV), true);
         mainVault.setAvailableToken(address(assetToken1), true);
@@ -3190,7 +3310,7 @@ contract InvestmentVaultTest is Test {
         router = new MockRouter();
 
         mainVault = new MockMainVault();
-        mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(tokenMV), true);
         mainVault.setAvailableToken(address(assetToken1), true);
@@ -3243,7 +3363,7 @@ contract InvestmentVaultTest is Test {
         router = new MockRouter();
 
         mainVault = new MockMainVault();
-        mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(tokenMV), true);
         mainVault.setAvailableToken(address(assetToken1), true);
@@ -3296,7 +3416,7 @@ contract InvestmentVaultTest is Test {
         router = new MockRouter();
 
         mainVault = new MockMainVault();
-        mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(tokenMV), true);
         mainVault.setAvailableToken(address(assetToken1), true);
@@ -3352,7 +3472,7 @@ contract InvestmentVaultTest is Test {
         router = new MockRouter();
 
         mainVault = new MockMainVault();
-        mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(tokenMV), true);
         mainVault.setAvailableToken(address(assetToken1), true);
@@ -3405,7 +3525,7 @@ contract InvestmentVaultTest is Test {
         router = new MockRouter();
 
         mainVault = new MockMainVault();
-        mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(tokenMV), true);
         mainVault.setAvailableToken(address(assetToken1), true);
@@ -3458,7 +3578,7 @@ contract InvestmentVaultTest is Test {
         router = new MockRouter();
 
         mainVault = new MockMainVault();
-        mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(tokenMV), true);
         mainVault.setAvailableToken(address(assetToken1), true);
@@ -3511,7 +3631,7 @@ contract InvestmentVaultTest is Test {
         router = new MockRouter();
 
         mainVault = new MockMainVault();
-        mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(tokenMV), true);
         mainVault.setAvailableToken(address(assetToken1), true);
@@ -3564,7 +3684,7 @@ contract InvestmentVaultTest is Test {
         router = new MockRouter();
 
         mainVault = new MockMainVault();
-        mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(tokenMV), true);
         mainVault.setAvailableToken(address(assetToken1), true);
@@ -3616,7 +3736,7 @@ contract InvestmentVaultTest is Test {
         router = new MockRouter();
 
         mainVault = new MockMainVault();
-        mainVault.setAvailableRouter(address(router), true);
+        _setupRouterQuoterPairs(address(router), address(router));
         mainVault.setAvailableToken(address(tokenMI), true);
         mainVault.setAvailableToken(address(assetToken1), true);
         mainVault.setAvailableToken(address(assetToken2), true);
