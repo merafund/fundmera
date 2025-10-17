@@ -237,17 +237,17 @@ contract MainVaultSwapsTest is Test {
 
         uint256 balanceBefore = token1.balanceOf(address(vault));
 
-        DataTypes.DelegateQuickswapExactInputSingleParams memory params = DataTypes
-            .DelegateQuickswapExactInputSingleParams({
-            router: address(quickswapV3),
-            tokenIn: address(token0),
-            tokenOut: address(token1),
-            amountIn: amountIn,
-            amountOutMinimum: expectedAmountOut * 95 / 100, // 5% slippage
-            limitSqrtPrice: 0,
-            deadline: block.timestamp,
-            swapType: DataTypes.SwapType.Default
-        });
+        DataTypes.DelegateQuickswapExactInputSingleParams memory params =
+            DataTypes.DelegateQuickswapExactInputSingleParams({
+                router: address(quickswapV3),
+                tokenIn: address(token0),
+                tokenOut: address(token1),
+                amountIn: amountIn,
+                amountOutMinimum: expectedAmountOut * 95 / 100, // 5% slippage
+                limitSqrtPrice: 0,
+                deadline: block.timestamp,
+                swapType: DataTypes.SwapType.Default
+            });
 
         vault.quickswapExactInputSingle(params);
 
@@ -319,18 +319,18 @@ contract MainVaultSwapsTest is Test {
 
         uint256 balanceBefore = token0.balanceOf(address(vault));
 
-        DataTypes.DelegateQuickswapExactOutputSingleParams memory params = DataTypes
-            .DelegateQuickswapExactOutputSingleParams({
-            router: address(quickswapV3),
-            tokenIn: address(token0),
-            tokenOut: address(token1),
-            fee: 3000,
-            deadline: block.timestamp,
-            amountOut: amountOut,
-            amountInMaximum: expectedAmountIn * 105 / 100, // 5% slippage
-            limitSqrtPrice: 0,
-            swapType: DataTypes.SwapType.Default
-        });
+        DataTypes.DelegateQuickswapExactOutputSingleParams memory params =
+            DataTypes.DelegateQuickswapExactOutputSingleParams({
+                router: address(quickswapV3),
+                tokenIn: address(token0),
+                tokenOut: address(token1),
+                fee: 3000,
+                deadline: block.timestamp,
+                amountOut: amountOut,
+                amountInMaximum: expectedAmountIn * 105 / 100, // 5% slippage
+                limitSqrtPrice: 0,
+                swapType: DataTypes.SwapType.Default
+            });
 
         vault.quickswapExactOutputSingle(params);
 

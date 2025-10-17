@@ -57,7 +57,14 @@ contract UniswapV2Mock is IUniswapV2Router02 {
         address[] calldata, /* path */
         address, /* to */
         uint256 /* deadline */
-    ) external payable override returns (uint256[] memory /* amounts */ ) {
+    )
+        external
+        payable
+        override
+        returns (
+            uint256[] memory /* amounts */
+        )
+    {
         revert("UniswapV2Mock: UNIMPLEMENTED");
     }
 
@@ -67,12 +74,24 @@ contract UniswapV2Mock is IUniswapV2Router02 {
         address[] calldata, /* path */
         address, /* to */
         uint256 /* deadline */
-    ) external pure override returns (uint256[] memory /* amounts */ ) {
+    )
+        external
+        pure
+        override
+        returns (
+            uint256[] memory /* amounts */
+        )
+    {
         revert("UniswapV2Mock: UNIMPLEMENTED");
     }
 
     // Required interface implementations with minimal functionality
-    function quote(uint256 amountA, uint256, /* reserveA */ uint256 /* reserveB */ )
+    function quote(
+        uint256 amountA,
+        uint256,
+        /* reserveA */
+        uint256 /* reserveB */
+    )
         external
         pure
         override
@@ -81,7 +100,12 @@ contract UniswapV2Mock is IUniswapV2Router02 {
         return amountA;
     }
 
-    function getAmountOut(uint256 amountIn, uint256, /* reserveIn */ uint256 /* reserveOut */ )
+    function getAmountOut(
+        uint256 amountIn,
+        uint256,
+        /* reserveIn */
+        uint256 /* reserveOut */
+    )
         external
         pure
         override
@@ -90,7 +114,12 @@ contract UniswapV2Mock is IUniswapV2Router02 {
         return amountIn;
     }
 
-    function getAmountIn(uint256 amountOut, uint256, /* reserveIn */ uint256 /* reserveOut */ )
+    function getAmountIn(
+        uint256 amountOut,
+        uint256,
+        /* reserveIn */
+        uint256 /* reserveOut */
+    )
         external
         pure
         override
@@ -132,7 +161,12 @@ contract UniswapV2Mock is IUniswapV2Router02 {
         uint256, /* amountBMin */
         address, /* to */
         uint256 /* deadline */
-    ) external pure override returns (uint256, uint256, uint256) {
+    )
+        external
+        pure
+        override
+        returns (uint256, uint256, uint256)
+    {
         revert("UniswapV2Mock: UNIMPLEMENTED");
     }
 
@@ -143,7 +177,12 @@ contract UniswapV2Mock is IUniswapV2Router02 {
         uint256, /* amountETHMin */
         address, /* to */
         uint256 /* deadline */
-    ) external payable override returns (uint256, uint256, uint256) {
+    )
+        external
+        payable
+        override
+        returns (uint256, uint256, uint256)
+    {
         revert("UniswapV2Mock: UNIMPLEMENTED");
     }
 
@@ -155,7 +194,12 @@ contract UniswapV2Mock is IUniswapV2Router02 {
         uint256, /* amountBMin */
         address, /* to */
         uint256 /* deadline */
-    ) external pure override returns (uint256, uint256) {
+    )
+        external
+        pure
+        override
+        returns (uint256, uint256)
+    {
         revert("UniswapV2Mock: UNIMPLEMENTED");
     }
 
@@ -166,7 +210,12 @@ contract UniswapV2Mock is IUniswapV2Router02 {
         uint256, /* amountETHMin */
         address, /* to */
         uint256 /* deadline */
-    ) external pure override returns (uint256, uint256) {
+    )
+        external
+        pure
+        override
+        returns (uint256, uint256)
+    {
         revert("UniswapV2Mock: UNIMPLEMENTED");
     }
 
@@ -231,7 +280,12 @@ contract UniswapV2Mock is IUniswapV2Router02 {
         address[] calldata, /* path */
         address, /* to */
         uint256 /* deadline */
-    ) external pure override returns (uint256[] memory) {
+    )
+        external
+        pure
+        override
+        returns (uint256[] memory)
+    {
         revert("UniswapV2Mock: UNIMPLEMENTED");
     }
 
@@ -240,7 +294,12 @@ contract UniswapV2Mock is IUniswapV2Router02 {
         address[] calldata, /* path */
         address, /* to */
         uint256 /* deadline */
-    ) external payable override returns (uint256[] memory) {
+    )
+        external
+        payable
+        override
+        returns (uint256[] memory)
+    {
         revert("UniswapV2Mock: UNIMPLEMENTED");
     }
 
@@ -251,7 +310,12 @@ contract UniswapV2Mock is IUniswapV2Router02 {
         uint256, /* amountETHMin */
         address, /* to */
         uint256 /* deadline */
-    ) external pure override returns (uint256) {
+    )
+        external
+        pure
+        override
+        returns (uint256)
+    {
         revert("UniswapV2Mock: UNIMPLEMENTED");
     }
 
@@ -285,7 +349,11 @@ contract UniswapV2Mock is IUniswapV2Router02 {
         address[] calldata, /* path */
         address, /* to */
         uint256 /* deadline */
-    ) external payable override {
+    )
+        external
+        payable
+        override
+    {
         revert("UniswapV2Mock: UNIMPLEMENTED");
     }
 
@@ -295,7 +363,11 @@ contract UniswapV2Mock is IUniswapV2Router02 {
         address[] calldata, /* path */
         address, /* to */
         uint256 /* deadline */
-    ) external pure override {
+    )
+        external
+        pure
+        override
+    {
         revert("UniswapV2Mock: UNIMPLEMENTED");
     }
 

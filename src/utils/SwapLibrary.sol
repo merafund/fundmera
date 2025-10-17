@@ -263,7 +263,8 @@ library SwapLibrary {
             // If threshold not reached, check both time and price conditions
             require(
                 lastBuyTimestamp < block.timestamp - Constants.MIN_TIME_BETWEEN_BUYS
-                    || lastBuyPrice * (Constants.SHARE_DENOMINATOR - step) / Constants.SHARE_DENOMINATOR >= currentPrice,
+                    || lastBuyPrice * (Constants.SHARE_DENOMINATOR - step) / Constants.SHARE_DENOMINATOR
+                        >= currentPrice,
                 BadPriceAndTimeBetweenBuys()
             );
         }
@@ -302,7 +303,7 @@ library SwapLibrary {
 
         require(
             tokenData.mvBought * tokenData.step * tokenData.capitalOfMi
-                / (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) >= mvReceived,
+                    / (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) >= mvReceived,
             AssetBoughtTooMuch()
         );
 
@@ -314,8 +315,8 @@ library SwapLibrary {
             tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step) / Constants.SHARE_DENOMINATOR
                 > currentPrice
         ) {
-            tokenData.lastBuyPrice =
-                tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step) / Constants.SHARE_DENOMINATOR;
+            tokenData.lastBuyPrice = tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step)
+                / Constants.SHARE_DENOMINATOR;
         } else {
             tokenData.lastBuyPrice = currentPrice < tokenData.lastBuyPrice ? currentPrice : tokenData.lastBuyPrice; // minimum between current price and last buy price
         }
@@ -420,7 +421,7 @@ library SwapLibrary {
 
         require(
             assetData.tokenBought * assetData.step * assetData.capital
-                / (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) >= assetReceived,
+                    / (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) >= assetReceived,
             AssetBoughtTooMuch()
         );
 
@@ -443,8 +444,8 @@ library SwapLibrary {
             assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step) / Constants.SHARE_DENOMINATOR
                 > currentPrice
         ) {
-            assetData.lastBuyPrice =
-                assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step) / Constants.SHARE_DENOMINATOR;
+            assetData.lastBuyPrice = assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step)
+                / Constants.SHARE_DENOMINATOR;
         } else {
             assetData.lastBuyPrice = currentPrice < assetData.lastBuyPrice ? currentPrice : assetData.lastBuyPrice; // minimum between current price and last buy price
         }
@@ -529,7 +530,8 @@ library SwapLibrary {
         // Calculate current purchase price (MV per Asset)
         uint256 currentPrice = (mvSpent * Constants.SHARE_DENOMINATOR) / assetReceived;
 
-        uint256 workingOrderDeposit = (assetData.capital * assetData.shareToken * assetData.step)
+        uint256 workingOrderDeposit =
+            (assetData.capital * assetData.shareToken * assetData.step)
             / (Constants.SHARE_DENOMINATOR * (Constants.SHARE_DENOMINATOR + assetData.step));
 
         uint256 workingBalanceBuy = (assetData.tokenBought * assetData.step) / (Constants.SHARE_DENOMINATOR);
@@ -592,7 +594,8 @@ library SwapLibrary {
         }
 
         // Calculate working order depisit (WOD)
-        uint256 workingOrderDeposit = (assetData.capital * assetData.shareToken * assetData.step)
+        uint256 workingOrderDeposit =
+            (assetData.capital * assetData.shareToken * assetData.step)
             / (Constants.SHARE_DENOMINATOR * (Constants.SHARE_DENOMINATOR + assetData.step));
 
         // Calculate working order balance (WOB)
@@ -681,14 +684,15 @@ library SwapLibrary {
 
         // Execute the swap
         if (params.deadline == 0) {
-            amountOut = ISwapRouterBase(router).exactInput(
-                ISwapRouterBase.ExactInputParams({
-                    path: params.path,
-                    recipient: address(this),
-                    amountIn: params.amountIn,
-                    amountOutMinimum: params.amountOutMinimum
-                })
-            );
+            amountOut = ISwapRouterBase(router)
+                .exactInput(
+                    ISwapRouterBase.ExactInputParams({
+                        path: params.path,
+                        recipient: address(this),
+                        amountIn: params.amountIn,
+                        amountOutMinimum: params.amountOutMinimum
+                    })
+                );
         } else {
             amountOut = ISwapRouter(router).exactInput(routerParams);
         }
@@ -737,7 +741,8 @@ library SwapLibrary {
         );
         require(
             mainVault.availableTokensByInvestor(params.tokenIn) && mainVault.availableTokensByInvestor(params.tokenOut)
-                && mainVault.availableTokensByAdmin(params.tokenIn) && mainVault.availableTokensByAdmin(params.tokenOut),
+                && mainVault.availableTokensByAdmin(params.tokenIn)
+                && mainVault.availableTokensByAdmin(params.tokenOut),
             TokenNotAvailable()
         );
 
@@ -763,17 +768,18 @@ library SwapLibrary {
 
         // Execute the swap
         if (params.deadline == 0) {
-            amountOut = ISwapRouterBase(router).exactInputSingle(
-                ISwapRouterBase.ExactInputSingleParams({
-                    tokenIn: params.tokenIn,
-                    tokenOut: params.tokenOut,
-                    fee: params.fee,
-                    recipient: address(this),
-                    amountIn: params.amountIn,
-                    amountOutMinimum: params.amountOutMinimum,
-                    sqrtPriceLimitX96: params.sqrtPriceLimitX96
-                })
-            );
+            amountOut = ISwapRouterBase(router)
+                .exactInputSingle(
+                    ISwapRouterBase.ExactInputSingleParams({
+                        tokenIn: params.tokenIn,
+                        tokenOut: params.tokenOut,
+                        fee: params.fee,
+                        recipient: address(this),
+                        amountIn: params.amountIn,
+                        amountOutMinimum: params.amountOutMinimum,
+                        sqrtPriceLimitX96: params.sqrtPriceLimitX96
+                    })
+                );
         } else {
             amountOut = ISwapRouter(router).exactInputSingle(routerParams);
         }
@@ -886,7 +892,8 @@ library SwapLibrary {
         );
         require(
             mainVault.availableTokensByInvestor(params.tokenIn) && mainVault.availableTokensByInvestor(params.tokenOut)
-                && mainVault.availableTokensByAdmin(params.tokenIn) && mainVault.availableTokensByAdmin(params.tokenOut),
+                && mainVault.availableTokensByAdmin(params.tokenIn)
+                && mainVault.availableTokensByAdmin(params.tokenOut),
             TokenNotAvailable()
         );
 

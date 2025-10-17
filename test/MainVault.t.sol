@@ -997,8 +997,9 @@ contract MainVaultTest is Test {
         vm.warp(commitTime + Constants.WITHDRAW_COMMIT_MIN_DELAY + 1);
 
         IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
-        withdrawals[0] =
-            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+        withdrawals[0] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4
+        });
 
         uint256 balanceBefore = token.balanceOf(address(vault));
 
@@ -1169,10 +1170,12 @@ contract MainVaultTest is Test {
         vm.warp(commitTime + Constants.WITHDRAW_COMMIT_MIN_DELAY + 1);
 
         IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](2);
-        withdrawals[0] =
-            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
-        withdrawals[1] =
-            IMainVault.WithdrawFromVaultData({vaultIndex: 1, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+        withdrawals[0] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4
+        });
+        withdrawals[1] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 1, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4
+        });
 
         uint256 balanceBefore = token.balanceOf(address(vault));
 
@@ -3478,8 +3481,9 @@ contract MainVaultTest is Test {
         vm.startPrank(mainInvestor);
 
         IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
-        withdrawals[0] =
-            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+        withdrawals[0] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4
+        });
 
         uint256 balanceBefore = token.balanceOf(address(vault));
 
@@ -3533,8 +3537,9 @@ contract MainVaultTest is Test {
         vm.startPrank(mainInvestor);
 
         IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
-        withdrawals[0] =
-            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+        withdrawals[0] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4
+        });
 
         // Should revert because vault is not available for withdrawal
         vm.expectRevert(MainVault.InvestmentVaultNotAvailableForWithdraw.selector);
@@ -3625,8 +3630,9 @@ contract MainVaultTest is Test {
         vm.warp(block.timestamp + 7 days + 1);
 
         IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
-        withdrawals[0] =
-            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+        withdrawals[0] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4
+        });
 
         // Test that non-main-investor addresses cannot call the function
         vm.startPrank(user1);
@@ -3709,10 +3715,12 @@ contract MainVaultTest is Test {
         vm.startPrank(mainInvestor);
 
         IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](2);
-        withdrawals[0] =
-            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
-        withdrawals[1] =
-            IMainVault.WithdrawFromVaultData({vaultIndex: 2, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+        withdrawals[0] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4
+        });
+        withdrawals[1] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 2, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4
+        });
 
         uint256 balanceBefore = token.balanceOf(address(vault));
 
@@ -3780,10 +3788,12 @@ contract MainVaultTest is Test {
         vm.startPrank(mainInvestor);
 
         IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](2);
-        withdrawals[0] =
-            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
-        withdrawals[1] =
-            IMainVault.WithdrawFromVaultData({vaultIndex: 1, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+        withdrawals[0] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4
+        });
+        withdrawals[1] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 1, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4
+        });
 
         // Should revert because vault 1 is not available for withdrawal
         vm.expectRevert(MainVault.InvestmentVaultNotAvailableForWithdraw.selector);
@@ -3831,8 +3841,9 @@ contract MainVaultTest is Test {
         vm.startPrank(mainInvestor);
 
         IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
-        withdrawals[0] =
-            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+        withdrawals[0] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4
+        });
 
         uint256 balanceBefore = token.balanceOf(address(vault));
 
@@ -3885,8 +3896,9 @@ contract MainVaultTest is Test {
         vm.startPrank(mainInvestor);
 
         IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
-        withdrawals[0] =
-            IMainVault.WithdrawFromVaultData({vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4});
+        withdrawals[0] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4
+        });
 
         // Test that event is emitted
         vm.expectEmit(true, true, true, true);

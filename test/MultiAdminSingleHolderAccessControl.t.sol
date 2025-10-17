@@ -12,8 +12,9 @@ pragma solidity ^0.8.29;
 
 import {Test, console} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {MultiAdminSingleHolderAccessControlUppgradable} from
-    "../src/utils/MultiAdminSingleHolderAccessControlUppgradable.sol";
+import {
+    MultiAdminSingleHolderAccessControlUppgradable
+} from "../src/utils/MultiAdminSingleHolderAccessControlUppgradable.sol";
 import {IMultiAdminSingleHolderAccessControl} from "../src/interfaces/IMultiAdminSingleHolderAccessControl.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 

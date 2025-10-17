@@ -93,17 +93,18 @@ library MainVaultSwapLibrary {
         inputToken.safeIncreaseAllowance(router, params.amountIn);
 
         if (params.deadline == 0) {
-            amountOut = ISwapRouterBase(router).exactInputSingle(
-                ISwapRouterBase.ExactInputSingleParams({
-                    tokenIn: params.tokenIn,
-                    tokenOut: params.tokenOut,
-                    fee: params.fee,
-                    recipient: address(this),
-                    amountIn: params.amountIn,
-                    amountOutMinimum: params.amountOutMinimum,
-                    sqrtPriceLimitX96: params.sqrtPriceLimitX96
-                })
-            );
+            amountOut = ISwapRouterBase(router)
+                .exactInputSingle(
+                    ISwapRouterBase.ExactInputSingleParams({
+                        tokenIn: params.tokenIn,
+                        tokenOut: params.tokenOut,
+                        fee: params.fee,
+                        recipient: address(this),
+                        amountIn: params.amountIn,
+                        amountOutMinimum: params.amountOutMinimum,
+                        sqrtPriceLimitX96: params.sqrtPriceLimitX96
+                    })
+                );
         } else {
             amountOut = ISwapRouter(router).exactInputSingle(routerParams);
         }
@@ -168,14 +169,15 @@ library MainVaultSwapLibrary {
         inputToken.safeIncreaseAllowance(router, params.amountIn);
 
         if (params.deadline == 0) {
-            amountOut = ISwapRouterBase(router).exactInput(
-                ISwapRouterBase.ExactInputParams({
-                    path: params.path,
-                    recipient: address(this),
-                    amountIn: params.amountIn,
-                    amountOutMinimum: params.amountOutMinimum
-                })
-            );
+            amountOut = ISwapRouterBase(router)
+                .exactInput(
+                    ISwapRouterBase.ExactInputParams({
+                        path: params.path,
+                        recipient: address(this),
+                        amountIn: params.amountIn,
+                        amountOutMinimum: params.amountOutMinimum
+                    })
+                );
         } else {
             amountOut = ISwapRouter(router).exactInput(routerParams);
         }
@@ -220,17 +222,18 @@ library MainVaultSwapLibrary {
         inputToken.safeIncreaseAllowance(router, params.amountInMaximum);
 
         if (params.deadline == 0) {
-            amountIn = ISwapRouterBase(router).exactOutputSingle(
-                ISwapRouterBase.ExactOutputSingleParams({
-                    tokenIn: params.tokenIn,
-                    tokenOut: params.tokenOut,
-                    fee: params.fee,
-                    recipient: address(this),
-                    amountOut: params.amountOut,
-                    amountInMaximum: params.amountInMaximum,
-                    sqrtPriceLimitX96: params.sqrtPriceLimitX96
-                })
-            );
+            amountIn = ISwapRouterBase(router)
+                .exactOutputSingle(
+                    ISwapRouterBase.ExactOutputSingleParams({
+                        tokenIn: params.tokenIn,
+                        tokenOut: params.tokenOut,
+                        fee: params.fee,
+                        recipient: address(this),
+                        amountOut: params.amountOut,
+                        amountInMaximum: params.amountInMaximum,
+                        sqrtPriceLimitX96: params.sqrtPriceLimitX96
+                    })
+                );
         } else {
             amountIn = ISwapRouter(router).exactOutputSingle(routerParams);
         }
@@ -295,14 +298,15 @@ library MainVaultSwapLibrary {
         inputToken.safeIncreaseAllowance(router, params.amountInMaximum);
 
         if (params.deadline == 0) {
-            amountIn = ISwapRouterBase(router).exactOutput(
-                ISwapRouterBase.ExactOutputParams({
-                    path: params.path,
-                    recipient: address(this),
-                    amountOut: params.amountOut,
-                    amountInMaximum: params.amountInMaximum
-                })
-            );
+            amountIn = ISwapRouterBase(router)
+                .exactOutput(
+                    ISwapRouterBase.ExactOutputParams({
+                        path: params.path,
+                        recipient: address(this),
+                        amountOut: params.amountOut,
+                        amountInMaximum: params.amountInMaximum
+                    })
+                );
         } else {
             amountIn = ISwapRouter(router).exactOutput(routerParams);
         }
@@ -347,13 +351,14 @@ library MainVaultSwapLibrary {
         inputToken.safeIncreaseAllowance(router, amountIn);
 
         // Execute the swap
-        amounts = IUniswapV2Router02(router).swapExactTokensForTokens(
-            amountIn,
-            amountOutMin,
-            path,
-            address(this), // tokens come back to the vault
-            deadline
-        );
+        amounts = IUniswapV2Router02(router)
+            .swapExactTokensForTokens(
+                amountIn,
+                amountOutMin,
+                path,
+                address(this), // tokens come back to the vault
+                deadline
+            );
 
         // Emit event
         emit ExactTokensSwapped(router, firstToken, lastToken, amountIn, amounts[amounts.length - 1]);
@@ -389,13 +394,14 @@ library MainVaultSwapLibrary {
         IERC20 inputToken = IERC20(path[0]);
         inputToken.safeIncreaseAllowance(router, amountInMax);
         // Execute the swap
-        amounts = IUniswapV2Router02(router).swapTokensForExactTokens(
-            amountOut,
-            amountInMax,
-            path,
-            address(this), // tokens come back to the vault
-            deadline
-        );
+        amounts = IUniswapV2Router02(router)
+            .swapTokensForExactTokens(
+                amountOut,
+                amountInMax,
+                path,
+                address(this), // tokens come back to the vault
+                deadline
+            );
 
         // Emit event
         emit TokensSwappedForExact(router, path[0], path[path.length - 1], amounts[0], amountOut);

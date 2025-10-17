@@ -58,8 +58,9 @@ abstract contract MultiAdminSingleHolderAccessControlUppgradable is
      */
 
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IMultiAdminSingleHolderAccessControl).interfaceId
-            || super.supportsInterface(interfaceId);
+        return
+            interfaceId == type(IMultiAdminSingleHolderAccessControl).interfaceId
+                || super.supportsInterface(interfaceId);
     }
 
     /**

@@ -639,8 +639,7 @@ contract AgentDistributionProfitTest is Test {
             for (uint256 j = 0; j < 8; j++) {
                 addresses[j] = j == i
                     ? address(0)
-                    : (
-                        j == 0
+                    : (j == 0
                             ? fundWallet
                             : j == 1
                                 ? mainAgent
@@ -648,8 +647,9 @@ contract AgentDistributionProfitTest is Test {
                                     ? admin
                                     : j == 3
                                         ? emergencyAdmin
-                                        : j == 4 ? backupAdmin : j == 5 ? emergencyAgent : j == 6 ? backupAgent : meraCapitalWallet
-                    );
+                                        : j == 4
+                                            ? backupAdmin
+                                            : j == 5 ? emergencyAgent : j == 6 ? backupAgent : meraCapitalWallet);
             }
 
             bytes memory initData = abi.encodeWithSelector(

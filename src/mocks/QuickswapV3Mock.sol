@@ -119,7 +119,13 @@ contract QuickswapV3Mock is IQuickswapV3Router {
         return amountOut;
     }
 
-    function algebraSwapCallback(int256, /* amount0Delta */ int256, /* amount1Delta */ bytes calldata /* data */ )
+    function algebraSwapCallback(
+        int256,
+        /* amount0Delta */
+        int256,
+        /* amount1Delta */
+        bytes calldata /* data */
+    )
         external
         pure
         override

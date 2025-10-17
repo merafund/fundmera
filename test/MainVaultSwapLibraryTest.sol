@@ -341,17 +341,17 @@ contract MainVaultSwapLibraryTest is Test {
 
     // Tests for executeQuickswapExactInputSingle
     function testExecuteQuickswapExactInputSingle_RouterNotAvailable() public {
-        DataTypes.DelegateQuickswapExactInputSingleParams memory params = DataTypes
-            .DelegateQuickswapExactInputSingleParams({
-            router: router,
-            tokenIn: address(tokenIn),
-            tokenOut: address(tokenOut),
-            amountIn: 1e18,
-            amountOutMinimum: 0,
-            limitSqrtPrice: 0,
-            deadline: block.timestamp + 1,
-            swapType: DataTypes.SwapType.Default
-        });
+        DataTypes.DelegateQuickswapExactInputSingleParams memory params =
+            DataTypes.DelegateQuickswapExactInputSingleParams({
+                router: router,
+                tokenIn: address(tokenIn),
+                tokenOut: address(tokenOut),
+                amountIn: 1e18,
+                amountOutMinimum: 0,
+                limitSqrtPrice: 0,
+                deadline: block.timestamp + 1,
+                swapType: DataTypes.SwapType.Default
+            });
 
         vm.expectRevert(MainVaultSwapLibrary.RouterNotAvailable.selector);
         MainVaultSwapLibrary.executeQuickswapExactInputSingle(
@@ -362,17 +362,17 @@ contract MainVaultSwapLibraryTest is Test {
     function testExecuteQuickswapExactInputSingle_ZeroAmountNotAllowed() public {
         availableRouterByAdmin[router] = true;
 
-        DataTypes.DelegateQuickswapExactInputSingleParams memory params = DataTypes
-            .DelegateQuickswapExactInputSingleParams({
-            router: router,
-            tokenIn: address(tokenIn),
-            tokenOut: address(tokenOut),
-            amountIn: 0, // Zero amount
-            amountOutMinimum: 0,
-            limitSqrtPrice: 0,
-            deadline: block.timestamp + 1,
-            swapType: DataTypes.SwapType.Default
-        });
+        DataTypes.DelegateQuickswapExactInputSingleParams memory params =
+            DataTypes.DelegateQuickswapExactInputSingleParams({
+                router: router,
+                tokenIn: address(tokenIn),
+                tokenOut: address(tokenOut),
+                amountIn: 0, // Zero amount
+                amountOutMinimum: 0,
+                limitSqrtPrice: 0,
+                deadline: block.timestamp + 1,
+                swapType: DataTypes.SwapType.Default
+            });
 
         vm.expectRevert(MainVaultSwapLibrary.ZeroAmountNotAllowed.selector);
         MainVaultSwapLibrary.executeQuickswapExactInputSingle(
@@ -383,17 +383,17 @@ contract MainVaultSwapLibraryTest is Test {
     function testExecuteQuickswapExactInputSingle_TokenNotAvailable() public {
         availableRouterByAdmin[router] = true;
 
-        DataTypes.DelegateQuickswapExactInputSingleParams memory params = DataTypes
-            .DelegateQuickswapExactInputSingleParams({
-            router: router,
-            tokenIn: address(tokenIn),
-            tokenOut: address(tokenOut),
-            amountIn: 1e18,
-            amountOutMinimum: 0,
-            limitSqrtPrice: 0,
-            deadline: block.timestamp + 1,
-            swapType: DataTypes.SwapType.Default
-        });
+        DataTypes.DelegateQuickswapExactInputSingleParams memory params =
+            DataTypes.DelegateQuickswapExactInputSingleParams({
+                router: router,
+                tokenIn: address(tokenIn),
+                tokenOut: address(tokenOut),
+                amountIn: 1e18,
+                amountOutMinimum: 0,
+                limitSqrtPrice: 0,
+                deadline: block.timestamp + 1,
+                swapType: DataTypes.SwapType.Default
+            });
 
         vm.expectRevert(MainVaultSwapLibrary.TokenNotAvailable.selector);
         MainVaultSwapLibrary.executeQuickswapExactInputSingle(
@@ -456,18 +456,18 @@ contract MainVaultSwapLibraryTest is Test {
 
     // Tests for executeQuickswapExactOutputSingle
     function testExecuteQuickswapExactOutputSingle_RouterNotAvailable() public {
-        DataTypes.DelegateQuickswapExactOutputSingleParams memory params = DataTypes
-            .DelegateQuickswapExactOutputSingleParams({
-            router: router,
-            tokenIn: address(tokenIn),
-            tokenOut: address(tokenOut),
-            fee: 3000,
-            deadline: block.timestamp + 1,
-            amountOut: 1e18,
-            amountInMaximum: 2e18,
-            limitSqrtPrice: 0,
-            swapType: DataTypes.SwapType.Default
-        });
+        DataTypes.DelegateQuickswapExactOutputSingleParams memory params =
+            DataTypes.DelegateQuickswapExactOutputSingleParams({
+                router: router,
+                tokenIn: address(tokenIn),
+                tokenOut: address(tokenOut),
+                fee: 3000,
+                deadline: block.timestamp + 1,
+                amountOut: 1e18,
+                amountInMaximum: 2e18,
+                limitSqrtPrice: 0,
+                swapType: DataTypes.SwapType.Default
+            });
 
         vm.expectRevert(MainVaultSwapLibrary.RouterNotAvailable.selector);
         MainVaultSwapLibrary.executeQuickswapExactOutputSingle(
@@ -478,18 +478,18 @@ contract MainVaultSwapLibraryTest is Test {
     function testExecuteQuickswapExactOutputSingle_ZeroAmountNotAllowed() public {
         availableRouterByAdmin[router] = true;
 
-        DataTypes.DelegateQuickswapExactOutputSingleParams memory params = DataTypes
-            .DelegateQuickswapExactOutputSingleParams({
-            router: router,
-            tokenIn: address(tokenIn),
-            tokenOut: address(tokenOut),
-            fee: 3000,
-            deadline: block.timestamp + 1,
-            amountOut: 0, // Zero amount
-            amountInMaximum: 2e18,
-            limitSqrtPrice: 0,
-            swapType: DataTypes.SwapType.Default
-        });
+        DataTypes.DelegateQuickswapExactOutputSingleParams memory params =
+            DataTypes.DelegateQuickswapExactOutputSingleParams({
+                router: router,
+                tokenIn: address(tokenIn),
+                tokenOut: address(tokenOut),
+                fee: 3000,
+                deadline: block.timestamp + 1,
+                amountOut: 0, // Zero amount
+                amountInMaximum: 2e18,
+                limitSqrtPrice: 0,
+                swapType: DataTypes.SwapType.Default
+            });
 
         vm.expectRevert(MainVaultSwapLibrary.ZeroAmountNotAllowed.selector);
         MainVaultSwapLibrary.executeQuickswapExactOutputSingle(
@@ -500,18 +500,18 @@ contract MainVaultSwapLibraryTest is Test {
     function testExecuteQuickswapExactOutputSingle_TokenNotAvailable() public {
         availableRouterByAdmin[router] = true;
 
-        DataTypes.DelegateQuickswapExactOutputSingleParams memory params = DataTypes
-            .DelegateQuickswapExactOutputSingleParams({
-            router: router,
-            tokenIn: address(tokenIn),
-            tokenOut: address(tokenOut),
-            fee: 3000,
-            deadline: block.timestamp + 1,
-            amountOut: 1e18,
-            amountInMaximum: 2e18,
-            limitSqrtPrice: 0,
-            swapType: DataTypes.SwapType.Default
-        });
+        DataTypes.DelegateQuickswapExactOutputSingleParams memory params =
+            DataTypes.DelegateQuickswapExactOutputSingleParams({
+                router: router,
+                tokenIn: address(tokenIn),
+                tokenOut: address(tokenOut),
+                fee: 3000,
+                deadline: block.timestamp + 1,
+                amountOut: 1e18,
+                amountInMaximum: 2e18,
+                limitSqrtPrice: 0,
+                swapType: DataTypes.SwapType.Default
+            });
 
         vm.expectRevert(MainVaultSwapLibrary.TokenNotAvailable.selector);
         MainVaultSwapLibrary.executeQuickswapExactOutputSingle(

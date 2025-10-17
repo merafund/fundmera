@@ -29,9 +29,7 @@ contract MockMeraPriceOracle is IMeraPriceOracle {
 
         for (uint256 i = 0; i < assets.length; i++) {
             priceData[i] = AssetPriceData({
-                price: prices[assets[i]],
-                decimals: decimals[assets[i]],
-                lastUpdateTime: lastUpdateTimes[assets[i]]
+                price: prices[assets[i]], decimals: decimals[assets[i]], lastUpdateTime: lastUpdateTimes[assets[i]]
             });
         }
 

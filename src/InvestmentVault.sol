@@ -443,7 +443,8 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         uint256 finalBalance = tokenData.tokenMI.balanceOf(address(this));
         require(finalBalance >= tokenData.capitalOfMi, NoProfit());
 
-        uint256 totalProfit = finalBalance - tokenData.capitalOfMi
+        uint256 totalProfit =
+            finalBalance - tokenData.capitalOfMi
             - (profitData.earntProfitTotal - profitData.withdrawnProfitInvestor - profitData.withdrawnProfitFee);
         // Use centralized helper to distribute MI-denominated profit
         SwapLibrary.distributeMiProfit(tokenData, profitData, totalProfit, mainVault);
@@ -502,8 +503,9 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         SwapsInitialized
         returns (uint256 amountOut)
     {
-        amountOut =
-            SwapLibrary.executeExactInputSingleSwap(params.router, params, tokenData, profitData, assetsData, mainVault);
+        amountOut = SwapLibrary.executeExactInputSingleSwap(
+            params.router, params, tokenData, profitData, assetsData, mainVault
+        );
     }
 
     /// @dev Swaps an exact amount of tokens for as many output tokens as possible along the specified path using Uniswap V3
@@ -520,8 +522,9 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         SwapsInitialized
         returns (uint256 amountOut)
     {
-        amountOut =
-            SwapLibrary.executeExactInputSwap(params.router, params, tokenData, profitData, assetsData, mainVault);
+        amountOut = SwapLibrary.executeExactInputSwap(
+            params.router, params, tokenData, profitData, assetsData, mainVault
+        );
     }
 
     /// @dev Swaps an exact amount of input tokens for as many output tokens as possible using Quickswap V3
@@ -739,14 +742,15 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
                 amountOutMinimum: initSwapsData.amountOutMin
             });
             if (deadline == 0) {
-                ISwapRouterBase(address(router)).exactInput(
-                    ISwapRouterBase.ExactInputParams({
-                        path: initSwapsData.pathBytes,
-                        recipient: address(this),
-                        amountIn: amountIn,
-                        amountOutMinimum: initSwapsData.amountOutMin
-                    })
-                );
+                ISwapRouterBase(address(router))
+                    .exactInput(
+                        ISwapRouterBase.ExactInputParams({
+                            path: initSwapsData.pathBytes,
+                            recipient: address(this),
+                            amountIn: amountIn,
+                            amountOutMinimum: initSwapsData.amountOutMin
+                        })
+                    );
             } else {
                 router.exactInput(params);
             }

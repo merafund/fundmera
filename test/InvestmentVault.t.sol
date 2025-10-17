@@ -25,11 +25,7 @@ import {MockToken} from "../src/mocks/MockToken.sol";
 import {MockMainVault} from "../src/mocks/MockMainVault.sol";
 
 contract MockRouter {
-    function getAmountsOut(uint256 amountIn, address[] calldata path)
-        external
-        pure
-        returns (uint256[] memory amounts)
-    {
+    function getAmountsOut(uint256 amountIn, address[] calldata path) external pure returns (uint256[] memory amounts) {
         require(path.length >= 2, "Invalid path");
 
         amounts = new uint256[](path.length);
@@ -45,7 +41,10 @@ contract MockRouter {
         address[] calldata path,
         address to,
         uint256 /* deadline */
-    ) external returns (uint256[] memory amounts) {
+    )
+        external
+        returns (uint256[] memory amounts)
+    {
         require(path.length >= 2, "Invalid path");
 
         uint256 amountOut = amountIn / 2; // 50% output as per mock implementation
@@ -462,8 +461,7 @@ contract InvestmentVaultTest is Test {
         (
             ,
             uint256 earntProfitInvestor,
-            uint256 earntProfitFee,
-            ,
+            uint256 earntProfitFee,,
             uint256 withdrawnProfitInvestor,
             uint256 withdrawnProfitFee
         ) = vault.profitData();
