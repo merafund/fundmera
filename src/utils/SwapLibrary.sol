@@ -73,8 +73,8 @@ library SwapLibrary {
         address indexed fromToken,
         address indexed toToken,
         uint256 miReceived,
-        uint256 investorProfit,
-        uint256 feeAmount
+        uint256 earntProfitInvestor,
+        uint256 earntProfitFee
     );
 
     /// @dev Process swap data and update stored information
