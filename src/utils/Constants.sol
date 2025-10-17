@@ -41,4 +41,5 @@ library Constants {
     uint256 public constant MAX_STEP = 3e17; // Maximum step of an asset
     uint256 public constant MIN_STEP = 2e16; // Minimum step of an asset
     uint256 public constant SHARE_INITIAL_MAX = 7e17; // Maximum share of an asset
+    uint256 public constant PURCHASE_CONDITION_CHANGE_THRESHOLD = 5e17; // Represents 50% - threshold for changing purchase conditions
 }

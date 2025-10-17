@@ -2221,7 +2221,7 @@ contract SwapTests is Test {
         vm.stopPrank();
     }
 
-    function testBadPriceAndTimeBetweenBuys() public {
+    function testBadPriceForPurchase() public {
         vm.startPrank(manager);
         vm.warp(block.timestamp + 31 days);
 
@@ -2239,11 +2239,7 @@ contract SwapTests is Test {
             swapType: DataTypes.SwapType.Default
         });
 
-        vault.exactInput(paramsBuy);
-
-        uniswapV3Router.setPrice(address(tokenMV), address(tokenMI), 1.9 * 10 ** 18); // Keep bad price
-
-        vm.expectRevert(SwapLibrary.BadPriceAndTimeBetweenBuys.selector);
+        vm.expectRevert(SwapLibrary.BadPriceForPurchase.selector);
         vault.exactInput(paramsBuy);
 
         vm.stopPrank();

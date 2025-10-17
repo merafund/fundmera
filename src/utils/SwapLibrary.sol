@@ -48,6 +48,7 @@ library SwapLibrary {
     error NoProfit();
     error ProfitNotZero();
     error BadPriceAndTimeBetweenBuys();
+    error BadPriceForPurchase();
     error AssetBoughtTooMuch();
     error InvalidStrategy();
     // Calculation events
@@ -234,6 +235,36 @@ library SwapLibrary {
         );
     }
 
+    /// @dev Check purchase conditions based on investment threshold
+    function checkPurchaseConditions(
+        uint256 deposit,
+        uint256 capital,
+        uint256 lastBuyTimestamp,
+        uint256 lastBuyPrice,
+        uint256 step,
+        uint256 currentPrice
+    ) internal view {
+        // Pre-calculate threshold check to avoid stack too deep
+        uint256 depositThreshold = deposit * Constants.SHARE_DENOMINATOR;
+        uint256 capitalThreshold = capital * Constants.PURCHASE_CONDITION_CHANGE_THRESHOLD;
+        bool thresholdReached = depositThreshold > capitalThreshold;
+
+        if (thresholdReached) {
+            // If threshold reached, only allow buying if price decreased (ignore time constraints)
+            require(
+                lastBuyPrice * (Constants.SHARE_DENOMINATOR - step) / Constants.SHARE_DENOMINATOR >= currentPrice,
+                BadPriceForPurchase()
+            );
+        } else {
+            // If threshold not reached, check both time and price conditions
+            require(
+                lastBuyTimestamp < block.timestamp - Constants.MIN_TIME_BETWEEN_BUYS
+                    || lastBuyPrice * (Constants.SHARE_DENOMINATOR - step) / Constants.SHARE_DENOMINATOR >= currentPrice,
+                BadPriceAndTimeBetweenBuys()
+            );
+        }
+    }
+
     /// @dev Handle MI to MV swap logic
     function handleMiToMvSwap(DataTypes.SwapParams memory swapParams, DataTypes.TokenData storage tokenData) internal {
         // Check if the average price before is higher than the current purchase price
@@ -253,14 +284,16 @@ library SwapLibrary {
         uint256 currentPrice = (miSpent * Constants.SHARE_DENOMINATOR) / mvReceived;
 
         // Check that the average price before was higher (which means we're buying at a better price now)
-
         require(averagePriceBefore > currentPrice, NonAdvantageousPurchasePrice());
 
-        require(
-            tokenData.lastBuyTimestamp < block.timestamp - Constants.MIN_TIME_BETWEEN_BUYS
-                || tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step) / Constants.SHARE_DENOMINATOR
-                    >= currentPrice,
-            BadPriceAndTimeBetweenBuys()
+        // Check purchase conditions based on investment threshold
+        checkPurchaseConditions(
+            tokenData.depositInMv,
+            tokenData.capitalOfMi,
+            tokenData.lastBuyTimestamp,
+            tokenData.lastBuyPrice,
+            tokenData.step,
+            currentPrice
         );
 
         require(
@@ -397,11 +430,14 @@ library SwapLibrary {
         assetData.deposit += int256(mvSpent);
         require(assetData.deposit <= int256(assetData.capital), DepositIsGreaterThanCapital());
 
-        require(
-            assetData.lastBuyTimestamp < block.timestamp - Constants.MIN_TIME_BETWEEN_BUYS
-                || assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step) / Constants.SHARE_DENOMINATOR
-                    >= currentPrice,
-            BadPriceAndTimeBetweenBuys()
+        // Check purchase conditions based on investment threshold
+        checkPurchaseConditions(
+            uint256(assetData.deposit),
+            assetData.capital,
+            assetData.lastBuyTimestamp,
+            assetData.lastBuyPrice,
+            assetData.step,
+            currentPrice
         );
 
         assetData.tokenBought += assetReceived;
