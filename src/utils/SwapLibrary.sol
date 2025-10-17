@@ -192,7 +192,6 @@ library SwapLibrary {
         uint256 currentPrice = (miReceived * Constants.SHARE_DENOMINATOR) / mvSpent; // MI per MV
 
         uint256 averagePriceBefore = (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) / tokenData.mvBought; // MI per MV
-        tokenData.lastBuyPrice = averagePriceBefore;
 
         require(currentPrice > averagePriceBefore, NonAdvantageousPurchasePrice());
 
