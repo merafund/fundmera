@@ -49,7 +49,7 @@ library DataTypes {
 
     /// @dev Structure for storing asset data
     struct AssetData {
-        uint256 shareMV; // Share of MV tokens allocated to this asset
+        uint256 shareToken; // Share of MV tokens allocated to this asset
         uint256 step; // Step percentage for First strategy
         Strategy strategy; // Trading strategy for this asset
         int256 deposit; // Deposited amount
@@ -75,7 +75,7 @@ library DataTypes {
         IERC20 tokenMV; // Main vault token
         uint256 capitalOfMi; // Initial deposit
         uint256 mvBought; // Amount of MV tokens bought
-        uint256 shareMI; // Share of MI tokens for swap
+        uint256 shareMV; // Share of MI tokens for swap
         uint256 depositInMv; // Deposit in MV tokens
         uint256 timestampOfStartInvestment; // Timestamp of start of investment
         ProfitType profitType; // Profit type
@@ -100,7 +100,7 @@ library DataTypes {
         IERC20 tokenMI;
         IERC20 tokenMV;
         uint256 capitalOfMi;
-        uint256 shareMI;
+        uint256 shareMV;
         uint256 step;
         AssetInitData[] assets;
     }
@@ -108,7 +108,7 @@ library DataTypes {
     /// @dev Structure for initializing an asset
     struct AssetInitData {
         IERC20 token; // Asset token
-        uint256 shareMV; // Share of MV tokens for this asset
+        uint256 shareToken; // Share of MV tokens for this asset
         uint256 step; // Step percentage for First strategy
         Strategy strategy; // Trading strategy
     }

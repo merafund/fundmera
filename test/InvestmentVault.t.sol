@@ -129,14 +129,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -146,7 +146,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMI)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: Constants.SHARE_DENOMINATOR,
+            shareMV: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -188,14 +188,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -205,7 +205,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 7 * 10 ** 17,
+            shareMV: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -251,14 +251,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -268,7 +268,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 7 * 10 ** 17,
+            shareMV: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -312,14 +312,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -329,7 +329,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMI)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: Constants.SHARE_DENOMINATOR,
+            shareMV: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -348,12 +348,12 @@ contract InvestmentVaultTest is Test {
     function testInitializationSameTokens() public {
         setUp_SameTokens();
 
-        (IERC20 tMI, IERC20 tMV, uint256 capitalOfMi, uint256 mvBought, uint256 shareMI,,,,,,) = vault.tokenData();
+        (IERC20 tMI, IERC20 tMV, uint256 capitalOfMi, uint256 mvBought, uint256 shareMV,,,,,,) = vault.tokenData();
 
         assertEq(address(tMI), address(tMV), "MI and MV tokens should be the same");
         assertEq(capitalOfMi, INITIAL_BALANCE, "Initial deposit should match");
         assertEq(mvBought, INITIAL_BALANCE, "MV bought should equal initial deposit for same tokens");
-        assertEq(shareMI, Constants.SHARE_DENOMINATOR, "Share MI should be 100% for same tokens");
+        assertEq(shareMV, Constants.SHARE_DENOMINATOR, "Share MI should be 100% for same tokens");
 
         (,,, DataTypes.SwapInitState swapInitState) = vault.vaultState();
         assertEq(
@@ -366,13 +366,13 @@ contract InvestmentVaultTest is Test {
     function testInitializationDifferentTokens() public {
         setUp_DifferentTokens();
 
-        (IERC20 tMI, IERC20 tMV, uint256 capitalOfMi, uint256 mvBought, uint256 shareMI,,,,,,) = vault.tokenData();
+        (IERC20 tMI, IERC20 tMV, uint256 capitalOfMi, uint256 mvBought, uint256 shareMV,,,,,,) = vault.tokenData();
 
         assertEq(address(tMI), address(tokenMI), "MI token should match");
         assertEq(address(tMV), address(tokenMV), "MV token should match");
         assertEq(capitalOfMi, INITIAL_BALANCE, "Initial deposit should match");
         assertEq(mvBought, 0, "MV bought should be 0 initially");
-        assertEq(shareMI, 7 * 10 ** 17, "Share MI should be 70%");
+        assertEq(shareMV, 7 * 10 ** 17, "Share MI should be 70%");
 
         (,,, DataTypes.SwapInitState swapInitState) = vault.vaultState();
         assertEq(
@@ -1381,14 +1381,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
@@ -1398,7 +1398,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 5 * 10 ** 17,
+            shareMV: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -1547,14 +1547,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
@@ -1564,7 +1564,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 5 * 10 ** 17,
+            shareMV: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -3265,14 +3265,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -3282,7 +3282,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 7 * 10 ** 17,
+            shareMV: 7 * 10 ** 17,
             step: Constants.MAX_STEP + 1,
             assets: assets
         });
@@ -3318,14 +3318,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -3335,7 +3335,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 7 * 10 ** 17,
+            shareMV: 7 * 10 ** 17,
             step: Constants.MIN_STEP - 1,
             assets: assets
         });
@@ -3371,14 +3371,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -3388,7 +3388,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: Constants.SHARE_INITIAL_MAX + 1,
+            shareMV: Constants.SHARE_INITIAL_MAX + 1,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -3424,14 +3424,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -3441,7 +3441,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: Constants.SHARE_DENOMINATOR,
+            shareMV: Constants.SHARE_DENOMINATOR,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -3480,14 +3480,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: Constants.MAX_STEP + 1,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -3497,7 +3497,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 7 * 10 ** 17,
+            shareMV: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -3533,14 +3533,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: Constants.MIN_STEP - 1,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -3550,7 +3550,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 7 * 10 ** 17,
+            shareMV: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -3586,14 +3586,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: Constants.SHARE_INITIAL_MAX + 1,
+            shareToken: Constants.SHARE_INITIAL_MAX + 1,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -3603,7 +3603,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 7 * 10 ** 17,
+            shareMV: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -3639,14 +3639,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(tokenMI)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -3656,7 +3656,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 7 * 10 ** 17,
+            shareMV: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -3692,14 +3692,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(tokenMV)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -3709,7 +3709,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 7 * 10 ** 17,
+            shareMV: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -3743,14 +3743,14 @@ contract InvestmentVaultTest is Test {
 
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
 
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -3760,7 +3760,7 @@ contract InvestmentVaultTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMI)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 7 * 10 ** 17,
+            shareMV: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
         });

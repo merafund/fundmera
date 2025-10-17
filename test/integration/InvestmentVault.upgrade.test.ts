@@ -163,7 +163,7 @@ describe("InvestmentVault Upgrade Tests", function () {
       tokenMI: await tokenMI.getAddress(),
       tokenMV: await tokenMV.getAddress(),
       capitalOfMi: ethers.parseEther("1000"),
-      shareMI: ethers.parseEther("0.5"),
+      shareMV: ethers.parseEther("0.5"),
       step: ethers.parseEther("0.1"),
       assets: []
     };

@@ -90,13 +90,13 @@ contract SwapTestsSingleToken is Test {
         DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](2);
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 4 * 10 ** 17, // 40% of MV tokens
+            shareToken: 4 * 10 ** 17, // 40% of MV tokens
             step: STEP,
             strategy: DataTypes.Strategy.Zero
         });
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 3 * 10 ** 17, // 30% of MV tokens
+            shareToken: 3 * 10 ** 17, // 30% of MV tokens
             step: STEP, // 5% step for first strategy
             strategy: DataTypes.Strategy.First
         });
@@ -107,7 +107,7 @@ contract SwapTestsSingleToken is Test {
             tokenMI: IERC20(address(mainToken)), // Same token as MV
             tokenMV: IERC20(address(mainToken)), // Same token as MI
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 10 ** 18,
+            shareMV: 10 ** 18,
             step: STEP,
             assets: assets
         });
@@ -163,7 +163,7 @@ contract SwapTestsSingleToken is Test {
 
         // Setup swap path for Asset1
         bytes memory pathBytesAsset1 = abi.encodePacked(address(mainToken), uint24(3000), address(assetToken1));
-        uint256 capitalForAsset1 = (totalMVBalanceForAssetSwaps * initData.assets[0].shareMV) / (10 ** 18);
+        uint256 capitalForAsset1 = (totalMVBalanceForAssetSwaps * initData.assets[0].shareToken) / (10 ** 18);
 
         mvToTokenPaths[0] = DataTypes.InitSwapsData({
             quouter: address(quoterV2),
@@ -179,7 +179,7 @@ contract SwapTestsSingleToken is Test {
 
         // Setup swap path for Asset2
         bytes memory pathBytesAsset2 = abi.encodePacked(address(mainToken), uint24(3000), address(assetToken2));
-        uint256 capitalForAsset2 = (totalMVBalanceForAssetSwaps * initData.assets[1].shareMV) / (10 ** 18);
+        uint256 capitalForAsset2 = (totalMVBalanceForAssetSwaps * initData.assets[1].shareToken) / (10 ** 18);
 
         mvToTokenPaths[1] = DataTypes.InitSwapsData({
             quouter: address(quoterV2),

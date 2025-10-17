@@ -78,13 +78,13 @@ contract PriceValidationTest is Test {
         DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](2);
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(tokenUSDC)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(tokenWETH)),
-            shareMV: 5 * 10 ** 17,
+            shareToken: 5 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -94,7 +94,7 @@ contract PriceValidationTest is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 7 * 10 ** 17,
+            shareMV: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
         });

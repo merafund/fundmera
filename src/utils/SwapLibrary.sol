@@ -357,7 +357,7 @@ library SwapLibrary {
         require(currentSellPrice > averageBuyPrice, PriceDidNotIncreaseEnough());
 
         // Calculate new deposit after the sale
-        uint256 initialDeposit = tokenData.capitalOfMi * tokenData.shareMI / Constants.SHARE_DENOMINATOR; // Using init deposit instead of capital
+        uint256 initialDeposit = tokenData.capitalOfMi * tokenData.shareMV / Constants.SHARE_DENOMINATOR; // Using init deposit instead of capital
 
         uint256 profit = 0;
 
@@ -377,7 +377,7 @@ library SwapLibrary {
 
         // Calculate the minimum required MV tokens that should remain after the sale
         uint256 remainingTokens = tokenData.mvBought;
-        uint256 minRequiredTokens = (tokenData.capitalOfMi * tokenData.shareMI) / currentSellPrice;
+        uint256 minRequiredTokens = (tokenData.capitalOfMi * tokenData.shareMV) / currentSellPrice;
 
         // Ensure we still hold enough MV tokens
         require(remainingTokens >= minRequiredTokens, InsufficientTokensRemaining());
@@ -472,7 +472,7 @@ library SwapLibrary {
 
         DataTypes.AssetData storage assetData = assetsData[swapParams.fromToken];
 
-        uint256 initialDeposit = (assetData.capital * assetData.shareMV) / Constants.SHARE_DENOMINATOR;
+        uint256 initialDeposit = (assetData.capital * assetData.shareToken) / Constants.SHARE_DENOMINATOR;
 
         int256 newDeposit = int256(assetData.deposit) - int256(mvReceived);
         // Calculate average purchase price (MV/Asset)
@@ -495,7 +495,7 @@ library SwapLibrary {
 
         // Check that we're not selling too much asset
         uint256 remainingTokens = assetData.tokenBought - tokenSpent;
-        uint256 minRequiredTokens = (assetData.capital * assetData.shareMV) / currentSellPrice;
+        uint256 minRequiredTokens = (assetData.capital * assetData.shareToken) / currentSellPrice;
 
         // Ensure that we have enough tokens left after the sale
         require(remainingTokens >= minRequiredTokens, InsufficientTokensRemaining());
@@ -532,7 +532,7 @@ library SwapLibrary {
         // Calculate current purchase price (MV per Asset)
         uint256 currentPrice = (mvSpent * Constants.SHARE_DENOMINATOR) / assetReceived;
 
-        uint256 workingOrderDeposit = (assetData.capital * assetData.shareMV * assetData.step)
+        uint256 workingOrderDeposit = (assetData.capital * assetData.shareToken * assetData.step)
             / (Constants.SHARE_DENOMINATOR * (Constants.SHARE_DENOMINATOR + assetData.step));
 
         uint256 workingBalanceBuy = (assetData.tokenBought * assetData.step) / (Constants.SHARE_DENOMINATOR);
@@ -595,7 +595,7 @@ library SwapLibrary {
         }
 
         // Calculate working order depisit (WOD)
-        uint256 workingOrderDeposit = (assetData.capital * assetData.shareMV * assetData.step)
+        uint256 workingOrderDeposit = (assetData.capital * assetData.shareToken * assetData.step)
             / (Constants.SHARE_DENOMINATOR * (Constants.SHARE_DENOMINATOR + assetData.step));
 
         // Calculate working order balance (WOB)

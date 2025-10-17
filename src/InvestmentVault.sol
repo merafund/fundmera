@@ -150,7 +150,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
 
         require(initData.step <= Constants.MAX_STEP && initData.step >= Constants.MIN_STEP, InvalidStep());
         require(
-            initData.shareMI <= Constants.SHARE_INITIAL_MAX || initData.shareMI == Constants.SHARE_DENOMINATOR,
+            initData.shareMV <= Constants.SHARE_INITIAL_MAX || initData.shareMV == Constants.SHARE_DENOMINATOR,
             ShareExceedsMaximum()
         );
 
@@ -160,7 +160,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
             tokenMV: initData.tokenMV,
             capitalOfMi: initData.capitalOfMi,
             mvBought: 0,
-            shareMI: initData.shareMI,
+            shareMV: initData.shareMV,
             depositInMv: 0,
             timestampOfStartInvestment: block.timestamp,
             profitType: mainVault.profitType(),
@@ -192,13 +192,13 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
                 initData.assets[i].step <= Constants.MAX_STEP && initData.assets[i].step >= Constants.MIN_STEP,
                 InvalidStep()
             );
-            require(initData.assets[i].shareMV <= Constants.SHARE_INITIAL_MAX, ShareExceedsMaximum());
+            require(initData.assets[i].shareToken <= Constants.SHARE_INITIAL_MAX, ShareExceedsMaximum());
             require(
                 initData.assets[i].token != initData.tokenMI && initData.assets[i].token != initData.tokenMV,
                 InvalidToken()
             );
             assetsData[initData.assets[i].token] = DataTypes.AssetData({
-                shareMV: initData.assets[i].shareMV,
+                shareToken: initData.assets[i].shareToken,
                 step: initData.assets[i].step,
                 strategy: initData.assets[i].strategy,
                 deposit: 0,
@@ -210,7 +210,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
             });
         }
         if (initData.tokenMI == initData.tokenMV) {
-            require(initData.shareMI == Constants.SHARE_DENOMINATOR, InvalidShareMi());
+            require(initData.shareMV == Constants.SHARE_DENOMINATOR, InvalidShareMi());
             tokenData.mvBought = initData.capitalOfMi;
             tokenData.depositInMv = initData.capitalOfMi;
             vaultState.swapInitState = DataTypes.SwapInitState.MiToMvInitialized;
@@ -240,7 +240,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
 
         require(tokenData.mvBought == 0, AssetAlreadyBought());
 
-        uint256 amountIn = tokenData.capitalOfMi * tokenData.shareMI / Constants.SHARE_DENOMINATOR;
+        uint256 amountIn = tokenData.capitalOfMi * tokenData.shareMV / Constants.SHARE_DENOMINATOR;
 
         amountOut = _performSwapAndValidate(miToMvPath, amountIn, deadline, tokenIn, tokenOut);
 
@@ -294,12 +294,12 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
             require(tokenIn == address(tokenData.tokenMV), InvalidMVToken());
             IERC20 targetToken = IERC20(tokenOut);
             DataTypes.AssetData memory assetData = assetsData[targetToken];
-            require(assetData.shareMV > 0, InvalidMVToken());
+            require(assetData.shareToken > 0, InvalidMVToken());
             require(assetData.tokenBought == 0, AssetAlreadyBought());
 
             assetData.capital = mvToTokenPaths[i].capital;
 
-            uint256 amountIn = (assetData.capital * assetData.shareMV) / Constants.SHARE_DENOMINATOR;
+            uint256 amountIn = (assetData.capital * assetData.shareToken) / Constants.SHARE_DENOMINATOR;
             require(amountIn <= availableMvCapital, InsufficientMvCapital());
             availableMvCapital -= amountIn;
             uint256 amountOut = _performSwapAndValidate(mvToTokenPaths[i], amountIn, deadline, tokenIn, tokenOut);
@@ -341,12 +341,12 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
                 ShareMustBeLessThanOrEqualToDeposit()
             );
 
-            uint256 oldShareMV = assetData.shareMV;
+            uint256 oldShareMV = assetData.shareToken;
 
             // Update the share value
-            assetData.shareMV = newShareMV;
+            assetData.shareToken = newShareMV;
             assetsData[token] = assetData;
-            require(assetData.shareMV <= Constants.SHARE_INITIAL_MAX, ShareExceedsMaximum());
+            require(assetData.shareToken <= Constants.SHARE_INITIAL_MAX, ShareExceedsMaximum());
 
             emit AssetShareUpdated(address(token), oldShareMV, newShareMV);
         }
@@ -385,8 +385,8 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
             ShareMustBeLessThanOrEqualToDeposit()
         );
 
-        uint256 oldShareMI = tokenData.shareMI;
-        tokenData.shareMI = newShareMI;
+        uint256 oldShareMI = tokenData.shareMV;
+        tokenData.shareMV = newShareMI;
 
         emit ShareMiUpdated(oldShareMI, newShareMI);
     }
@@ -599,9 +599,9 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
             uint256 currentDeposit = uint256(assetData.deposit);
             uint256 maxAllowedShare = (currentDeposit * Constants.SHARE_DENOMINATOR) / assetData.capital;
 
-            if (assetData.shareMV > maxAllowedShare) {
-                uint256 oldShare = assetData.shareMV;
-                assetData.shareMV = maxAllowedShare;
+            if (assetData.shareToken > maxAllowedShare) {
+                uint256 oldShare = assetData.shareToken;
+                assetData.shareToken = maxAllowedShare;
                 emit AssetShareUpdated(address(asset), oldShare, maxAllowedShare);
             }
         }
@@ -646,13 +646,13 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
             // Share must be positive
             require(newShare > 0, ShareMustBePositive());
 
-            if (newShare != assetData.shareMV) {
-                uint256 oldShare = assetData.shareMV;
-                assetData.shareMV = newShare;
+            if (newShare != assetData.shareToken) {
+                uint256 oldShare = assetData.shareToken;
+                assetData.shareToken = newShare;
                 emit AssetShareUpdated(address(asset), oldShare, newShare);
             }
         }
-        require(assetData.shareMV <= Constants.SHARE_INITIAL_MAX, ShareExceedsMaximum());
+        require(assetData.shareToken <= Constants.SHARE_INITIAL_MAX, ShareExceedsMaximum());
 
         // Update the strategy
         assetData.strategy = strategy;

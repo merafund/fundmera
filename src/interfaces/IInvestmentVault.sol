@@ -94,7 +94,7 @@ interface IInvestmentVault {
     /// Must be called after initMiToMvSwap
     ///
     /// For each asset, this function:
-    /// - Calculates and sets the capital based on mvBought and shareMV
+    /// - Calculates and sets the capital based on mvBought and shareToken
     /// - Executes swaps from MV token to the asset tokens
     /// - Updates tracking data
     ///

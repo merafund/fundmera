@@ -90,13 +90,13 @@ contract SwapTests is Test {
         DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](2);
         assets[0] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken1)),
-            shareMV: 4 * 10 ** 17,
+            shareToken: 4 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.Zero
         });
         assets[1] = DataTypes.AssetInitData({
             token: IERC20(address(assetToken2)),
-            shareMV: 3 * 10 ** 17,
+            shareToken: 3 * 10 ** 17,
             step: 5 * 10 ** 16,
             strategy: DataTypes.Strategy.First
         });
@@ -106,7 +106,7 @@ contract SwapTests is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: INITIAL_BALANCE,
-            shareMI: 7 * 10 ** 17,
+            shareMV: 7 * 10 ** 17,
             step: 5 * 10 ** 16,
             assets: assets
         });
@@ -180,7 +180,7 @@ contract SwapTests is Test {
         uint256 totalMVBalanceForAssetSwaps = tokenMV.balanceOf(address(vault));
 
         bytes memory pathBytesAsset1 = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
-        uint256 capitalForAsset1 = (totalMVBalanceForAssetSwaps * initData.assets[0].shareMV) / (10 ** 18);
+        uint256 capitalForAsset1 = (totalMVBalanceForAssetSwaps * initData.assets[0].shareToken) / (10 ** 18);
 
         mvToTokenPaths[0] = DataTypes.InitSwapsData({
             quouter: address(quoterV2),
@@ -195,7 +195,7 @@ contract SwapTests is Test {
         mvToTokenPaths[0].path[1] = address(assetToken1);
 
         bytes memory pathBytesAsset2 = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken2));
-        uint256 capitalForAsset2 = (totalMVBalanceForAssetSwaps * initData.assets[1].shareMV) / (10 ** 18);
+        uint256 capitalForAsset2 = (totalMVBalanceForAssetSwaps * initData.assets[1].shareToken) / (10 ** 18);
 
         mvToTokenPaths[1] = DataTypes.InitSwapsData({
             quouter: address(quoterV2),
@@ -513,7 +513,7 @@ contract SwapTests is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: 0,
-            shareMI: 0,
+            shareMV: 0,
             step: 5 * 10 ** 16,
             assets: emptyAssets
         });
@@ -610,7 +610,7 @@ contract SwapTests is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: 0, // No initial deposit to prevent auto-swap initialization
-            shareMI: 0,
+            shareMV: 0,
             step: 5 * 10 ** 16,
             assets: emptyAssets
         });
@@ -728,7 +728,7 @@ contract SwapTests is Test {
             tokenMI: IERC20(address(tokenMI)),
             tokenMV: IERC20(address(tokenMV)),
             capitalOfMi: 0,
-            shareMI: 0,
+            shareMV: 0,
             step: 5 * 10 ** 16,
             assets: emptyAssets
         });
@@ -1741,7 +1741,7 @@ contract SwapTests is Test {
         bytes memory pathBytes = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
 
         (
-            uint256 shareMV,
+            uint256 shareToken,
             uint256 step,
             DataTypes.Strategy strategy,
             int256 currentDeposit,
