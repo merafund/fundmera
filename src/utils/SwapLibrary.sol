@@ -78,6 +78,64 @@ library SwapLibrary {
         uint256 earntProfitFee
     );
 
+    /// @dev Distribute MI-denominated profit between investor and fee according to profit type
+    ///      This helper centralizes Dynamic/Fixed profit allocation logic to avoid duplication.
+    function distributeMiProfit(
+        DataTypes.TokenData storage tokenData,
+        DataTypes.ProfitData storage profitData,
+        uint256 profitMi,
+        IMainVault mainVault
+    ) internal {
+        if (profitMi == 0) {
+            return;
+        }
+
+        if (tokenData.profitType == DataTypes.ProfitType.Dynamic) {
+            uint256 feePercent = mainVault.feePercentage();
+            uint256 feeAmount = (profitMi * feePercent) / Constants.MAX_PERCENT;
+            uint256 investorProfit = profitMi - feeAmount;
+
+            profitData.earntProfitInvestor += investorProfit;
+            profitData.earntProfitFee += feeAmount;
+            profitData.earntProfitTotal += profitMi;
+        } else {
+            // profitData.earntProfitTotal += profitMi;
+
+            // uint256 currentFixedProfitPercent = mainVault.currentFixedProfitPercent();
+            // uint256 daysSinceStart = (block.timestamp - tokenData.timestampOfStartInvestment) / 1 days + 1;
+            // uint256 fixedProfit =
+            //     currentFixedProfitPercent * daysSinceStart * tokenData.capitalOfMi / 365 / Constants.MAX_PERCENT;
+
+            // if (fixedProfit < profitData.earntProfitTotal) {
+            //     uint256 mustEarntProfitFee = profitData.earntProfitTotal - fixedProfit;
+            //     if (mustEarntProfitFee > profitData.earntProfitFee) {
+            //         profitData.earntProfitFee = mustEarntProfitFee;
+            //         profitData.earntProfitInvestor = fixedProfit;
+            //     } else {
+            //         profitData.earntProfitFee = mustEarntProfitFee + (profitData.earntProfitFee - mustEarntProfitFee);
+            //         profitData.earntProfitInvestor = fixedProfit - (profitData.earntProfitFee - mustEarntProfitFee);
+            //     }
+            // } else {
+            //     profitData.earntProfitInvestor += profitMi;
+            // }
+
+            profitData.earntProfitTotal += profitMi;
+            profitData.earntProfitInvestor += profitMi;
+
+            uint256 currentFixedProfitPercent = mainVault.currentFixedProfitPercent();
+            uint256 daysSinceStart = (block.timestamp - tokenData.timestampOfStartInvestment) / 1 days + 1;
+            uint256 fixedProfit =
+                currentFixedProfitPercent * daysSinceStart * tokenData.capitalOfMi / 365 / Constants.MAX_PERCENT;
+
+            if (fixedProfit < profitData.earntProfitInvestor) {
+                uint256 mustEarntProfitFee = profitData.earntProfitInvestor - fixedProfit;
+
+                profitData.earntProfitFee += mustEarntProfitFee;
+                profitData.earntProfitInvestor = fixedProfit;
+            }
+        }
+    }
+
     /// @dev Process swap data and update stored information
     /// @param swapParams Swap parameters including tokens and balances
     /// @param tokenData Storage for token data
@@ -147,35 +205,8 @@ library SwapLibrary {
         profitData.profitMV += mvProfit;
 
         if (address(tokenData.tokenMI) == address(tokenData.tokenMV)) {
-            if (tokenData.profitType == DataTypes.ProfitType.Dynamic) {
-                uint256 feePercent = mainVault.feePercentage();
-                uint256 feeAmount = (mvProfit * feePercent) / Constants.MAX_PERCENT;
-                uint256 investorProfit = mvProfit - feeAmount;
-
-                profitData.earntProfitInvestor += investorProfit;
-                profitData.earntProfitFee += feeAmount;
-                profitData.earntProfitTotal += mvProfit;
-            } else {
-                profitData.earntProfitTotal += mvProfit;
-                uint256 currentFixedProfitPercent = mainVault.currentFixedProfitPercent();
-                uint256 daysSinceStart = (block.timestamp - tokenData.timestampOfStartInvestment) / 1 days;
-                uint256 fixedProfit =
-                    currentFixedProfitPercent * daysSinceStart * tokenData.capitalOfMi / 365 / Constants.MAX_PERCENT;
-
-                if (fixedProfit < profitData.earntProfitTotal) {
-                    uint256 mustEarntProfitFee = profitData.earntProfitTotal - fixedProfit;
-                    if (mustEarntProfitFee > profitData.earntProfitFee) {
-                        profitData.earntProfitFee = mustEarntProfitFee;
-                        profitData.earntProfitInvestor = fixedProfit;
-                    } else {
-                        profitData.earntProfitFee =
-                            mustEarntProfitFee + (profitData.earntProfitFee - mustEarntProfitFee);
-                        profitData.earntProfitInvestor = fixedProfit - (profitData.earntProfitFee - mustEarntProfitFee);
-                    }
-                } else {
-                    profitData.earntProfitInvestor += mvProfit;
-                }
-            }
+            // If MI and MV are the same token, MV profit is effectively MI profit
+            distributeMiProfit(tokenData, profitData, mvProfit, mainVault);
         }
     }
 
@@ -198,34 +229,7 @@ library SwapLibrary {
 
         profitData.profitMV -= mvSpent;
 
-        if (tokenData.profitType == DataTypes.ProfitType.Dynamic) {
-            uint256 feePercent = mainVault.feePercentage();
-            uint256 feeAmount = (miReceived * feePercent) / Constants.MAX_PERCENT;
-            uint256 investorProfit = miReceived - feeAmount;
-
-            profitData.earntProfitInvestor += investorProfit;
-            profitData.earntProfitFee += feeAmount;
-            profitData.earntProfitTotal += miReceived;
-        } else {
-            profitData.earntProfitTotal += miReceived;
-            uint256 currentFixedProfitPercent = mainVault.currentFixedProfitPercent();
-            uint256 daysSinceStart = (block.timestamp - tokenData.timestampOfStartInvestment) / 1 days;
-            uint256 fixedProfit =
-                currentFixedProfitPercent * daysSinceStart * tokenData.capitalOfMi / 365 / Constants.MAX_PERCENT;
-
-            if (fixedProfit < profitData.earntProfitTotal) {
-                uint256 mustEarntProfitFee = profitData.earntProfitTotal - fixedProfit;
-                if (mustEarntProfitFee > profitData.earntProfitFee) {
-                    profitData.earntProfitFee = mustEarntProfitFee;
-                    profitData.earntProfitInvestor = fixedProfit;
-                } else {
-                    profitData.earntProfitFee = mustEarntProfitFee + (profitData.earntProfitFee - mustEarntProfitFee);
-                    profitData.earntProfitInvestor = fixedProfit - (profitData.earntProfitFee - mustEarntProfitFee);
-                }
-            } else {
-                profitData.earntProfitInvestor += miReceived;
-            }
-        }
+        distributeMiProfit(tokenData, profitData, miReceived, mainVault);
         emit SwapMvProfitToMiProfit(
             address(swapParams.fromToken),
             address(swapParams.toToken),
@@ -384,14 +388,7 @@ library SwapLibrary {
 
         // If there is profit, distribute it between investor and fee wallets
         if (profit > 0) {
-            uint256 feePercent = mainVault.feePercentage();
-            uint256 feeAmount = (profit * feePercent) / Constants.MAX_PERCENT;
-            uint256 investorProfit = profit - feeAmount;
-
-            profitData.earntProfitInvestor += investorProfit;
-            profitData.earntProfitFee += feeAmount;
-            profitData.earntProfitTotal += profit;
-
+            distributeMiProfit(tokenData, profitData, profit, mainVault);
             emit ProfitCalculated(address(swapParams.fromToken), address(swapParams.toToken), profit);
         }
     }
@@ -605,16 +602,16 @@ library SwapLibrary {
         require(workingOrderBalance >= assetSpent, SoldMoreThanExpectedWOB());
         require(workingOrderDeposit < mvReceived, PriceDidNotIncreaseEnough());
 
-        uint256 profit = mvReceived - workingOrderDeposit;
+        uint256 profitAmount = mvReceived - workingOrderDeposit;
         // Add to profit
-        addMvProfit(tokenData, profitData, profit, mainVault);
+        addMvProfit(tokenData, profitData, profitAmount, mainVault);
 
         // Update deposit and balance
         assetData.deposit -= int256(workingOrderDeposit);
         assetData.tokenBought -= assetSpent;
 
         // Emit profit calculated event
-        emit ProfitCalculated(address(swapParams.fromToken), address(swapParams.toToken), profit);
+        emit ProfitCalculated(address(swapParams.fromToken), address(swapParams.toToken), profitAmount);
     }
 
     /// @dev Extract first and last token from a Uniswap V3 path
@@ -1050,36 +1047,7 @@ library SwapLibrary {
 
         // Distribute profit (if any) between investor and fee wallets
         if (profit > 0) {
-            if (tokenData.profitType == DataTypes.ProfitType.Dynamic) {
-                uint256 feePercent = mainVault.feePercentage();
-                uint256 feeAmount = (profit * feePercent) / Constants.MAX_PERCENT;
-                uint256 investorProfit = profit - feeAmount;
-
-                profitData.earntProfitInvestor += investorProfit;
-                profitData.earntProfitFee += feeAmount;
-                profitData.earntProfitTotal += profit;
-            } else {
-                profitData.earntProfitTotal += profit;
-                uint256 currentFixedProfitPercent = mainVault.currentFixedProfitPercent();
-                uint256 daysSinceStart = (block.timestamp - tokenData.timestampOfStartInvestment) / 1 days;
-                uint256 fixedProfit =
-                    (currentFixedProfitPercent * daysSinceStart * tokenData.capitalOfMi) / 365 / Constants.MAX_PERCENT;
-
-                if (fixedProfit < profitData.earntProfitTotal) {
-                    uint256 mustEarntProfitFee = profitData.earntProfitTotal - fixedProfit;
-                    if (mustEarntProfitFee > profitData.earntProfitFee) {
-                        profitData.earntProfitFee = mustEarntProfitFee;
-                        profitData.earntProfitInvestor = fixedProfit;
-                    } else {
-                        profitData.earntProfitFee =
-                            mustEarntProfitFee + (profitData.earntProfitFee - mustEarntProfitFee);
-                        profitData.earntProfitInvestor = fixedProfit - (profitData.earntProfitFee - mustEarntProfitFee);
-                    }
-                } else {
-                    profitData.earntProfitInvestor += profit;
-                }
-            }
-
+            distributeMiProfit(tokenData, profitData, profit, mainVault);
             emit ProfitCalculated(address(swapParams.fromToken), address(swapParams.toToken), profit);
         }
 

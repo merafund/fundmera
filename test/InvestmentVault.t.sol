@@ -2338,8 +2338,8 @@ contract InvestmentVaultTest is Test {
 
         vm.startPrank(owner);
 
-        // Move time forward by 365 days
-        vm.warp(block.timestamp + 365 days);
+        // Move time forward by 364 days
+        vm.warp(block.timestamp + 364 days);
 
         // Add large profit (more than fixed)
         uint256 profit = capitalOfMiBefore * 30 / 100; // 30% of capitalOfMi

@@ -445,33 +445,8 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
 
         uint256 totalProfit = finalBalance - tokenData.capitalOfMi
             - (profitData.earntProfitTotal - profitData.withdrawnProfitInvestor - profitData.withdrawnProfitFee);
-        if (tokenData.profitType == DataTypes.ProfitType.Dynamic) {
-            uint256 feePercent = mainVault.feePercentage();
-            uint256 feeAmount = (totalProfit * feePercent) / Constants.MAX_PERCENT;
-            uint256 investorProfit = totalProfit - feeAmount;
-            profitData.earntProfitInvestor += investorProfit;
-            profitData.earntProfitFee += feeAmount;
-            profitData.earntProfitTotal += totalProfit;
-        } else {
-            profitData.earntProfitTotal += totalProfit;
-            uint256 currentFixedProfitPercent = mainVault.currentFixedProfitPercent();
-            uint256 daysSinceStart = (block.timestamp - tokenData.timestampOfStartInvestment) / 1 days;
-            uint256 fixedProfit =
-                currentFixedProfitPercent * daysSinceStart * tokenData.capitalOfMi / (365 * Constants.MAX_PERCENT);
-
-            if (fixedProfit < profitData.earntProfitTotal) {
-                uint256 mustEarntProfitFee = profitData.earntProfitTotal - fixedProfit;
-                if (mustEarntProfitFee > profitData.earntProfitFee) {
-                    profitData.earntProfitFee = mustEarntProfitFee;
-                    profitData.earntProfitInvestor = fixedProfit;
-                } else {
-                    profitData.earntProfitFee = mustEarntProfitFee + (profitData.earntProfitFee - mustEarntProfitFee);
-                    profitData.earntProfitInvestor = fixedProfit - (profitData.earntProfitFee - mustEarntProfitFee);
-                }
-            } else {
-                profitData.earntProfitInvestor += totalProfit;
-            }
-        }
+        // Use centralized helper to distribute MI-denominated profit
+        SwapLibrary.distributeMiProfit(tokenData, profitData, totalProfit, mainVault);
 
         tokenData.tokenMI.safeTransfer(address(mainVault), tokenData.capitalOfMi);
 
