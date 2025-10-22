@@ -17,6 +17,7 @@ import {
 } from "../src/utils/MultiAdminSingleHolderAccessControlUppgradable.sol";
 import {IMultiAdminSingleHolderAccessControl} from "../src/interfaces/IMultiAdminSingleHolderAccessControl.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 // Test implementation contract that extends the abstract contract
 contract TestMultiAdminSingleHolderAccessControl is MultiAdminSingleHolderAccessControlUppgradable {
@@ -141,6 +142,19 @@ contract MultiAdminSingleHolderAccessControlTest is Test {
     // Test supportsInterface
     function test_SupportsInterface() public view {
         assertTrue(accessControl.supportsInterface(type(IMultiAdminSingleHolderAccessControl).interfaceId));
+    }
+
+    // Test supportsInterface with parent interface (IERC165) - tests super.supportsInterface delegation
+    function test_SupportsInterface_ParentInterface() public view {
+        // Test that the contract supports IERC165 interface through super.supportsInterface delegation
+        assertTrue(accessControl.supportsInterface(type(IERC165).interfaceId));
+        
+        // Test with a non-existent interface - should return false
+        bytes4 nonExistentInterface = 0x12345678;
+        assertFalse(accessControl.supportsInterface(nonExistentInterface));
+        
+        // Test with zero interface ID - should return false
+        assertFalse(accessControl.supportsInterface(bytes4(0)));
     }
 
     // Test hasRole function
@@ -825,7 +839,7 @@ contract MultiAdminSingleHolderAccessControlTest is Test {
     }
 
     // Test initialization state consistency
-    function test_InitializationStateConsistency() public {
+    function test_InitializationStateConsistency() public view {
         // Verify that after initialization, the contract is in expected state
         assertTrue(accessControl.hasRole(DEFAULT_ADMIN_ROLE, admin));
         assertTrue(accessControl.isRoleAdmin(DEFAULT_ADMIN_ROLE, DEFAULT_ADMIN_ROLE));
