@@ -598,4 +598,221 @@ contract FactoryTest is Test {
         factory.setMeraPriceOracle(address(0));
         vm.stopPrank();
     }
+
+    // Tests for createMainVaultWithLock function
+    function test_CreateMainVaultWithLock() public {
+        string memory referralCode = "TEST_CODE";
+        address profitWallet = makeAddr("profitWallet");
+        uint64 lockPeriod = 365 days; // Use allowed lock period
+
+        // First create agent distribution for the referral code
+        vm.startPrank(factory.deployer());
+        address agentWallet = makeAddr("agentWallet");
+        address reserveAgentWallet = makeAddr("reserveAgentWallet");
+        address emergencyAgentWallet = makeAddr("emergencyAgentWallet");
+        address agentDistProxy =
+            factory.createAgentDistribution(referralCode, agentWallet, reserveAgentWallet, emergencyAgentWallet);
+        vm.stopPrank();
+
+        // Create MainVault with lock
+        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
+        assertTrue(mainVaultProxy != address(0));
+
+        // Verify MainVault initialization
+        MainVault vault = MainVault(mainVaultProxy);
+        assertTrue(vault.hasRole(vault.MAIN_INVESTOR_ROLE(), ALICE));
+        assertTrue(vault.hasRole(vault.BACKUP_INVESTOR_ROLE(), BOB));
+        assertTrue(vault.hasRole(vault.EMERGENCY_INVESTOR_ROLE(), CHARLIE));
+        assertEq(vault.profitWallet(), profitWallet);
+        assertEq(vault.feeWallet(), agentDistProxy);
+    }
+
+    function test_CreateMainVaultWithLockWithDefaultReferral() public {
+        address profitWallet = makeAddr("profitWallet");
+        string memory nonExistentCode = "NON_EXISTENT";
+        uint64 lockPeriod = 10 minutes; // Use allowed lock period
+
+        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, nonExistentCode, lockPeriod);
+        assertTrue(mainVaultProxy != address(0));
+
+        // Verify MainVault uses default agent distribution
+        MainVault vault = MainVault(mainVaultProxy);
+        assertEq(vault.feeWallet(), factory.defaultAgentDistribution());
+    }
+
+    function test_CreateMainVaultWithLockWithZeroLockPeriod() public {
+        string memory referralCode = "TEST_CODE";
+        address profitWallet = makeAddr("profitWallet");
+        uint64 lockPeriod = 0;
+
+        // First create agent distribution for the referral code
+        vm.startPrank(factory.deployer());
+        address agentWallet = makeAddr("agentWallet");
+        address reserveAgentWallet = makeAddr("reserveAgentWallet");
+        address emergencyAgentWallet = makeAddr("emergencyAgentWallet");
+        address agentDistProxy =
+            factory.createAgentDistribution(referralCode, agentWallet, reserveAgentWallet, emergencyAgentWallet);
+        vm.stopPrank();
+
+        // Create MainVault with zero lock period
+        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
+        assertTrue(mainVaultProxy != address(0));
+
+        // Verify MainVault initialization
+        MainVault vault = MainVault(mainVaultProxy);
+        assertTrue(vault.hasRole(vault.MAIN_INVESTOR_ROLE(), ALICE));
+        assertTrue(vault.hasRole(vault.BACKUP_INVESTOR_ROLE(), BOB));
+        assertTrue(vault.hasRole(vault.EMERGENCY_INVESTOR_ROLE(), CHARLIE));
+        assertEq(vault.profitWallet(), profitWallet);
+        assertEq(vault.feeWallet(), agentDistProxy);
+    }
+
+    function test_CreateMainVaultWithLockWithThreeYearLockPeriod() public {
+        string memory referralCode = "TEST_CODE";
+        address profitWallet = makeAddr("profitWallet");
+        uint64 lockPeriod = 365 days * 3; // Use allowed lock period
+
+        // First create agent distribution for the referral code
+        vm.startPrank(factory.deployer());
+        address agentWallet = makeAddr("agentWallet");
+        address reserveAgentWallet = makeAddr("reserveAgentWallet");
+        address emergencyAgentWallet = makeAddr("emergencyAgentWallet");
+        address agentDistProxy =
+            factory.createAgentDistribution(referralCode, agentWallet, reserveAgentWallet, emergencyAgentWallet);
+        vm.stopPrank();
+
+        // Create MainVault with 3-year lock period
+        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
+        assertTrue(mainVaultProxy != address(0));
+
+        // Verify MainVault initialization
+        MainVault vault = MainVault(mainVaultProxy);
+        assertTrue(vault.hasRole(vault.MAIN_INVESTOR_ROLE(), ALICE));
+        assertTrue(vault.hasRole(vault.BACKUP_INVESTOR_ROLE(), BOB));
+        assertTrue(vault.hasRole(vault.EMERGENCY_INVESTOR_ROLE(), CHARLIE));
+        assertEq(vault.profitWallet(), profitWallet);
+        assertEq(vault.feeWallet(), agentDistProxy);
+    }
+
+    function test_CreateMainVaultWithLockWithFiveYearLockPeriod() public {
+        string memory referralCode = "TEST_CODE";
+        address profitWallet = makeAddr("profitWallet");
+        uint64 lockPeriod = 365 days * 5; // Use allowed lock period
+
+        // First create agent distribution for the referral code
+        vm.startPrank(factory.deployer());
+        address agentWallet = makeAddr("agentWallet");
+        address reserveAgentWallet = makeAddr("reserveAgentWallet");
+        address emergencyAgentWallet = makeAddr("emergencyAgentWallet");
+        address agentDistProxy =
+            factory.createAgentDistribution(referralCode, agentWallet, reserveAgentWallet, emergencyAgentWallet);
+        vm.stopPrank();
+
+        // Create MainVault with 5-year lock period
+        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
+        assertTrue(mainVaultProxy != address(0));
+
+        // Verify MainVault initialization
+        MainVault vault = MainVault(mainVaultProxy);
+        assertTrue(vault.hasRole(vault.MAIN_INVESTOR_ROLE(), ALICE));
+        assertTrue(vault.hasRole(vault.BACKUP_INVESTOR_ROLE(), BOB));
+        assertTrue(vault.hasRole(vault.EMERGENCY_INVESTOR_ROLE(), CHARLIE));
+        assertEq(vault.profitWallet(), profitWallet);
+        assertEq(vault.feeWallet(), agentDistProxy);
+    }
+
+    function test_RevertCreateMainVaultWithLockWithZeroAddresses() public {
+        string memory referralCode = "TEST_CODE";
+        address profitWallet = makeAddr("profitWallet");
+        uint64 lockPeriod = 365 days; // Use allowed lock period
+        address mainInvestor = makeAddr("mainInvestor");
+        address backupInvestor = makeAddr("backupInvestor");
+        address emergencyInvestor = makeAddr("emergencyInvestor");
+
+        // Test mainInvestor
+        vm.expectRevert(IFactory.ZeroAddress.selector);
+        factory.createMainVaultWithLock(address(0), backupInvestor, emergencyInvestor, profitWallet, referralCode, lockPeriod);
+
+        // Test backupInvestor
+        vm.expectRevert(IFactory.ZeroAddress.selector);
+        factory.createMainVaultWithLock(mainInvestor, address(0), emergencyInvestor, profitWallet, referralCode, lockPeriod);
+
+        // Test emergencyInvestor
+        vm.expectRevert(IFactory.ZeroAddress.selector);
+        factory.createMainVaultWithLock(mainInvestor, backupInvestor, address(0), profitWallet, referralCode, lockPeriod);
+
+        // Test profitWallet
+        vm.expectRevert(IFactory.ZeroAddress.selector);
+        factory.createMainVaultWithLock(mainInvestor, backupInvestor, emergencyInvestor, address(0), referralCode, lockPeriod);
+    }
+
+    function test_CreateMainVaultWithLockEmitsEvent() public {
+        string memory referralCode = "TEST_CODE";
+        address profitWallet = makeAddr("profitWallet");
+        uint64 lockPeriod = 365 days; // Use allowed lock period
+
+        // First create agent distribution for the referral code
+        vm.startPrank(factory.deployer());
+        address agentWallet = makeAddr("agentWallet");
+        address reserveAgentWallet = makeAddr("reserveAgentWallet");
+        address emergencyAgentWallet = makeAddr("emergencyAgentWallet");
+        address agentDistProxy =
+            factory.createAgentDistribution(referralCode, agentWallet, reserveAgentWallet, emergencyAgentWallet);
+        vm.stopPrank();
+
+        // Expect event emission - check all parameters except the first one (proxy address)
+        vm.expectEmit(false, true, true, true);
+        emit MainVaultCreated(
+            address(0), // This will be ignored in the check
+            ALICE,
+            address(this),
+            BOB,
+            CHARLIE,
+            profitWallet,
+            referralCode
+        );
+
+        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
+        assertTrue(mainVaultProxy != address(0));
+    }
+
+    function test_CreateMainVaultWithLockWithDefaultReferralEmitsEvent() public {
+        address profitWallet = makeAddr("profitWallet");
+        string memory nonExistentCode = "NON_EXISTENT";
+        uint64 lockPeriod = 10 minutes; // Use allowed lock period
+
+        // Expect event emission with DEFAULT referral code - check all parameters except the first one (proxy address)
+        vm.expectEmit(false, true, true, true);
+        emit MainVaultCreated(
+            address(0), // This will be ignored in the check
+            ALICE,
+            address(this),
+            BOB,
+            CHARLIE,
+            profitWallet,
+            "DEFAULT"
+        );
+
+        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, nonExistentCode, lockPeriod);
+        assertTrue(mainVaultProxy != address(0));
+    }
+
+    function test_RevertCreateMainVaultWithLockWithInvalidLockPeriod() public {
+        string memory referralCode = "TEST_CODE";
+        address profitWallet = makeAddr("profitWallet");
+        uint64 invalidLockPeriod = 30 days; // This period is not allowed
+
+        // First create agent distribution for the referral code
+        vm.startPrank(factory.deployer());
+        address agentWallet = makeAddr("agentWallet");
+        address reserveAgentWallet = makeAddr("reserveAgentWallet");
+        address emergencyAgentWallet = makeAddr("emergencyAgentWallet");
+        address agentDistProxy =
+            factory.createAgentDistribution(referralCode, agentWallet, reserveAgentWallet, emergencyAgentWallet);
+        vm.stopPrank();
+
+        // This should revert with LockPeriodNotAvailable error
+        vm.expectRevert("LockPeriodNotAvailable()");
+        factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, invalidLockPeriod);
+    }
 }
