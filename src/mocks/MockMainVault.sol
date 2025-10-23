@@ -17,8 +17,14 @@ contract MockMainVault {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     mapping(address => bool) public roles;
-    mapping(address => bool) public availableRouters;
-    mapping(address => bool) public availableTokens;
+
+    // Separate storage for admin and investor
+    mapping(address => bool) public availableRoutersByAdmin;
+    mapping(address => bool) public availableTokensByAdmin;
+    mapping(address => bool) public availableRoutersByInvestor;
+    mapping(address => bool) public availableTokensByInvestor;
+
+    // Router-quoter pairs (shared for now, but could be separated if needed)
     mapping(address => mapping(address => bool)) public availableRouterQuoterPairs;
 
     bool public _paused;
@@ -73,41 +79,53 @@ contract MockMainVault {
     }
 
     function setAvailableRouter(address router, bool available) external {
-        availableRouters[router] = available;
+        // Set for both admin and investor for backward compatibility
+        availableRoutersByAdmin[router] = available;
+        availableRoutersByInvestor[router] = available;
+    }
+
+    function setAvailableRouterForAdmin(address router, bool available) external {
+        availableRoutersByAdmin[router] = available;
+    }
+
+    function setAvailableRouterForInvestor(address router, bool available) external {
+        availableRoutersByInvestor[router] = available;
     }
 
     function setRouterQuoterPairAvailabilityByInvestor(DataTypes.RouterQuoterPair[] calldata pairs) external {
         for (uint256 i = 0; i < pairs.length; i++) {
-            availableRouters[pairs[i].router] = true;
+            availableRoutersByInvestor[pairs[i].router] = true;
             availableRouterQuoterPairs[pairs[i].router][pairs[i].quoter] = true;
         }
     }
 
     function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPair[] calldata pairs) external {
         for (uint256 i = 0; i < pairs.length; i++) {
-            availableRouters[pairs[i].router] = true;
+            availableRoutersByAdmin[pairs[i].router] = true;
             availableRouterQuoterPairs[pairs[i].router][pairs[i].quoter] = true;
         }
     }
 
     function availableRouterByAdmin(address router) external view returns (bool) {
-        return availableRouters[router];
+        return availableRoutersByAdmin[router];
     }
 
     function setAvailableToken(address token, bool available) external {
-        availableTokens[token] = available;
+        // Set for both admin and investor for backward compatibility
+        availableTokensByAdmin[token] = available;
+        availableTokensByInvestor[token] = available;
     }
 
-    function availableTokensByAdmin(address token) external view returns (bool) {
-        return availableTokens[token];
+    function setAvailableTokenForAdmin(address token, bool available) external {
+        availableTokensByAdmin[token] = available;
+    }
+
+    function setAvailableTokenForInvestor(address token, bool available) external {
+        availableTokensByInvestor[token] = available;
     }
 
     function availableRouterByInvestor(address router) external view returns (bool) {
-        return availableRouters[router];
-    }
-
-    function availableTokensByInvestor(address token) external view returns (bool) {
-        return availableTokens[token];
+        return availableRoutersByInvestor[router];
     }
 
     function setProfitLock(uint256 lockUntil) external {

@@ -1305,6 +1305,13 @@ contract MainVaultTest is Test {
         assertEq(vault.currentImplementationOfInvestmentVault(), newImplementation, "Implementation should be updated");
     }
 
+    function testSetCurrentImplementationOfInvestmentVault_InvalidUpgradeAddress() public {
+        // Test that setting address(0) as implementation reverts with InvalidUpgradeAddress
+        vm.prank(admin);
+        vm.expectRevert(MainVault.InvalidUpgradeAddress.selector);
+        vault.setCurrentImplementationOfInvestmentVault(address(0));
+    }
+
     function testSetAutoRenewWithdrawalLock() public {
         vm.startPrank(mainInvestor);
 
@@ -2028,6 +2035,58 @@ contract MainVaultTest is Test {
 
         vm.expectRevert(MainVault.InsufficientBalance.selector);
         vault.deployInvestmentVault(initData);
+        vm.stopPrank();
+    }
+
+    function testDeployInvestmentVault_InvalidImplementationAddress() public {
+        // Create a new MainVault implementation and proxy with zero implementation address
+        MainVault testImplementation = new MainVault();
+
+        // Initialize with zero implementation address
+        IMainVault.InitParams memory initParams = IMainVault.InitParams({
+            mainInvestor: mainInvestor,
+            backupInvestor: address(0),
+            emergencyInvestor: address(0),
+            manager: address(0),
+            admin: admin,
+            backupAdmin: address(0),
+            emergencyAdmin: address(0),
+            feeWallet: address(0),
+            profitWallet: profitWallet,
+            feePercentage: FEE_PERCENTAGE,
+            currentImplementationOfInvestmentVault: address(0), // Zero address
+            pauserList: address(pauserList),
+            meraPriceOracle: address(0),
+            lockPeriod: 0
+        });
+
+        bytes memory initData = abi.encodeWithSelector(MainVault.initialize.selector, initParams);
+        ERC1967Proxy testProxy = new ERC1967Proxy(address(testImplementation), initData);
+        MainVault testVault = MainVault(address(testProxy));
+
+        // Try to deploy investment vault - should revert with InvalidImplementationAddress
+        // The testVault was initialized with admin role for address(8), so we can call from admin
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(token)),
+            shareToken: DEPOSIT_AMOUNT / 2,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory vaultInitData = DataTypes.InvestmentVaultInitData({
+            mainVault: testVault,
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)), // Using same token for simplicity
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMV: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vm.expectRevert(MainVault.InvalidImplementationAddress.selector);
+        testVault.deployInvestmentVault(vaultInitData);
         vm.stopPrank();
     }
 

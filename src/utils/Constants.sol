@@ -35,6 +35,7 @@ library Constants {
     uint256 public constant MAX_PRICE_DEVIATION = 3 * 1e18; // Maximum allowed price deviation (3%)
 
     uint256 public constant MAX_PRICE_DEVIATION_FROM_ORACLE = 5 * 1e18; // Maximum allowed price deviation from oracle (5%)
+    uint256 public constant MAX_MV_PRICE_DECLINE_FROM_ENTRY = 5e15; // Maximum allowed MV price decline from entry point (0.5%)
 
     uint256 public constant MAX_FIXED_PROFIT_PERCENT = 2500; // Represents 25.00% - fixed profit percent can't exceed this value
     uint256 public constant MIN_TIME_BETWEEN_BUYS = 30 days; // Minimum time between buys of an asset
@@ -42,4 +43,5 @@ library Constants {
     uint256 public constant MIN_STEP = 2e16; // Minimum step of an asset
     uint256 public constant SHARE_INITIAL_MAX = 7e17; // Maximum share of an asset
     uint256 public constant PURCHASE_CONDITION_CHANGE_THRESHOLD = 5e17; // Represents 50% - threshold for changing purchase conditions
+    uint256 public constant NON_BURNABLE_RESERVE_PERCENT = 2e17; // Represents 20% - minimum MV reserve that should remain on balance
 }

@@ -11,6 +11,7 @@ pragma solidity ^0.8.0;
 pragma abicoder v2;
 
 import {ISwapRouter} from "../../src/interfaces/ISwapRouter.sol";
+import {ISwapRouterBase} from "../../src/interfaces/ISwapRouterBase.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Mock contract for UniswapV3Router with fixed price swaps
@@ -128,5 +129,87 @@ contract UniswapV3Mock is ISwapRouter {
 
     function uniswapV3SwapCallback(int256, int256, bytes calldata) external pure override {
         revert("UniswapV3Mock: UNIMPLEMENTED");
+    }
+
+    // Additional methods to support ISwapRouterBase interface
+    // These methods implement ISwapRouterBase.ExactInputSingleParams structure
+    function exactInputSingle(ISwapRouterBase.ExactInputSingleParams calldata params)
+        external
+        payable
+        returns (uint256 amountOut)
+    {
+        // Calculate output amount based on fixed price
+        amountOut = (params.amountIn * prices[params.tokenIn][params.tokenOut]) / 1e18;
+        require(amountOut >= params.amountOutMinimum, "UniswapV3Mock: INSUFFICIENT_OUTPUT_AMOUNT");
+
+        // Transfer tokens
+        IERC20(params.tokenIn).transferFrom(msg.sender, address(this), params.amountIn);
+        IERC20(params.tokenOut).transfer(params.recipient, amountOut);
+
+        return amountOut;
+    }
+
+    function exactInput(ISwapRouterBase.ExactInputParams calldata params) external payable returns (uint256 amountOut) {
+        // Extract tokens from path
+        // Path format: [token1, fee1, token2, fee2, token3]
+        address[] memory tokens = new address[]((params.path.length + 20) / 23);
+        tokens[0] = address(uint160(bytes20(params.path[0:20])));
+
+        uint256 i;
+        uint256 offset = 0;
+        while (offset < params.path.length - 20) {
+            offset += 23; // token (20) + fee (3)
+            tokens[++i] = address(uint160(bytes20(params.path[offset:offset + 20])));
+        }
+
+        // Calculate output amount through all hops
+        amountOut = params.amountIn;
+        for (i = 0; i < tokens.length - 1; i++) {
+            amountOut = (amountOut * prices[tokens[i]][tokens[i + 1]]) / 1e18;
+        }
+        require(amountOut >= params.amountOutMinimum, "UniswapV3Mock: INSUFFICIENT_OUTPUT_AMOUNT");
+
+        // Transfer tokens
+        IERC20(tokens[0]).transferFrom(msg.sender, address(this), params.amountIn);
+        IERC20(tokens[tokens.length - 1]).transfer(params.recipient, amountOut);
+
+        return amountOut;
+    }
+
+    function exactOutputSingle(ISwapRouterBase.ExactOutputSingleParams calldata params)
+        external
+        payable
+        returns (uint256 amountIn)
+    {
+        // Create params for the main exactOutputSingle method
+        ExactOutputSingleParams memory routerParams = ExactOutputSingleParams({
+            tokenIn: params.tokenIn,
+            tokenOut: params.tokenOut,
+            fee: params.fee,
+            recipient: params.recipient,
+            deadline: type(uint256).max, // Use max deadline for base interface
+            amountOut: params.amountOut,
+            amountInMaximum: params.amountInMaximum,
+            sqrtPriceLimitX96: params.sqrtPriceLimitX96
+        });
+
+        return this.exactOutputSingle(routerParams);
+    }
+
+    function exactOutput(ISwapRouterBase.ExactOutputParams calldata params)
+        external
+        payable
+        returns (uint256 amountIn)
+    {
+        // Create params for the main exactOutput method
+        ExactOutputParams memory routerParams = ExactOutputParams({
+            path: params.path,
+            recipient: params.recipient,
+            deadline: type(uint256).max, // Use max deadline for base interface
+            amountOut: params.amountOut,
+            amountInMaximum: params.amountInMaximum
+        });
+
+        return this.exactOutput(routerParams);
     }
 }

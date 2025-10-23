@@ -14,6 +14,8 @@ import {MainVaultSwapLibrary} from "../src/utils/MainVaultSwapLibrary.sol";
 import {DataTypes} from "../src/utils/DataTypes.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
+import {ISwapRouterBase} from "../src/interfaces/ISwapRouterBase.sol";
+import {UniswapV3Mock} from "../src/mocks/UniswapV3Mock.sol";
 
 contract MainVaultSwapLibraryTest is Test {
     using MainVaultSwapLibrary for *;
@@ -22,6 +24,7 @@ contract MainVaultSwapLibraryTest is Test {
     mapping(address => bool) public availableTokensByAdmin;
 
     address public router;
+    UniswapV3Mock public swapRouterMock;
     MockERC20 public tokenIn;
     MockERC20 public tokenOut;
     address public user;
@@ -31,6 +34,27 @@ contract MainVaultSwapLibraryTest is Test {
         tokenIn = new MockERC20("TokenIn", "IN", 18);
         tokenOut = new MockERC20("TokenOut", "OUT", 18);
         user = address(0x2);
+    }
+
+    // Helper function to setup mock router for ISwapRouterBase tests
+    function _setupMockRouter() internal {
+        swapRouterMock = new UniswapV3Mock();
+
+        // Setup tokens and router
+        availableRouterByAdmin[address(swapRouterMock)] = true;
+        availableTokensByAdmin[address(tokenIn)] = true;
+        availableTokensByAdmin[address(tokenOut)] = true;
+
+        // Set price for token swap (1:2 ratio)
+        swapRouterMock.setPrice(address(tokenIn), address(tokenOut), 2e18);
+
+        // Mint tokens to this contract for testing
+        tokenIn.mint(address(this), 1000000 * 10 ** 18);
+        tokenOut.mint(address(this), 1000000 * 10 ** 18);
+
+        // Mint tokens to swapRouterMock for swaps
+        tokenIn.mint(address(swapRouterMock), 1000000 * 10 ** 18);
+        tokenOut.mint(address(swapRouterMock), 1000000 * 10 ** 18);
     }
 
     // Tests for executeExactInputSingle
@@ -570,5 +594,304 @@ contract MainVaultSwapLibraryTest is Test {
 
         vm.expectRevert(MainVaultSwapLibrary.TokenNotAvailable.selector);
         MainVaultSwapLibrary.executeQuickswapExactOutput(router, params, availableRouterByAdmin, availableTokensByAdmin);
+    }
+
+    // ==================== TESTS FOR ISwapRouterBase (deadline == 0) ====================
+
+    // Test executeExactInputSingle with deadline = 0 (uses ISwapRouterBase)
+    function testExecuteExactInputSingle_DeadlineZero_UsesSwapRouterBase() public {
+        _setupMockRouter();
+
+        DataTypes.DelegateExactInputSingleParams memory params = DataTypes.DelegateExactInputSingleParams({
+            router: address(swapRouterMock),
+            tokenIn: address(tokenIn),
+            tokenOut: address(tokenOut),
+            fee: 3000,
+            deadline: 0, // This triggers ISwapRouterBase usage
+            amountIn: 1e18,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        uint256 amountOut = MainVaultSwapLibrary.executeExactInputSingle(
+            address(swapRouterMock), params, availableRouterByAdmin, availableTokensByAdmin
+        );
+
+        // Verify the swap was successful
+        assertEq(amountOut, 2e18); // 1e18 * 2 = 2e18
+    }
+
+    // Test executeExactInput with deadline = 0 (uses ISwapRouterBase)
+    function testExecuteExactInput_DeadlineZero_UsesSwapRouterBase() public {
+        _setupMockRouter();
+        bytes memory path = abi.encodePacked(address(tokenIn), uint24(3000), address(tokenOut));
+
+        DataTypes.DelegateExactInputParams memory params = DataTypes.DelegateExactInputParams({
+            router: address(swapRouterMock),
+            path: path,
+            deadline: 0, // This triggers ISwapRouterBase usage
+            amountIn: 1e18,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        // Expect event emission (check only the event, not other logs like Approval)
+        vm.expectEmit(false, false, false, false);
+        emit MainVaultSwapLibrary.ExactInputDelegateExecuted(
+            address(swapRouterMock),
+            address(tokenIn),
+            address(tokenOut),
+            1e18,
+            2e18 // Expected output based on 1:2 price ratio
+        );
+
+        uint256 amountOut = MainVaultSwapLibrary.executeExactInput(
+            address(swapRouterMock), params, availableRouterByAdmin, availableTokensByAdmin
+        );
+
+        // Verify the swap was successful
+        assertEq(amountOut, 2e18); // 1e18 * 2 = 2e18
+    }
+
+    // Test executeExactOutputSingle with deadline = 0 (uses ISwapRouterBase)
+    function testExecuteExactOutputSingle_DeadlineZero_UsesSwapRouterBase() public {
+        _setupMockRouter();
+        DataTypes.DelegateExactOutputSingleParams memory params = DataTypes.DelegateExactOutputSingleParams({
+            router: address(swapRouterMock),
+            tokenIn: address(tokenIn),
+            tokenOut: address(tokenOut),
+            fee: 3000,
+            deadline: 0, // This triggers ISwapRouterBase usage
+            amountOut: 2e18,
+            amountInMaximum: 5e18,
+            sqrtPriceLimitX96: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        // Expect event emission (check only the event, not other logs like Approval)
+        vm.expectEmit(false, false, false, false);
+        emit MainVaultSwapLibrary.ExactOutputSingleDelegateExecuted(
+            address(swapRouterMock),
+            address(tokenIn),
+            address(tokenOut),
+            1e18, // Expected input based on 1:2 price ratio
+            2e18
+        );
+
+        uint256 amountIn = MainVaultSwapLibrary.executeExactOutputSingle(
+            address(swapRouterMock), params, availableRouterByAdmin, availableTokensByAdmin
+        );
+
+        // Verify the swap was successful
+        assertEq(amountIn, 1e18); // 2e18 / 2 = 1e18
+    }
+
+    // Test executeExactOutput with deadline = 0 (uses ISwapRouterBase)
+    function testExecuteExactOutput_DeadlineZero_UsesSwapRouterBase() public {
+        _setupMockRouter();
+        bytes memory path = abi.encodePacked(address(tokenIn), uint24(3000), address(tokenOut));
+
+        DataTypes.DelegateExactOutputParams memory params = DataTypes.DelegateExactOutputParams({
+            router: address(swapRouterMock),
+            path: path,
+            deadline: 0, // This triggers ISwapRouterBase usage
+            amountOut: 2e18,
+            amountInMaximum: 5e18,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        // Expect event emission (check only the event, not other logs like Approval)
+        vm.expectEmit(false, false, false, false);
+        emit MainVaultSwapLibrary.ExactOutputDelegateExecuted(
+            address(swapRouterMock),
+            address(tokenIn),
+            address(tokenOut),
+            1e18, // Expected input based on 1:2 price ratio
+            2e18
+        );
+
+        uint256 amountIn = MainVaultSwapLibrary.executeExactOutput(
+            address(swapRouterMock), params, availableRouterByAdmin, availableTokensByAdmin
+        );
+
+        // Verify the swap was successful
+        assertEq(amountIn, 1e18); // 2e18 / 2 = 1e18
+    }
+
+    // Test executeExactInputSingle with deadline > 0 (uses ISwapRouter)
+    function testExecuteExactInputSingle_DeadlineNonZero_UsesSwapRouter() public {
+        _setupMockRouter();
+        DataTypes.DelegateExactInputSingleParams memory params = DataTypes.DelegateExactInputSingleParams({
+            router: address(swapRouterMock),
+            tokenIn: address(tokenIn),
+            tokenOut: address(tokenOut),
+            fee: 3000,
+            deadline: block.timestamp + 1, // This triggers ISwapRouter usage
+            amountIn: 1e18,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        // Expect event emission (check only the event, not other logs like Approval)
+        vm.expectEmit(false, false, false, false);
+        emit MainVaultSwapLibrary.ExactInputSingleDelegateExecuted(
+            address(swapRouterMock),
+            address(tokenIn),
+            address(tokenOut),
+            1e18,
+            2e18 // Expected output based on 1:2 price ratio
+        );
+
+        uint256 amountOut = MainVaultSwapLibrary.executeExactInputSingle(
+            address(swapRouterMock), params, availableRouterByAdmin, availableTokensByAdmin
+        );
+
+        // Verify the swap was successful
+        assertEq(amountOut, 2e18); // 1e18 * 2 = 2e18
+    }
+
+    // Test executeExactInput with deadline > 0 (uses ISwapRouter)
+    function testExecuteExactInput_DeadlineNonZero_UsesSwapRouter() public {
+        _setupMockRouter();
+        bytes memory path = abi.encodePacked(address(tokenIn), uint24(3000), address(tokenOut));
+
+        DataTypes.DelegateExactInputParams memory params = DataTypes.DelegateExactInputParams({
+            router: address(swapRouterMock),
+            path: path,
+            deadline: block.timestamp + 1, // This triggers ISwapRouter usage
+            amountIn: 1e18,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        // Expect event emission (check only the event, not other logs like Approval)
+        vm.expectEmit(false, false, false, false);
+        emit MainVaultSwapLibrary.ExactInputDelegateExecuted(
+            address(swapRouterMock),
+            address(tokenIn),
+            address(tokenOut),
+            1e18,
+            2e18 // Expected output based on 1:2 price ratio
+        );
+
+        uint256 amountOut = MainVaultSwapLibrary.executeExactInput(
+            address(swapRouterMock), params, availableRouterByAdmin, availableTokensByAdmin
+        );
+
+        // Verify the swap was successful
+        assertEq(amountOut, 2e18); // 1e18 * 2 = 2e18
+    }
+
+    // Test executeExactOutputSingle with deadline > 0 (uses ISwapRouter)
+    function testExecuteExactOutputSingle_DeadlineNonZero_UsesSwapRouter() public {
+        _setupMockRouter();
+        DataTypes.DelegateExactOutputSingleParams memory params = DataTypes.DelegateExactOutputSingleParams({
+            router: address(swapRouterMock),
+            tokenIn: address(tokenIn),
+            tokenOut: address(tokenOut),
+            fee: 3000,
+            deadline: block.timestamp + 1, // This triggers ISwapRouter usage
+            amountOut: 2e18,
+            amountInMaximum: 5e18,
+            sqrtPriceLimitX96: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        // Expect event emission (check only the event, not other logs like Approval)
+        vm.expectEmit(false, false, false, false);
+        emit MainVaultSwapLibrary.ExactOutputSingleDelegateExecuted(
+            address(swapRouterMock),
+            address(tokenIn),
+            address(tokenOut),
+            1e18, // Expected input based on 1:2 price ratio
+            2e18
+        );
+
+        uint256 amountIn = MainVaultSwapLibrary.executeExactOutputSingle(
+            address(swapRouterMock), params, availableRouterByAdmin, availableTokensByAdmin
+        );
+
+        // Verify the swap was successful
+        assertEq(amountIn, 1e18); // 2e18 / 2 = 1e18
+    }
+
+    // Test executeExactOutput with deadline > 0 (uses ISwapRouter)
+    function testExecuteExactOutput_DeadlineNonZero_UsesSwapRouter() public {
+        _setupMockRouter();
+        bytes memory path = abi.encodePacked(address(tokenIn), uint24(3000), address(tokenOut));
+
+        DataTypes.DelegateExactOutputParams memory params = DataTypes.DelegateExactOutputParams({
+            router: address(swapRouterMock),
+            path: path,
+            deadline: block.timestamp + 1, // This triggers ISwapRouter usage
+            amountOut: 2e18,
+            amountInMaximum: 5e18,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        // Expect event emission (check only the event, not other logs like Approval)
+        vm.expectEmit(false, false, false, false);
+        emit MainVaultSwapLibrary.ExactOutputDelegateExecuted(
+            address(swapRouterMock),
+            address(tokenIn),
+            address(tokenOut),
+            1e18, // Expected input based on 1:2 price ratio
+            2e18
+        );
+
+        uint256 amountIn = MainVaultSwapLibrary.executeExactOutput(
+            address(swapRouterMock), params, availableRouterByAdmin, availableTokensByAdmin
+        );
+
+        // Verify the swap was successful
+        assertEq(amountIn, 1e18); // 2e18 / 2 = 1e18
+    }
+
+    // Test that both ISwapRouterBase and ISwapRouter produce same results
+    function testSwapRouterBaseAndSwapRouterProduceSameResults() public {
+        _setupMockRouter();
+        uint256 amountIn = 1e18;
+        uint256 expectedAmountOut = 2e18;
+
+        // Test with deadline = 0 (ISwapRouterBase)
+        DataTypes.DelegateExactInputSingleParams memory paramsBase = DataTypes.DelegateExactInputSingleParams({
+            router: address(swapRouterMock),
+            tokenIn: address(tokenIn),
+            tokenOut: address(tokenOut),
+            fee: 3000,
+            deadline: 0,
+            amountIn: amountIn,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        uint256 amountOutBase = MainVaultSwapLibrary.executeExactInputSingle(
+            address(swapRouterMock), paramsBase, availableRouterByAdmin, availableTokensByAdmin
+        );
+
+        // Test with deadline > 0 (ISwapRouter)
+        DataTypes.DelegateExactInputSingleParams memory paramsRouter = DataTypes.DelegateExactInputSingleParams({
+            router: address(swapRouterMock),
+            tokenIn: address(tokenIn),
+            tokenOut: address(tokenOut),
+            fee: 3000,
+            deadline: block.timestamp + 1,
+            amountIn: amountIn,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        uint256 amountOutRouter = MainVaultSwapLibrary.executeExactInputSingle(
+            address(swapRouterMock), paramsRouter, availableRouterByAdmin, availableTokensByAdmin
+        );
+
+        // Both should produce the same result
+        assertEq(amountOutBase, expectedAmountOut);
+        assertEq(amountOutRouter, expectedAmountOut);
+        assertEq(amountOutBase, amountOutRouter);
     }
 }

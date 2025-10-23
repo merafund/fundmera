@@ -2900,4 +2900,56 @@ contract SwapTests is Test {
 
         vm.stopPrank();
     }
+
+    function testExactInputSingle_WithZeroDeadline() public {
+        vm.startPrank(manager);
+        vm.warp(block.timestamp + 31 days);
+
+        bytes memory pathBytes = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+
+        uniswapV3Router.setPrice(address(tokenMV), address(assetToken1), 4 * 10 ** 18);
+
+        uint256 amountIn = tokenMV.balanceOf(address(vault)) / 400;
+
+        DataTypes.DelegateExactInputSingleParams memory params = DataTypes.DelegateExactInputSingleParams({
+            router: address(uniswapV3Router),
+            tokenIn: address(tokenMV),
+            tokenOut: address(assetToken1),
+            fee: 3000,
+            deadline: 0, // Zero deadline to trigger ISwapRouterBase path
+            amountIn: amountIn,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        uint256 amountOut = vault.exactInputSingle(params);
+        assertEq(amountOut, amountIn * 4, "Amount out should be correct");
+
+        vm.stopPrank();
+    }
+
+    function testExactInput_WithZeroDeadline() public {
+        vm.startPrank(manager);
+        vm.warp(block.timestamp + 31 days);
+
+        bytes memory pathBytes = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+        uniswapV3Router.setPrice(address(tokenMV), address(assetToken1), 4 * 10 ** 18);
+
+        uint256 amountIn = tokenMV.balanceOf(address(vault)) / 400;
+
+        DataTypes.DelegateExactInputParams memory params = DataTypes.DelegateExactInputParams({
+            router: address(uniswapV3Router),
+            path: pathBytes,
+            deadline: 0, // Zero deadline to trigger ISwapRouterBase path
+            amountIn: amountIn,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        uint256 amountOut = vault.exactInput(params);
+        assertEq(amountOut, amountIn * 4, "Amount out should be correct");
+
+        vm.stopPrank();
+    }
 }

@@ -18,6 +18,7 @@ import {Constants} from "./Constants.sol";
 import {DataTypes} from "./DataTypes.sol";
 import {IMainVault} from "../interfaces/IMainVault.sol";
 import {IQuickswapV3Router} from "../interfaces/IQuickswapV3Router.sol";
+import {IMeraPriceOracle} from "../interfaces/IMeraPriceOracle.sol";
 /// @title SwapLibrary
 /// @dev Library providing swap functionality for InvestmentVault
 
@@ -48,6 +49,8 @@ library SwapLibrary {
     error NoProfit();
     error ProfitNotZero();
     error BadPriceAndTimeBetweenBuys();
+    error InsufficientNonBurnableReserve();
+    error MvPriceDeclinedTooMuch();
     error BadPriceForPurchase();
     error AssetBoughtTooMuch();
     error InvalidStrategy();
@@ -171,9 +174,9 @@ library SwapLibrary {
         // Case 3: MV to Asset swap (buying asset with MV)
         else if (swapParams.fromToken == tokenData.tokenMV && assetsData[swapParams.toToken].decimals > 0) {
             if (assetsData[swapParams.toToken].strategy == DataTypes.Strategy.Zero) {
-                handleZeroStrategyBuy(swapParams, assetsData, profitData);
+                handleZeroStrategyBuy(swapParams, assetsData, profitData, tokenData, mainVault);
             } else if (assetsData[swapParams.toToken].strategy == DataTypes.Strategy.First) {
-                handleFirstStrategyBuy(swapParams, assetsData, profitData);
+                handleFirstStrategyBuy(swapParams, assetsData, profitData, tokenData);
             }
         }
         // Case 4: Asset to MV swap (selling asset for MV)
@@ -324,6 +327,66 @@ library SwapLibrary {
         tokenData.lastBuyTimestamp = block.timestamp;
     }
 
+    /// @dev Check if there's sufficient non-burnable MV reserve on balance
+    /// @param mvBalanceAfter Current MV balance after the swap
+    /// @param totalMvBought Total amount of MV tokens bought (excluding profit)
+    /// @param profitMV Current profit in MV tokens
+    function checkNonBurnableReserve(uint256 mvBalanceAfter, uint256 totalMvBought, uint256 profitMV) internal pure {
+        // Calculate minimum required reserve: 20% of total MV bought (excluding profit)
+        uint256 minRequiredReserve =
+            (totalMvBought * Constants.NON_BURNABLE_RESERVE_PERCENT) / Constants.SHARE_DENOMINATOR;
+
+        // Available MV for trading (excluding profit)
+        uint256 availableMvForTrading = mvBalanceAfter > profitMV ? mvBalanceAfter - profitMV : 0;
+
+        // Check if we have enough MV reserve
+        require(availableMvForTrading >= minRequiredReserve, InsufficientNonBurnableReserve());
+    }
+
+    /// @dev Validate MV price hasn't declined too much from entry point
+    /// @param tokenData Token data containing entry price and token addresses
+    /// @param mainVault Main vault contract for oracle access
+    function _validateMvPriceFromEntryPoint(DataTypes.TokenData storage tokenData, IMainVault mainVault) internal view {
+        // If oracle check is canceled in MainVault, skip validation
+        if (mainVault.isCanceledOracleCheck()) {
+            return;
+        }
+
+        // Skip validation if no entry point price is set (first time initialization)
+        if (tokenData.lastBuyPrice == 0) {
+            return;
+        }
+
+        // Get price oracle from MainVault
+        IMeraPriceOracle oracle = mainVault.meraPriceOracle();
+
+        // Prepare array of assets for oracle query [MI, MV]
+        address[] memory assets = new address[](2);
+        assets[0] = address(tokenData.tokenMI);
+        assets[1] = address(tokenData.tokenMV);
+
+        // Get price data from oracle
+        IMeraPriceOracle.AssetPriceData[] memory priceData = oracle.getAssetsPriceData(assets);
+
+        // Calculate current MV price in MI terms (MI per MV) with 18 decimals
+        uint256 currentMvPrice =
+            (priceData[1].price * (10 ** (18 + priceData[0].decimals - priceData[1].decimals))) / priceData[0].price;
+
+        // Calculate price decline percentage (scaled to 1e18)
+        uint256 priceDecline;
+        if (currentMvPrice >= tokenData.lastBuyPrice) {
+            // Price hasn't declined, allow initialization
+            return;
+        } else {
+            // Calculate decline percentage
+            priceDecline =
+                ((tokenData.lastBuyPrice - currentMvPrice) * Constants.SHARE_DENOMINATOR) / tokenData.lastBuyPrice;
+        }
+
+        // Check if decline is within allowed range (0.5%)
+        require(priceDecline <= Constants.MAX_MV_PRICE_DECLINE_FROM_ENTRY, MvPriceDeclinedTooMuch());
+    }
+
     /// @dev Handle MV to MI swap logic
     function handleMvToMiSwap(
         DataTypes.SwapParams memory swapParams,
@@ -398,11 +461,18 @@ library SwapLibrary {
     function handleZeroStrategyBuy(
         DataTypes.SwapParams memory swapParams,
         mapping(IERC20 => DataTypes.AssetData) storage assetsData,
-        DataTypes.ProfitData storage profitData
+        DataTypes.ProfitData storage profitData,
+        DataTypes.TokenData storage tokenData,
+        IMainVault mainVault
     ) internal {
         // Similar check for Zero strategy when buying asset tokens with MV
         DataTypes.AssetData storage assetData = assetsData[swapParams.toToken];
         require(assetData.tokenBought > 0 && assetData.deposit > 0, PositionNotOpened());
+
+        if (tokenData.lastBuyPrice > 0) {
+            _validateMvPriceFromEntryPoint(tokenData, mainVault);
+        }
+
         // Calculate the average price before this swap (MV/Asset)
         uint256 averagePriceBefore = (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) / assetData.tokenBought;
 
@@ -511,7 +581,8 @@ library SwapLibrary {
     function handleFirstStrategyBuy(
         DataTypes.SwapParams memory swapParams,
         mapping(IERC20 => DataTypes.AssetData) storage assetsData,
-        DataTypes.ProfitData storage profitData
+        DataTypes.ProfitData storage profitData,
+        DataTypes.TokenData storage tokenData
     ) internal returns (bool) {
         // Get asset data
         DataTypes.AssetData storage assetData = assetsData[swapParams.toToken];
@@ -519,6 +590,9 @@ library SwapLibrary {
 
         uint256 mvBalanceAfter = IERC20(swapParams.fromToken).balanceOf(address(this));
         require(mvBalanceAfter >= profitData.profitMV, SpentMoreThanExpected());
+
+        // Check non-burnable MV reserve before any other checks
+        checkNonBurnableReserve(mvBalanceAfter, tokenData.mvBought, profitData.profitMV);
 
         // Calculate how many MV tokens were spent and how many asset tokens received
         uint256 mvSpent = swapParams.firstBalanceBefore - mvBalanceAfter;

@@ -148,11 +148,11 @@ contract MultiAdminSingleHolderAccessControlTest is Test {
     function test_SupportsInterface_ParentInterface() public view {
         // Test that the contract supports IERC165 interface through super.supportsInterface delegation
         assertTrue(accessControl.supportsInterface(type(IERC165).interfaceId));
-        
+
         // Test with a non-existent interface - should return false
         bytes4 nonExistentInterface = 0x12345678;
         assertFalse(accessControl.supportsInterface(nonExistentInterface));
-        
+
         // Test with zero interface ID - should return false
         assertFalse(accessControl.supportsInterface(bytes4(0)));
     }

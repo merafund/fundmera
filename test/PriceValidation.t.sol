@@ -207,8 +207,13 @@ contract PriceValidationTest is Test {
         uint256 mvBought = vault.initMiToMvSwap(miToMvData, block.timestamp + 1);
 
         // Now setup MV to tokens prices
-        // MV price: 1 MV = 1 USD (with 6 decimals)
-        oracle.setAssetPrice(address(tokenMV), 1 * 10 ** 6, 6);
+        // IMPORTANT: Set oracle prices to match the entry point price from initMiToMvSwap
+        // The entry point price is calculated as: amountIn * SHARE_DENOMINATOR / amountOut
+        // With 98% router price: 1 MI = 0.98 MV, so 1 MV = 1/0.98 MI ≈ 1.0204 MI
+        // Oracle price should be: 1 MV = 1.0204 MI (in 18 decimals)
+        oracle.setAssetPrice(address(tokenMI), 1 * 10 ** 18, 18); // 1 MI = 1 MI (base)
+        oracle.setAssetPrice(address(tokenMV), 1020400000000000000, 18); // 1 MV = 1.0204 MI (entry point price)
+
         // USDC price: 1 USDC = 1 USD (with 6 decimals)
         oracle.setAssetPrice(address(tokenUSDC), 1 * 10 ** 6, 6);
         // WETH price: 1 WETH = 2000 USD (with 6 decimals)
@@ -282,8 +287,10 @@ contract PriceValidationTest is Test {
         uint256 mvBought = vault.initMiToMvSwap(miToMvData, block.timestamp + 1);
 
         // Now setup MV to tokens prices with big deviation
-        // MV price: 1 MV = 1 USD (with 6 decimals)
-        oracle.setAssetPrice(address(tokenMV), 1 * 10 ** 6, 6);
+        // IMPORTANT: Set oracle prices to match the entry point price from initMiToMvSwap
+        oracle.setAssetPrice(address(tokenMI), 1 * 10 ** 18, 18); // 1 MI = 1 MI (base)
+        oracle.setAssetPrice(address(tokenMV), 1020400000000000000, 18); // 1 MV = 1.0204 MI (entry point price)
+
         // USDC price: 1 USDC = 1 USD (with 6 decimals)
         oracle.setAssetPrice(address(tokenUSDC), 1 * 10 ** 6, 6);
         // WETH price: 1 WETH = 2000 USD (with 6 decimals)
@@ -358,8 +365,10 @@ contract PriceValidationTest is Test {
         uint256 mvBought = vault.initMiToMvSwap(miToMvData, block.timestamp + 1);
 
         // Set prices in oracle with different decimals
-        // MV price: 1 MV = 1 USD (with 6 decimals)
-        oracle.setAssetPrice(address(tokenMV), 1 * 10 ** 6, 6);
+        // IMPORTANT: Set oracle prices to match the entry point price from initMiToMvSwap
+        oracle.setAssetPrice(address(tokenMI), 1 * 10 ** 18, 18); // 1 MI = 1 MI (base)
+        oracle.setAssetPrice(address(tokenMV), 1020400000000000000, 18); // 1 MV = 1.0204 MI (entry point price)
+
         // USDC price: 1 USDC = 1 USD (with 6 decimals)
         oracle.setAssetPrice(address(tokenUSDC), 1 * 10 ** 6, 6);
         // WETH price: 1 WETH = 2000 USD (with 6 decimals)

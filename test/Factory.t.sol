@@ -615,7 +615,8 @@ contract FactoryTest is Test {
         vm.stopPrank();
 
         // Create MainVault with lock
-        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
+        address mainVaultProxy =
+            factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
         assertTrue(mainVaultProxy != address(0));
 
         // Verify MainVault initialization
@@ -632,7 +633,8 @@ contract FactoryTest is Test {
         string memory nonExistentCode = "NON_EXISTENT";
         uint64 lockPeriod = 10 minutes; // Use allowed lock period
 
-        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, nonExistentCode, lockPeriod);
+        address mainVaultProxy =
+            factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, nonExistentCode, lockPeriod);
         assertTrue(mainVaultProxy != address(0));
 
         // Verify MainVault uses default agent distribution
@@ -655,7 +657,8 @@ contract FactoryTest is Test {
         vm.stopPrank();
 
         // Create MainVault with zero lock period
-        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
+        address mainVaultProxy =
+            factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
         assertTrue(mainVaultProxy != address(0));
 
         // Verify MainVault initialization
@@ -682,7 +685,8 @@ contract FactoryTest is Test {
         vm.stopPrank();
 
         // Create MainVault with 3-year lock period
-        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
+        address mainVaultProxy =
+            factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
         assertTrue(mainVaultProxy != address(0));
 
         // Verify MainVault initialization
@@ -709,7 +713,8 @@ contract FactoryTest is Test {
         vm.stopPrank();
 
         // Create MainVault with 5-year lock period
-        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
+        address mainVaultProxy =
+            factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
         assertTrue(mainVaultProxy != address(0));
 
         // Verify MainVault initialization
@@ -731,19 +736,27 @@ contract FactoryTest is Test {
 
         // Test mainInvestor
         vm.expectRevert(IFactory.ZeroAddress.selector);
-        factory.createMainVaultWithLock(address(0), backupInvestor, emergencyInvestor, profitWallet, referralCode, lockPeriod);
+        factory.createMainVaultWithLock(
+            address(0), backupInvestor, emergencyInvestor, profitWallet, referralCode, lockPeriod
+        );
 
         // Test backupInvestor
         vm.expectRevert(IFactory.ZeroAddress.selector);
-        factory.createMainVaultWithLock(mainInvestor, address(0), emergencyInvestor, profitWallet, referralCode, lockPeriod);
+        factory.createMainVaultWithLock(
+            mainInvestor, address(0), emergencyInvestor, profitWallet, referralCode, lockPeriod
+        );
 
         // Test emergencyInvestor
         vm.expectRevert(IFactory.ZeroAddress.selector);
-        factory.createMainVaultWithLock(mainInvestor, backupInvestor, address(0), profitWallet, referralCode, lockPeriod);
+        factory.createMainVaultWithLock(
+            mainInvestor, backupInvestor, address(0), profitWallet, referralCode, lockPeriod
+        );
 
         // Test profitWallet
         vm.expectRevert(IFactory.ZeroAddress.selector);
-        factory.createMainVaultWithLock(mainInvestor, backupInvestor, emergencyInvestor, address(0), referralCode, lockPeriod);
+        factory.createMainVaultWithLock(
+            mainInvestor, backupInvestor, emergencyInvestor, address(0), referralCode, lockPeriod
+        );
     }
 
     function test_CreateMainVaultWithLockEmitsEvent() public {
@@ -772,7 +785,8 @@ contract FactoryTest is Test {
             referralCode
         );
 
-        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
+        address mainVaultProxy =
+            factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, referralCode, lockPeriod);
         assertTrue(mainVaultProxy != address(0));
     }
 
@@ -793,7 +807,8 @@ contract FactoryTest is Test {
             "DEFAULT"
         );
 
-        address mainVaultProxy = factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, nonExistentCode, lockPeriod);
+        address mainVaultProxy =
+            factory.createMainVaultWithLock(ALICE, BOB, CHARLIE, profitWallet, nonExistentCode, lockPeriod);
         assertTrue(mainVaultProxy != address(0));
     }
 
