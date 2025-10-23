@@ -29,6 +29,7 @@ import {Constants} from "./utils/Constants.sol";
 import {DataTypes} from "./utils/DataTypes.sol";
 import {MainVaultSwapLibrary} from "./utils/MainVaultSwapLibrary.sol";
 import {IMeraPriceOracle} from "./interfaces/IMeraPriceOracle.sol";
+import {IFactory} from "./interfaces/IFactory.sol";
 /// @title MainVault
 /// @dev Main storage for tokens with UUPS upgrade support and role system
 
@@ -129,6 +130,7 @@ contract MainVault is
 
     IPauserList public pauserList;
     IMeraPriceOracle public meraPriceOracle;
+    IFactory public factory;
 
     mapping(uint256 => bool) public availableInvestmentVaultForWithdraw;
 
@@ -146,11 +148,6 @@ contract MainVault is
 
     modifier IsNotAfterSetupPause() {
         require(block.timestamp > pauseToTimestamp, InitializePause());
-        _;
-    }
-
-    modifier onlyAdminOrInvestor() {
-        require(hasRole(ADMIN_ROLE, msg.sender) || hasRole(MAIN_INVESTOR_ROLE, msg.sender), AccessDenied());
         _;
     }
 
@@ -173,7 +170,7 @@ contract MainVault is
         currentImplementationOfInvestmentVault = params.currentImplementationOfInvestmentVault;
         autoRenewWithdrawalLock = false; // Default to no auto-renewal
         pauserList = IPauserList(params.pauserList);
-
+        factory = IFactory(msg.sender);
         meraPriceOracle = IMeraPriceOracle(params.meraPriceOracle);
 
         if (params.meraPriceOracle == address(0)) {
@@ -239,33 +236,23 @@ contract MainVault is
     }
 
     /// @inheritdoc IMainVault
-    function approveMainVaultUpgrade(address newImplementation) external onlyAdminOrInvestor {
+    function approveMainVaultUpgrade(address newImplementation) external onlyRole(MAIN_INVESTOR_ROLE) {
         require(newImplementation != address(0), InvalidUpgradeAddress());
+        require(newImplementation == factory.mainVaultImplementation(), "Implementation must match factory");
 
-        if (hasRole(ADMIN_ROLE, msg.sender)) {
-            adminApprovedMainVaultImpl = newImplementation;
-            adminApprovedMainVaultTimestamp = block.timestamp;
-            emit MainVaultUpgradeApproved(newImplementation, msg.sender);
-        } else {
-            investorApprovedMainVaultImpl = newImplementation;
-            investorApprovedMainVaultTimestamp = block.timestamp;
-            emit MainVaultUpgradeApproved(newImplementation, msg.sender);
-        }
+        investorApprovedMainVaultImpl = newImplementation;
+        investorApprovedMainVaultTimestamp = block.timestamp;
+        emit MainVaultUpgradeApproved(newImplementation, msg.sender);
     }
 
     /// @inheritdoc IMainVault
-    function approveInvestorVaultUpgrade(address newImplementation) external onlyAdminOrInvestor {
+    function approveInvestorVaultUpgrade(address newImplementation) external onlyRole(MAIN_INVESTOR_ROLE) {
         require(newImplementation != address(0), InvalidUpgradeAddress());
+        require(newImplementation == factory.investmentVaultImplementation(), "Implementation must match factory");
 
-        if (hasRole(ADMIN_ROLE, msg.sender)) {
-            adminApprovedInvestorVaultImpl = newImplementation;
-            adminApprovedInvestorVaultTimestamp = block.timestamp;
-            emit InvestorVaultUpgradeApproved(newImplementation, msg.sender);
-        } else {
-            investorApprovedInvestorVaultImpl = newImplementation;
-            investorApprovedInvestorVaultTimestamp = block.timestamp;
-            emit InvestorVaultUpgradeApproved(newImplementation, msg.sender);
-        }
+        investorApprovedInvestorVaultImpl = newImplementation;
+        investorApprovedInvestorVaultTimestamp = block.timestamp;
+        emit InvestorVaultUpgradeApproved(newImplementation, msg.sender);
     }
 
     /// @inheritdoc IMainVault
@@ -391,11 +378,9 @@ contract MainVault is
     }
 
     /// @inheritdoc IMainVault
-    function setCurrentImplementationOfInvestmentVault(address implementation) external onlyAdminOrInvestor {
+    function setCurrentImplementationOfInvestmentVault(address implementation) external onlyRole(ADMIN_ROLE) {
         require(implementation != address(0), InvalidUpgradeAddress());
-        require(implementation == adminApprovedInvestorVaultImpl, ImplementationNotApprovedByAdmin());
         require(implementation == investorApprovedInvestorVaultImpl, ImplementationNotApprovedByInvestor());
-        require(block.timestamp - adminApprovedInvestorVaultTimestamp < UPGRADE_TIME_LIMIT, UpgradeDeadlineExpired());
         require(block.timestamp - investorApprovedInvestorVaultTimestamp < UPGRADE_TIME_LIMIT, UpgradeDeadlineExpired());
 
         address oldImplementation = currentImplementationOfInvestmentVault;
@@ -823,14 +808,11 @@ contract MainVault is
     }
 
     /// @dev Contract upgrade authorization function (UUPS pattern)
-    /// Requires approval from both admin and main investor within the time limit
+    /// Can only be called by admin, requires approval from main investor within the time limit
     ///
     /// @param newImplementation Address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override onlyAdminOrInvestor {
-        require(newImplementation != address(0), InvalidUpgradeAddress());
-        require(newImplementation == adminApprovedMainVaultImpl, ImplementationNotApprovedByAdmin());
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(ADMIN_ROLE) {
         require(newImplementation == investorApprovedMainVaultImpl, ImplementationNotApprovedByInvestor());
-        require(block.timestamp - adminApprovedMainVaultTimestamp < UPGRADE_TIME_LIMIT, UpgradeDeadlineExpired());
         require(block.timestamp - investorApprovedMainVaultTimestamp < UPGRADE_TIME_LIMIT, UpgradeDeadlineExpired());
 
         // Reset approval state

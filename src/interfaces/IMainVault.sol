@@ -355,15 +355,15 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     function setLockPeriodsAvailability(LockPeriodAvailability[] calldata configs) external;
 
     /// @dev Approves a new implementation for the Main Vault
-    /// Can be called by either admin or main investor
-    /// Both must approve the same implementation within UPGRADE_TIME_LIMIT for upgrade to be authorized
+    /// Can only be called by main investor
+    /// The implementation must match the one stored in factory
     ///
     /// @param newImplementation Address of the new implementation
     function approveMainVaultUpgrade(address newImplementation) external;
 
     /// @dev Approves a new implementation for the Investor Vault
-    /// Can be called by either admin or main investor
-    /// Both must approve the same implementation within UPGRADE_TIME_LIMIT for setCurrentImplementationOfInvestmentVault to succeed
+    /// Can only be called by main investor
+    /// The implementation must match the one stored in factory
     ///
     /// @param newImplementation Address of the new implementation
     function approveInvestorVaultUpgrade(address newImplementation) external;

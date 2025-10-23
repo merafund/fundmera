@@ -52,6 +52,16 @@ contract MockPauserList {
     }
 }
 
+contract MockFactory {
+    address public mainVaultImplementation;
+    address public investmentVaultImplementation;
+
+    constructor(address _mainVaultImplementation, address _investmentVaultImplementation) {
+        mainVaultImplementation = _mainVaultImplementation;
+        investmentVaultImplementation = _investmentVaultImplementation;
+    }
+}
+
 contract MainVaultTest is Test {
     MainVault public implementation;
     ERC1967Proxy public proxy;
@@ -62,6 +72,7 @@ contract MainVaultTest is Test {
     MockERC20 public fourthToken;
     MockPauserList public pauserList;
     InvestmentVault public investmentVaultImplementation;
+    MockFactory public factory;
 
     address public owner = address(1);
     address public user1 = address(2);
@@ -113,6 +124,9 @@ contract MainVaultTest is Test {
 
         investmentVaultImplementation = new InvestmentVault();
 
+        // Create mock factory
+        factory = new MockFactory(address(implementation), address(investmentVaultImplementation));
+
         IMainVault.InitParams memory initParams = IMainVault.InitParams({
             mainInvestor: mainInvestor,
             backupInvestor: backupInvestor,
@@ -132,9 +146,16 @@ contract MainVaultTest is Test {
 
         bytes memory initData = abi.encodeWithSelector(MainVault.initialize.selector, initParams);
 
+        // Create proxy with factory as the caller so that factory is set correctly
+        vm.stopPrank();
+        vm.startPrank(address(factory));
         proxy = new ERC1967Proxy(address(implementation), initData);
+        vm.stopPrank();
 
         vault = MainVault(address(proxy));
+
+        // Return to owner for token transfers
+        vm.startPrank(owner);
 
         token.transfer(user1, INITIAL_BALANCE);
         token.transfer(user2, INITIAL_BALANCE);
@@ -478,20 +499,18 @@ contract MainVaultTest is Test {
 
     // Test for approveMainVaultUpgrade - Admin approval
     function testApproveMainVaultUpgrade_Admin() public {
-        address newImplementation = address(new MainVaultV2());
+        address newImplementation = factory.mainVaultImplementation();
 
         vm.startPrank(admin);
+        vm.expectRevert(); // Admin can no longer approve upgrades
         vault.approveMainVaultUpgrade(newImplementation);
-
-        // Verify state changes
-        assertEq(vault.adminApprovedMainVaultImpl(), newImplementation, "Admin approved implementation should be set");
-        assertEq(vault.adminApprovedMainVaultTimestamp(), block.timestamp, "Admin approval timestamp should be set");
         vm.stopPrank();
     }
 
     // Test for approveMainVaultUpgrade - Investor approval
     function testApproveMainVaultUpgrade_Investor() public {
-        address newImplementation = address(new MainVaultV2());
+        // Use the implementation address from factory
+        address newImplementation = factory.mainVaultImplementation();
 
         vm.startPrank(mainInvestor);
         vault.approveMainVaultUpgrade(newImplementation);
@@ -508,40 +527,36 @@ contract MainVaultTest is Test {
 
     // Test for approveMainVaultUpgrade - Zero address
     function testApproveMainVaultUpgrade_ZeroAddress() public {
-        vm.startPrank(admin);
+        vm.startPrank(mainInvestor);
         vm.expectRevert(MainVault.InvalidUpgradeAddress.selector);
         vault.approveMainVaultUpgrade(address(0));
         vm.stopPrank();
     }
 
     // Test for approveMainVaultUpgrade - Access control
-    function testApproveMainVaultUpgrade_OnlyAdminOrInvestor() public {
-        address newImplementation = address(new MainVaultV2());
+    function testApproveMainVaultUpgrade_OnlyInvestor() public {
+        address newImplementation = factory.mainVaultImplementation();
 
         vm.startPrank(user1);
-        vm.expectRevert(MainVault.AccessDenied.selector);
+        vm.expectRevert(); // Only investor can approve upgrades now
         vault.approveMainVaultUpgrade(newImplementation);
         vm.stopPrank();
     }
 
     // Test for approveInvestorVaultUpgrade - Admin approval
     function testApproveInvestorVaultUpgrade_Admin() public {
-        address newImplementation = address(new InvestmentVaultV2());
+        address newImplementation = factory.investmentVaultImplementation();
 
         vm.startPrank(admin);
+        vm.expectRevert(); // Admin can no longer approve upgrades
         vault.approveInvestorVaultUpgrade(newImplementation);
-
-        // Verify state changes
-        assertEq(
-            vault.adminApprovedInvestorVaultImpl(), newImplementation, "Admin approved implementation should be set"
-        );
-        assertEq(vault.adminApprovedInvestorVaultTimestamp(), block.timestamp, "Admin approval timestamp should be set");
         vm.stopPrank();
     }
 
     // Test for approveInvestorVaultUpgrade - Investor approval
     function testApproveInvestorVaultUpgrade_Investor() public {
-        address newImplementation = address(new InvestmentVaultV2());
+        // Use the implementation address from factory
+        address newImplementation = factory.investmentVaultImplementation();
 
         vm.startPrank(mainInvestor);
         vault.approveInvestorVaultUpgrade(newImplementation);
@@ -560,18 +575,18 @@ contract MainVaultTest is Test {
 
     // Test for approveInvestorVaultUpgrade - Zero address
     function testApproveInvestorVaultUpgrade_ZeroAddress() public {
-        vm.startPrank(admin);
+        vm.startPrank(mainInvestor);
         vm.expectRevert(MainVault.InvalidUpgradeAddress.selector);
         vault.approveInvestorVaultUpgrade(address(0));
         vm.stopPrank();
     }
 
     // Test for approveInvestorVaultUpgrade - Access control
-    function testApproveInvestorVaultUpgrade_OnlyAdminOrInvestor() public {
-        address newImplementation = address(new InvestmentVaultV2());
+    function testApproveInvestorVaultUpgrade_OnlyInvestor() public {
+        address newImplementation = factory.investmentVaultImplementation();
 
         vm.startPrank(user1);
-        vm.expectRevert(MainVault.AccessDenied.selector);
+        vm.expectRevert(); // Only investor can approve upgrades now
         vault.approveInvestorVaultUpgrade(newImplementation);
         vm.stopPrank();
     }
@@ -1193,10 +1208,11 @@ contract MainVaultTest is Test {
     }
 
     function testSetCurrentImplementationOfInvestmentVault() public {
-        address newImplementation = address(new InvestmentVaultV2());
+        address newImplementation = factory.investmentVaultImplementation();
 
-        // Both admin and investor approve
+        // Only investor can approve now
         vm.prank(admin);
+        vm.expectRevert(); // Admin can no longer approve upgrades
         vault.approveInvestorVaultUpgrade(newImplementation);
 
         vm.prank(mainInvestor);
@@ -1218,60 +1234,75 @@ contract MainVaultTest is Test {
     }
 
     function testSetCurrentImplementationOfInvestmentVault_OnlyInvestorApproved() public {
-        address newImplementation = address(new InvestmentVaultV2());
+        address newImplementation = factory.investmentVaultImplementation();
 
         // Only investor approves
         vm.prank(mainInvestor);
         vault.approveInvestorVaultUpgrade(newImplementation);
 
-        // Try to set without admin approval
+        // Now admin can set (no revert expected)
         vm.prank(admin);
-        vm.expectRevert(MainVault.ImplementationNotApprovedByAdmin.selector);
         vault.setCurrentImplementationOfInvestmentVault(newImplementation);
+    }
+
+    function testSetCurrentImplementationOfInvestmentVault_RequiresInvestorApproval() public {
+        address newImplementation = factory.investmentVaultImplementation();
+        address differentImplementation = address(new InvestmentVaultV2());
+
+        // Try to set implementation without investor approval
+        vm.prank(admin);
+        vm.expectRevert(MainVault.ImplementationNotApprovedByInvestor.selector);
+        vault.setCurrentImplementationOfInvestmentVault(newImplementation);
+
+        // Try to set different implementation without investor approval
+        vm.prank(admin);
+        vm.expectRevert(MainVault.ImplementationNotApprovedByInvestor.selector);
+        vault.setCurrentImplementationOfInvestmentVault(differentImplementation);
+
+        // Investor approves the correct implementation
+        vm.prank(mainInvestor);
+        vault.approveInvestorVaultUpgrade(newImplementation);
+
+        // Now admin can set the approved implementation
+        vm.prank(admin);
+        vault.setCurrentImplementationOfInvestmentVault(newImplementation);
+
+        assertEq(vault.currentImplementationOfInvestmentVault(), newImplementation, "Implementation should be set");
     }
 
     function testSetCurrentImplementationOfInvestmentVault_OnlyAdminApproved() public {
-        address newImplementation = address(new InvestmentVaultV2());
+        address newImplementation = factory.investmentVaultImplementation();
 
-        // Only admin approves
+        // Admin can no longer approve, so this test is no longer applicable
+        // This test now verifies that admin cannot approve
         vm.prank(admin);
+        vm.expectRevert(); // Admin can no longer approve upgrades
         vault.approveInvestorVaultUpgrade(newImplementation);
-
-        // Try to set without investor approval
-        vm.prank(mainInvestor);
-        vm.expectRevert(MainVault.ImplementationNotApprovedByInvestor.selector);
-        vault.setCurrentImplementationOfInvestmentVault(newImplementation);
     }
 
     function testSetCurrentImplementationOfInvestmentVault_DifferentApprovals() public {
-        address implementation1 = address(new InvestmentVaultV2());
+        address implementation1 = factory.investmentVaultImplementation();
         address implementation2 = address(new InvestmentVaultV2());
 
-        // Admin approves one implementation
+        // Admin can no longer approve
         vm.prank(admin);
+        vm.expectRevert(); // Admin can no longer approve upgrades
         vault.approveInvestorVaultUpgrade(implementation1);
 
-        // Investor approves different implementation
+        // Investor can only approve implementation from factory
         vm.prank(mainInvestor);
+        vault.approveInvestorVaultUpgrade(implementation1);
+
+        // Investor cannot approve different implementation
+        vm.prank(mainInvestor);
+        vm.expectRevert("Implementation must match factory");
         vault.approveInvestorVaultUpgrade(implementation2);
-
-        // Try to set either - both should fail
-        vm.prank(admin);
-        vm.expectRevert(MainVault.ImplementationNotApprovedByInvestor.selector);
-        vault.setCurrentImplementationOfInvestmentVault(implementation1);
-
-        vm.prank(admin);
-        vm.expectRevert(MainVault.ImplementationNotApprovedByAdmin.selector);
-        vault.setCurrentImplementationOfInvestmentVault(implementation2);
     }
 
     function testSetCurrentImplementationOfInvestmentVault_ExpiredDeadline() public {
-        address newImplementation = address(new InvestmentVaultV2());
+        address newImplementation = factory.investmentVaultImplementation();
 
-        // Both approve
-        vm.prank(admin);
-        vault.approveInvestorVaultUpgrade(newImplementation);
-
+        // Only investor approves
         vm.prank(mainInvestor);
         vault.approveInvestorVaultUpgrade(newImplementation);
 
@@ -1283,23 +1314,25 @@ contract MainVaultTest is Test {
         vault.setCurrentImplementationOfInvestmentVault(newImplementation);
     }
 
-    function testSetCurrentImplementationOfInvestmentVault_AdminOrInvestorCanCall() public {
-        address newImplementation = address(new InvestmentVaultV2());
+    function testSetCurrentImplementationOfInvestmentVault_OnlyAdminCanCall() public {
+        address newImplementation = factory.investmentVaultImplementation();
 
-        // Both approve
-        vm.prank(admin);
-        vault.approveInvestorVaultUpgrade(newImplementation);
-
+        // Only investor approves
         vm.prank(mainInvestor);
         vault.approveInvestorVaultUpgrade(newImplementation);
 
         // User cannot call
         vm.prank(user1);
-        vm.expectRevert(MainVault.AccessDenied.selector);
+        vm.expectRevert();
         vault.setCurrentImplementationOfInvestmentVault(newImplementation);
 
-        // Investor can call
+        // Investor cannot call
         vm.prank(mainInvestor);
+        vm.expectRevert();
+        vault.setCurrentImplementationOfInvestmentVault(newImplementation);
+
+        // Only admin can call
+        vm.prank(admin);
         vault.setCurrentImplementationOfInvestmentVault(newImplementation);
 
         assertEq(vault.currentImplementationOfInvestmentVault(), newImplementation, "Implementation should be updated");
@@ -1771,22 +1804,24 @@ contract MainVaultTest is Test {
     }
 
     function testUpgradeAuthorization() public {
-        address newImplementation = address(new MainVaultV2());
+        address newImplementation = factory.mainVaultImplementation();
 
-        // Both admin and investor approve
+        // Only investor can approve now
         vm.prank(admin);
+        vm.expectRevert(); // Admin can no longer approve upgrades
         vault.approveMainVaultUpgrade(newImplementation);
 
         vm.prank(mainInvestor);
         vault.approveMainVaultUpgrade(newImplementation);
 
         // Verify approval state
-        assertEq(vault.adminApprovedMainVaultImpl(), newImplementation);
+        assertEq(vault.adminApprovedMainVaultImpl(), address(0)); // Admin no longer approves
         assertEq(vault.investorApprovedMainVaultImpl(), newImplementation);
 
         vm.expectEmit(true, true, true, true);
         emit Upgraded(newImplementation);
 
+        // Only admin can upgrade
         vm.prank(admin);
         UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
 
@@ -1795,11 +1830,12 @@ contract MainVaultTest is Test {
         assertEq(vault.investorApprovedMainVaultImpl(), address(0));
     }
 
-    function testUpgradeAuthorization_OnlyAdminOrInvestorCanUpgrade() public {
-        address newImplementation = address(new MainVaultV2());
+    function testUpgradeAuthorization_OnlyAdminCanUpgrade() public {
+        address newImplementation = factory.mainVaultImplementation();
 
-        // Both approve
+        // Only investor can approve now
         vm.prank(admin);
+        vm.expectRevert(); // Admin can no longer approve upgrades
         vault.approveMainVaultUpgrade(newImplementation);
 
         vm.prank(mainInvestor);
@@ -1807,56 +1843,48 @@ contract MainVaultTest is Test {
 
         // User cannot upgrade
         vm.prank(user1);
-        vm.expectRevert(MainVault.AccessDenied.selector);
+        vm.expectRevert();
         UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
 
-        // Admin can upgrade
-        vm.prank(admin);
+        // Investor cannot upgrade
+        vm.prank(mainInvestor);
+        vm.expectRevert();
         UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
-    }
 
-    function testUpgradeAuthorization_InvestorCanAlsoUpgrade() public {
-        address newImplementation = address(new MainVaultV2());
-
-        // Both approve
+        // Only admin can upgrade
         vm.prank(admin);
-        vault.approveMainVaultUpgrade(newImplementation);
-
-        vm.prank(mainInvestor);
-        vault.approveMainVaultUpgrade(newImplementation);
-
-        // Investor can upgrade
-        vm.prank(mainInvestor);
         UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
     }
 
     function testUpgradeAuthorization_DifferentApprovals() public {
-        address implementation1 = address(new MainVaultV2());
+        address implementation1 = factory.mainVaultImplementation();
         address implementation2 = address(new MainVaultV2());
 
-        // Admin approves one
+        // Admin can no longer approve
         vm.prank(admin);
+        vm.expectRevert(); // Admin can no longer approve upgrades
         vault.approveMainVaultUpgrade(implementation1);
 
-        // Investor approves different one
+        // Investor can only approve implementation from factory
         vm.prank(mainInvestor);
+        vault.approveMainVaultUpgrade(implementation1);
+
+        // Investor cannot approve different implementation (without first approving)
+        vm.prank(mainInvestor);
+        vm.expectRevert("Implementation must match factory");
         vault.approveMainVaultUpgrade(implementation2);
 
-        // Cannot upgrade to either
+        // Only admin can upgrade to approved implementation
         vm.prank(admin);
-        vm.expectRevert(MainVault.ImplementationNotApprovedByInvestor.selector);
         UUPSUpgradeable(address(vault)).upgradeToAndCall(implementation1, "");
-
-        vm.prank(admin);
-        vm.expectRevert(MainVault.ImplementationNotApprovedByAdmin.selector);
-        UUPSUpgradeable(address(vault)).upgradeToAndCall(implementation2, "");
     }
 
     function testUpgradeAuthorization_ExpiredDeadline() public {
-        address newImplementation = address(new MainVaultV2());
+        address newImplementation = factory.mainVaultImplementation();
 
-        // Both approve
+        // Only investor can approve now
         vm.prank(admin);
+        vm.expectRevert(); // Admin can no longer approve upgrades
         vault.approveMainVaultUpgrade(newImplementation);
 
         vm.prank(mainInvestor);
@@ -1865,40 +1893,43 @@ contract MainVaultTest is Test {
         // Warp past deadline
         vm.warp(block.timestamp + vault.UPGRADE_TIME_LIMIT() + 1);
 
+        // Only admin can upgrade, but it should fail due to expired deadline
         vm.prank(admin);
         vm.expectRevert(MainVault.UpgradeDeadlineExpired.selector);
         UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
     }
 
     function testUpgradeAuthorization_NoApprovals() public {
-        address newImplementation = address(new MainVaultV2());
-
-        vm.prank(admin);
-        vm.expectRevert(MainVault.ImplementationNotApprovedByAdmin.selector);
-        UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
-    }
-
-    function testUpgradeAuthorization_OnlyAdminApproved() public {
-        address newImplementation = address(new MainVaultV2());
-
-        // Only admin approves
-        vm.prank(admin);
-        vault.approveMainVaultUpgrade(newImplementation);
+        address newImplementation = factory.mainVaultImplementation();
 
         vm.prank(admin);
         vm.expectRevert(MainVault.ImplementationNotApprovedByInvestor.selector);
         UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
     }
 
+    function testUpgradeAuthorization_OnlyAdminApproved() public {
+        address newImplementation = factory.mainVaultImplementation();
+
+        // Admin can no longer approve
+        vm.prank(admin);
+        vm.expectRevert(); // Admin can no longer approve upgrades
+        vault.approveMainVaultUpgrade(newImplementation);
+    }
+
     function testUpgradeAuthorization_OnlyInvestorApproved() public {
-        address newImplementation = address(new MainVaultV2());
+        address newImplementation = factory.mainVaultImplementation();
 
         // Only investor approves
         vm.prank(mainInvestor);
         vault.approveMainVaultUpgrade(newImplementation);
 
+        // Investor cannot upgrade
         vm.prank(mainInvestor);
-        vm.expectRevert(MainVault.ImplementationNotApprovedByAdmin.selector);
+        vm.expectRevert();
+        UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
+
+        // Only admin can upgrade
+        vm.prank(admin);
         UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
     }
 

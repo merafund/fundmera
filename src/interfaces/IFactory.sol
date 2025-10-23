@@ -130,4 +130,12 @@ interface IFactory {
     /// @notice Sets the Mera Price Oracle
     /// @param _meraPriceOracle The new Mera Price Oracle address
     function setMeraPriceOracle(address _meraPriceOracle) external;
+
+    /// @notice Gets the current MainVault implementation address
+    /// @return The MainVault implementation address
+    function mainVaultImplementation() external view returns (address);
+
+    /// @notice Gets the current InvestmentVault implementation address
+    /// @return The InvestmentVault implementation address
+    function investmentVaultImplementation() external view returns (address);
 }
