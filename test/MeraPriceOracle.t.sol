@@ -140,9 +140,31 @@ contract MeraPriceOracleTest is Test {
         assertEq(priceData[0].decimals, 6);
     }
 
-    function test_SetFallbackOracle() public {
+    function test_SetFallbackOracle_WhenFallbackOracleAlreadySet() public {
         MockFallbackOracle newFallbackOracle = new MockFallbackOracle();
 
+        vm.prank(owner);
+        vm.expectRevert(MeraPriceOracle.FallbackOracleAlreadySet.selector);
+        oracle.setFallbackOracle(address(newFallbackOracle));
+
+        assertNotEq(oracle.getFallbackOracle(), address(newFallbackOracle));
+    }
+
+    function test_SetFallbackOracle() public {
+        address[] memory assets = new address[](2);
+        assets[0] = ASSET1;
+        assets[1] = ASSET2;
+
+        address[] memory sources = new address[](2);
+        sources[0] = address(mockAggregator1);
+        sources[1] = address(mockAggregator2);
+
+        uint8[] memory decimals = new uint8[](2);
+        decimals[0] = DECIMALS1;
+        decimals[1] = DECIMALS2;
+
+        oracle = new MeraPriceOracle(assets, sources, decimals, address(0));
+        MockFallbackOracle newFallbackOracle = new MockFallbackOracle();
         vm.prank(owner);
         oracle.setFallbackOracle(address(newFallbackOracle));
 

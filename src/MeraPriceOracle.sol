@@ -26,6 +26,7 @@ contract MeraPriceOracle is IMeraPriceOracle, Ownable {
     error InconsistentParamsLength();
     error AssetSourceAlreadySet();
     error AssetPriceNotAvailable(address asset);
+    error FallbackOracleAlreadySet();
     // Map of asset price sources (asset => priceSource)
 
     mapping(address => AggregatorInterface) private assetsSources;
@@ -98,6 +99,7 @@ contract MeraPriceOracle is IMeraPriceOracle, Ownable {
      * @param fallbackOracle The address of the fallback oracle
      */
     function _setFallbackOracle(address fallbackOracle) internal {
+        require(address(_fallbackOracle) == address(0), FallbackOracleAlreadySet());
         _fallbackOracle = IPriceOracleGetter(fallbackOracle);
         emit FallbackOracleUpdated(fallbackOracle);
     }
