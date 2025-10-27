@@ -2952,4 +2952,185 @@ contract SwapTests is Test {
 
         vm.stopPrank();
     }
+
+    // ================== New tests for handleZeroStrategySellToMi (tokenMI != tokenMV) ==================
+
+    function testZeroStrategySellToMi_Success() public {
+        vm.startPrank(manager);
+        vm.warp(block.timestamp + 31 days);
+
+        // 1) Open position in Asset1 (Zero strategy) by buying with MV
+        bytes memory pathBuy = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+        // Reduce asset price before buying to satisfy Zero strategy conditions
+        uniswapV3Router.setPrice(address(assetToken1), address(tokenMV), 3 * 10 ** 17);
+
+        uint256 mvToSpend = tokenMV.balanceOf(address(vault)) / 400;
+        DataTypes.DelegateExactInputParams memory buyParams = DataTypes.DelegateExactInputParams({
+            router: address(uniswapV3Router),
+            path: pathBuy,
+            deadline: block.timestamp + 1,
+            amountIn: mvToSpend,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+        vault.exactInput(buyParams);
+
+        uint256 assetBal = assetToken1.balanceOf(address(vault));
+
+        // 2) Ensure router has MI liquidity and set favorable price for Asset1 -> MI
+        vm.stopPrank();
+        vm.startPrank(owner);
+        tokenMI.mint(address(uniswapV3Router), assetBal * 20);
+        vm.stopPrank();
+        vm.startPrank(manager);
+        uniswapV3Router.setPrice(address(assetToken1), address(tokenMI), 10 * 10 ** 18);
+
+        // 3) Sell entire Asset1 -> MI (should succeed and clear Asset1 position)
+        bytes memory pathSellToMi = abi.encodePacked(address(assetToken1), uint24(3000), address(tokenMI));
+        DataTypes.DelegateExactInputParams memory sellParams = DataTypes.DelegateExactInputParams({
+            router: address(uniswapV3Router),
+            path: pathSellToMi,
+            deadline: block.timestamp + 1,
+            amountIn: assetBal,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vault.exactInput(sellParams);
+        assertEq(assetToken1.balanceOf(address(vault)), 0, "Asset1 should be fully sold to MI");
+
+        vm.stopPrank();
+    }
+
+    function testZeroStrategySellToMi_NoTokensReceived() public {
+        vm.startPrank(manager);
+        vm.warp(block.timestamp + 31 days);
+
+        // Open position first
+        bytes memory pathBuy = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+        // Reduce asset price before buying to satisfy Zero strategy conditions
+        uniswapV3Router.setPrice(address(assetToken1), address(tokenMV), 3 * 10 ** 17);
+
+        uint256 mvToSpend = tokenMV.balanceOf(address(vault)) / 400;
+        DataTypes.DelegateExactInputParams memory buyParams = DataTypes.DelegateExactInputParams({
+            router: address(uniswapV3Router),
+            path: pathBuy,
+            deadline: block.timestamp + 1,
+            amountIn: mvToSpend,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+        vault.exactInput(buyParams);
+
+        uint256 assetBal = assetToken1.balanceOf(address(vault));
+
+        // Set zero price for Asset1 -> MI to trigger NoTokensReceived
+        uniswapV3Router.setPrice(address(assetToken1), address(tokenMI), 0);
+
+        bytes memory pathSellToMi = abi.encodePacked(address(assetToken1), uint24(3000), address(tokenMI));
+        DataTypes.DelegateExactInputParams memory sellParams = DataTypes.DelegateExactInputParams({
+            router: address(uniswapV3Router),
+            path: pathSellToMi,
+            deadline: block.timestamp + 1,
+            amountIn: assetBal,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(SwapLibrary.NoTokensReceived.selector);
+        vault.exactInput(sellParams);
+
+        vm.stopPrank();
+    }
+
+    function testZeroStrategySellToMi_PriceDidNotIncreaseEnough() public {
+        vm.startPrank(manager);
+        vm.warp(block.timestamp + 31 days);
+
+        // 1) Open position in Asset1 with MV
+        bytes memory pathBuy = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+        // Reduce asset price before buying to satisfy Zero strategy conditions
+        uniswapV3Router.setPrice(address(assetToken1), address(tokenMV), 3 * 10 ** 17);
+
+        uint256 mvToSpend = tokenMV.balanceOf(address(vault)) / 400;
+        DataTypes.DelegateExactInputParams memory buyParams = DataTypes.DelegateExactInputParams({
+            router: address(uniswapV3Router),
+            path: pathBuy,
+            deadline: block.timestamp + 1,
+            amountIn: mvToSpend,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+        vault.exactInput(buyParams);
+
+        // 2) Prepare Asset1 -> MI sale with small, but non-zero MI price
+        uint256 assetBal = assetToken1.balanceOf(address(vault));
+        vm.stopPrank();
+        vm.startPrank(owner);
+        tokenMI.mint(address(uniswapV3Router), assetBal * 2);
+        vm.stopPrank();
+        vm.startPrank(manager);
+        uniswapV3Router.setPrice(address(assetToken1), address(tokenMI), 1 * 10 ** 12); // tiny price
+
+        bytes memory pathSellToMi = abi.encodePacked(address(assetToken1), uint24(3000), address(tokenMI));
+        DataTypes.DelegateExactInputParams memory sellParams = DataTypes.DelegateExactInputParams({
+            router: address(uniswapV3Router),
+            path: pathSellToMi,
+            deadline: block.timestamp + 1,
+            amountIn: assetBal,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(SwapLibrary.PriceDidNotIncreaseEnough.selector);
+        vault.exactInput(sellParams);
+
+        vm.stopPrank();
+    }
+
+    function testZeroStrategySellToMi_SoldMoreThanExpectedWOB() public {
+        vm.startPrank(manager);
+        vm.warp(block.timestamp + 31 days);
+
+        // Open position in Asset1
+        bytes memory pathBuy = abi.encodePacked(address(tokenMV), uint24(3000), address(assetToken1));
+        // Reduce asset price before buying to satisfy Zero strategy conditions
+        uniswapV3Router.setPrice(address(assetToken1), address(tokenMV), 3 * 10 ** 17);
+        uint256 mvToSpend = tokenMV.balanceOf(address(vault)) / 400;
+        DataTypes.DelegateExactInputParams memory buyParams = DataTypes.DelegateExactInputParams({
+            router: address(uniswapV3Router),
+            path: pathBuy,
+            deadline: block.timestamp + 1,
+            amountIn: mvToSpend,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+        vault.exactInput(buyParams);
+
+        uint256 assetBal = assetToken1.balanceOf(address(vault));
+
+        // Ensure router has MI liquidity and set normal price
+        vm.stopPrank();
+        vm.startPrank(owner);
+        tokenMI.mint(address(uniswapV3Router), assetBal * 5);
+        vm.stopPrank();
+        vm.startPrank(manager);
+        uniswapV3Router.setPrice(address(assetToken1), address(tokenMI), 2 * 10 ** 18);
+
+        // Attempt to sell only half of the position -> should revert with SoldMoreThanExpectedWOB
+        bytes memory pathSellToMi = abi.encodePacked(address(assetToken1), uint24(3000), address(tokenMI));
+        DataTypes.DelegateExactInputParams memory sellParams = DataTypes.DelegateExactInputParams({
+            router: address(uniswapV3Router),
+            path: pathSellToMi,
+            deadline: block.timestamp + 1,
+            amountIn: assetBal / 2,
+            amountOutMinimum: 0,
+            swapType: DataTypes.SwapType.Default
+        });
+
+        vm.expectRevert(SwapLibrary.SoldMoreThanExpectedWOB.selector);
+        vault.exactInput(sellParams);
+
+        vm.stopPrank();
+    }
 }
