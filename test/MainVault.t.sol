@@ -392,6 +392,49 @@ contract MainVaultTest is Test {
         vm.stopPrank();
     }
 
+    function testSetRouterQuoterPairAvailabilityByAdmin_WithLock() public {
+        address router = address(100);
+        address quoter = address(200);
+
+        vm.startPrank(admin);
+
+        vm.warp(1000);
+
+        // Make lock period available
+        IMainVault.LockPeriodAvailability[] memory lockConfigs = new IMainVault.LockPeriodAvailability[](1);
+        lockConfigs[0] = IMainVault.LockPeriodAvailability({period: 10 minutes, isAvailable: true});
+        vault.setLockPeriodsAvailability(lockConfigs);
+
+        vm.stopPrank();
+
+        vm.startPrank(mainInvestor);
+        vault.setWithdrawalLock(10 minutes);
+        vm.stopPrank();
+
+        vm.warp(1000 + 5 minutes);
+
+        vm.startPrank(admin);
+
+        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
+        pairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
+
+        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+
+        assertEq(
+            vault.pauseToTimestamp(),
+            uint64(block.timestamp + Constants.PAUSE_AFTER_UPDATE_ACCESS_FOR_ADMIN),
+            "Pause timestamp should be set correctly"
+        );
+
+        assertTrue(vault.availableRouterByAdmin(router), "Router should be available despite lock");
+        assertTrue(
+            vault.availableRouterQuoterPairByAdmin(router, quoter),
+            "Router-Quoter pair should be available despite lock"
+        );
+
+        vm.stopPrank();
+    }
+
     function testSetLockPeriodsAvailability() public {
         uint256 period1 = 1 days;
         uint256 period2 = 7 days;
