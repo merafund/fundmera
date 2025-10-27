@@ -66,6 +66,7 @@ contract MainVault is
     error UpgradeDeadlineExpired();
     error AccessDenied();
     error InvestmentVaultNotAvailableForWithdraw();
+    error WithdrawTimeNotReached();
     // Role definitions
     // Each role is represented by a unique bytes32 value computed from the role name
 
@@ -133,6 +134,7 @@ contract MainVault is
     IFactory public factory;
 
     mapping(uint256 => bool) public availableInvestmentVaultForWithdraw;
+    mapping(uint256 => uint64) public investmentVaultWithdrawAvailableTimestamp; // Timestamp when vault becomes available for withdrawal
 
     modifier isNotLocked() {
         require(!_isLock(), WithdrawalLocked());
@@ -304,6 +306,9 @@ contract MainVault is
         external
         onlyRole(ADMIN_ROLE)
     {
+        if (_isLock()) {
+            pauseToTimestamp = uint64(block.timestamp + Constants.PAUSE_AFTER_UPDATE_ACCESS_FOR_ADMIN);
+        }
         for (uint256 i = 0; i < pairs.length; i++) {
             // Set both router and router-quoter pair as available
             availableRouterByAdmin[pairs[i].router] = true;
@@ -584,6 +589,10 @@ contract MainVault is
             require(
                 availableInvestmentVaultForWithdraw[withdrawal.vaultIndex], InvestmentVaultNotAvailableForWithdraw()
             );
+            require(
+                block.timestamp >= investmentVaultWithdrawAvailableTimestamp[withdrawal.vaultIndex],
+                WithdrawTimeNotReached()
+            );
 
             address vaultAddress = investmentVaults[withdrawal.vaultIndex];
 
@@ -732,6 +741,12 @@ contract MainVault is
         require(vaultIndex < investmentVaultsCount, InvalidVaultIndex());
 
         availableInvestmentVaultForWithdraw[vaultIndex] = isAvailable;
+
+        // Set activation timestamp (current time + delay)
+        if (isAvailable) {
+            investmentVaultWithdrawAvailableTimestamp[vaultIndex] =
+                uint64(block.timestamp + Constants.WITHDRAW_AVAILABLE_DELAY);
+        }
 
         emit InvestmentVaultAvailabilityForWithdrawChanged(vaultIndex, isAvailable);
     }

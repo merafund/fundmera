@@ -587,6 +587,11 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @return isAvailable True if vault is available for withdraw
     function availableInvestmentVaultForWithdraw(uint256 vaultIndex) external view returns (bool);
 
+    /// @dev Get investment vault withdraw available timestamp
+    /// @param vaultIndex Investment vault index
+    /// @return timestamp Timestamp when vault becomes available for withdrawal
+    function investmentVaultWithdrawAvailableTimestamp(uint256 vaultIndex) external view returns (uint64);
+
     /// @dev Set investment vault availability for withdraw
     /// Only admin can call this function
     /// @param vaultIndex Investment vault index (must be less than investmentVaultsCount)

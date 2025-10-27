@@ -3565,8 +3565,8 @@ contract MainVaultTest is Test {
         vault.setAvailableInvestmentVaultForWithdraw(0, true);
         vm.stopPrank();
 
-        // Wait for initial lock period to expire (7 days)
-        vm.warp(block.timestamp + 7 days + 1);
+        // Wait for the withdraw available delay (1 hour)
+        vm.warp(block.timestamp + Constants.WITHDRAW_AVAILABLE_DELAY);
 
         vm.startPrank(mainInvestor);
 
@@ -3716,8 +3716,8 @@ contract MainVaultTest is Test {
         vault.setAvailableInvestmentVaultForWithdraw(0, true);
         vm.stopPrank();
 
-        // Wait for initial lock period to expire (7 days)
-        vm.warp(block.timestamp + 7 days + 1);
+        // Wait for the withdraw available delay (1 hour)
+        vm.warp(block.timestamp + Constants.WITHDRAW_AVAILABLE_DELAY);
 
         IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
         withdrawals[0] = IMainVault.WithdrawFromVaultData({
@@ -3799,8 +3799,8 @@ contract MainVaultTest is Test {
         vault.setAvailableInvestmentVaultForWithdraw(2, true);
         vm.stopPrank();
 
-        // Wait for initial lock period to expire (7 days)
-        vm.warp(block.timestamp + 7 days + 1);
+        // Wait for the withdraw available delay (1 hour)
+        vm.warp(block.timestamp + Constants.WITHDRAW_AVAILABLE_DELAY);
 
         vm.startPrank(mainInvestor);
 
@@ -3872,8 +3872,8 @@ contract MainVaultTest is Test {
         // vault 1 remains unavailable (default false)
         vm.stopPrank();
 
-        // Wait for initial lock period to expire (7 days)
-        vm.warp(block.timestamp + 7 days + 1);
+        // Wait for the withdraw available delay (1 hour)
+        vm.warp(block.timestamp + Constants.WITHDRAW_AVAILABLE_DELAY);
 
         vm.startPrank(mainInvestor);
 
@@ -3922,6 +3922,9 @@ contract MainVaultTest is Test {
         vault.setAvailableInvestmentVaultForWithdraw(0, true);
         vm.stopPrank();
 
+        // Wait for the withdraw available delay (1 hour)
+        vm.warp(block.timestamp + Constants.WITHDRAW_AVAILABLE_DELAY);
+
         // Set withdrawal lock (should not affect this function)
         vm.startPrank(mainInvestor);
         vault.setWithdrawalLock(10 minutes);
@@ -3945,6 +3948,70 @@ contract MainVaultTest is Test {
             token.balanceOf(address(vault)),
             balanceBefore + DEPOSIT_AMOUNT / 4,
             "Main vault balance should increase even with withdrawal lock active"
+        );
+
+        vm.stopPrank();
+    }
+
+    function testWithdrawFromInvestmentVaultsIfWithdrawAvailable_WithdrawTimeNotReached() public {
+        // Deploy investment vault and deposit tokens
+        vm.startPrank(mainInvestor);
+        token.approve(address(vault), DEPOSIT_AMOUNT);
+        vault.deposit(token, DEPOSIT_AMOUNT);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        DataTypes.AssetInitData[] memory assets = new DataTypes.AssetInitData[](1);
+        assets[0] = DataTypes.AssetInitData({
+            token: IERC20(address(fourthToken)),
+            shareToken: 5 * 10 ** 17,
+            step: 5 * 10 ** 16,
+            strategy: DataTypes.Strategy.Zero
+        });
+
+        DataTypes.InvestmentVaultInitData memory initData = DataTypes.InvestmentVaultInitData({
+            mainVault: DataTypesIMainVault(address(vault)),
+            tokenMI: IERC20(address(token)),
+            tokenMV: IERC20(address(token)),
+            capitalOfMi: DEPOSIT_AMOUNT / 2,
+            shareMV: Constants.SHARE_DENOMINATOR,
+            step: 5 * 10 ** 16,
+            assets: assets
+        });
+
+        vault.deployInvestmentVault(initData);
+        vault.setAvailableInvestmentVaultForWithdraw(0, true);
+        vm.stopPrank();
+
+        // Try to withdraw immediately without waiting for the delay
+        vm.startPrank(mainInvestor);
+
+        IMainVault.WithdrawFromVaultData[] memory withdrawals = new IMainVault.WithdrawFromVaultData[](1);
+        withdrawals[0] = IMainVault.WithdrawFromVaultData({
+            vaultIndex: 0, token: IERC20(address(token)), amount: DEPOSIT_AMOUNT / 4
+        });
+
+        // Should revert because the delay time has not passed
+        vm.expectRevert(MainVault.WithdrawTimeNotReached.selector);
+        vault.withdrawFromInvestmentVaultsIfWithdrawAvailable(withdrawals);
+
+        vm.stopPrank();
+
+        // Wait for the delay and try again - should work now
+        vm.warp(block.timestamp + Constants.WITHDRAW_AVAILABLE_DELAY);
+
+        vm.startPrank(mainInvestor);
+
+        uint256 balanceBefore = token.balanceOf(address(vault));
+
+        // Should work after waiting for the delay
+        vault.withdrawFromInvestmentVaultsIfWithdrawAvailable(withdrawals);
+
+        // Verify balance increased
+        assertEq(
+            token.balanceOf(address(vault)),
+            balanceBefore + DEPOSIT_AMOUNT / 4,
+            "Main vault balance should increase after delay period"
         );
 
         vm.stopPrank();
@@ -3980,8 +4047,8 @@ contract MainVaultTest is Test {
         vault.setAvailableInvestmentVaultForWithdraw(0, true);
         vm.stopPrank();
 
-        // Wait for initial lock period to expire (7 days)
-        vm.warp(block.timestamp + 7 days + 1);
+        // Wait for the withdraw available delay (1 hour)
+        vm.warp(block.timestamp + Constants.WITHDRAW_AVAILABLE_DELAY);
 
         vm.startPrank(mainInvestor);
 
