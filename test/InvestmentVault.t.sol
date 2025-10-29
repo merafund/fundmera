@@ -3928,7 +3928,7 @@ contract InvestmentVaultTest is Test {
         setUp_DifferentTokens();
         vm.startPrank(owner);
 
-        vm.expectRevert(InvestmentVault.ShareExceedsMaximum.selector);
+        vm.expectRevert(InvestmentVault.ShareMustBeLessThanOrEqualToDeposit.selector);
         vault.setShareMi(Constants.SHARE_DENOMINATOR + 1);
 
         vm.stopPrank();

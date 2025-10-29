@@ -383,11 +383,11 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
 
     /// @inheritdoc IInvestmentVault
     function setShareMi(uint256 newShareMI) external OnlyAdmin whenNotPaused {
-        require(newShareMI <= Constants.SHARE_DENOMINATOR, ShareExceedsMaximum());
         require(
             newShareMI <= tokenData.depositInMv * Constants.SHARE_DENOMINATOR / tokenData.capitalOfMi,
             ShareMustBeLessThanOrEqualToDeposit()
         );
+        require(newShareMI <= Constants.SHARE_INITIAL_MAX, ShareExceedsMaximum());
 
         uint256 oldShareMI = tokenData.shareMV;
         tokenData.shareMV = newShareMI;
