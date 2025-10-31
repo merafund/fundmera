@@ -447,8 +447,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
         uint256 finalBalance = tokenData.tokenMI.balanceOf(address(this));
         require(finalBalance >= tokenData.capitalOfMi, NoProfit());
 
-        uint256 totalProfit =
-            finalBalance - tokenData.capitalOfMi
+        uint256 totalProfit = finalBalance - tokenData.capitalOfMi
             - (profitData.earntProfitTotal - profitData.withdrawnProfitInvestor - profitData.withdrawnProfitFee);
         // Use centralized helper to distribute MI-denominated profit
         SwapLibrary.distributeMiProfit(tokenData, profitData, totalProfit, mainVault);

@@ -604,8 +604,7 @@ library SwapLibrary {
         // Calculate current purchase price (MV per Asset)
         uint256 currentPrice = (mvSpent * Constants.SHARE_DENOMINATOR) / assetReceived;
 
-        uint256 workingOrderDeposit =
-            (assetData.capital * assetData.shareToken * assetData.step)
+        uint256 workingOrderDeposit = (assetData.capital * assetData.shareToken * assetData.step)
             / (Constants.SHARE_DENOMINATOR * (Constants.SHARE_DENOMINATOR + assetData.step));
 
         uint256 workingBalanceBuy = (assetData.tokenBought * assetData.step) / (Constants.SHARE_DENOMINATOR);
@@ -668,8 +667,7 @@ library SwapLibrary {
         }
 
         // Calculate working order depisit (WOD)
-        uint256 workingOrderDeposit =
-            (assetData.capital * assetData.shareToken * assetData.step)
+        uint256 workingOrderDeposit = (assetData.capital * assetData.shareToken * assetData.step)
             / (Constants.SHARE_DENOMINATOR * (Constants.SHARE_DENOMINATOR + assetData.step));
 
         // Calculate working order balance (WOB)
