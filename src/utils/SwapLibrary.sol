@@ -102,39 +102,21 @@ library SwapLibrary {
             profitData.earntProfitFee += feeAmount;
             profitData.earntProfitTotal += profitMi;
         } else {
-            // profitData.earntProfitTotal += profitMi;
-
-            // uint256 currentFixedProfitPercent = mainVault.currentFixedProfitPercent();
-            // uint256 daysSinceStart = (block.timestamp - tokenData.timestampOfStartInvestment) / 1 days + 1;
-            // uint256 fixedProfit =
-            //     currentFixedProfitPercent * daysSinceStart * tokenData.capitalOfMi / 365 / Constants.MAX_PERCENT;
-
-            // if (fixedProfit < profitData.earntProfitTotal) {
-            //     uint256 mustEarntProfitFee = profitData.earntProfitTotal - fixedProfit;
-            //     if (mustEarntProfitFee > profitData.earntProfitFee) {
-            //         profitData.earntProfitFee = mustEarntProfitFee;
-            //         profitData.earntProfitInvestor = fixedProfit;
-            //     } else {
-            //         profitData.earntProfitFee = mustEarntProfitFee + (profitData.earntProfitFee - mustEarntProfitFee);
-            //         profitData.earntProfitInvestor = fixedProfit - (profitData.earntProfitFee - mustEarntProfitFee);
-            //     }
-            // } else {
-            //     profitData.earntProfitInvestor += profitMi;
-            // }
-
             profitData.earntProfitTotal += profitMi;
-            profitData.earntProfitInvestor += profitMi;
 
             uint256 currentFixedProfitPercent = mainVault.currentFixedProfitPercent();
             uint256 daysSinceStart = (block.timestamp - tokenData.timestampOfStartInvestment) / 1 days + 1;
             uint256 fixedProfit =
                 currentFixedProfitPercent * daysSinceStart * tokenData.capitalOfMi / 365 / Constants.MAX_PERCENT;
 
-            if (fixedProfit < profitData.earntProfitInvestor) {
-                uint256 mustEarntProfitFee = profitData.earntProfitInvestor - fixedProfit;
+            uint256 neededForInvestor =
+                fixedProfit > profitData.earntProfitInvestor ? fixedProfit - profitData.earntProfitInvestor : 0;
 
-                profitData.earntProfitFee += mustEarntProfitFee;
-                profitData.earntProfitInvestor = fixedProfit;
+            if (profitMi > neededForInvestor) {
+                profitData.earntProfitInvestor += neededForInvestor;
+                profitData.earntProfitFee += (profitMi - neededForInvestor);
+            } else {
+                profitData.earntProfitInvestor += profitMi;
             }
         }
     }
