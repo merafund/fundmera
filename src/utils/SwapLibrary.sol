@@ -451,6 +451,9 @@ library SwapLibrary {
         uint256 mvBalanceAfter = IERC20(swapParams.fromToken).balanceOf(address(this));
         require(mvBalanceAfter >= profitData.profitMV, SpentMoreThanExpected());
 
+        // Check non-burnable MV reserve before any other checks
+        checkNonBurnableReserve(mvBalanceAfter, tokenData.mvBought, profitData.profitMV);
+
         // Calculate the current purchase price (MV/Asset)
         uint256 mvSpent = swapParams.firstBalanceBefore - mvBalanceAfter;
         uint256 assetReceived = IERC20(swapParams.toToken).balanceOf(address(this)) - swapParams.secondBalanceBefore;
