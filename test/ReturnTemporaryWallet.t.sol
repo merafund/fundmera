@@ -157,9 +157,7 @@ contract ReturnTemporaryWalletTest is Test {
         vm.stopPrank();
 
         assertEq(
-            token.balanceOf(recipient),
-            initialRecipientBalance + TRANSFER_AMOUNT,
-            "Recipient should receive tokens"
+            token.balanceOf(recipient), initialRecipientBalance + TRANSFER_AMOUNT, "Recipient should receive tokens"
         );
         assertEq(
             token.balanceOf(address(wallet)),
@@ -207,11 +205,7 @@ contract ReturnTemporaryWalletTest is Test {
         wallet.transferToken(address(token), amount2);
         vm.stopPrank();
 
-        assertEq(
-            token.balanceOf(recipient),
-            amount1 + amount2,
-            "Recipient should receive all transferred tokens"
-        );
+        assertEq(token.balanceOf(recipient), amount1 + amount2, "Recipient should receive all transferred tokens");
     }
 
     function test_TransferToken_CanTransferFullBalance() public {
@@ -239,11 +233,7 @@ contract ReturnTemporaryWalletTest is Test {
 
         // Transfer tokens
         wallet.transferToken(address(token), TRANSFER_AMOUNT);
-        assertEq(
-            token.balanceOf(recipient),
-            TRANSFER_AMOUNT,
-            "Recipient should receive tokens"
-        );
+        assertEq(token.balanceOf(recipient), TRANSFER_AMOUNT, "Recipient should receive tokens");
         vm.stopPrank();
     }
 

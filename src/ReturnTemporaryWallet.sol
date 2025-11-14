@@ -25,7 +25,7 @@ contract ReturnTemporaryWallet is Ownable {
 
     // Recipient address
     address public recipient;
-    
+
     // Flag that prevents changing recipient after it's been set
     bool public recipientLocked;
 

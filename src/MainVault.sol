@@ -316,7 +316,9 @@ contract MainVault is
             availableRouterQuoterPairByAdmin[configs[i].router][configs[i].quoter] = configs[i].isAvailable;
 
             emit RouterAvailabilityByAdminChanged(configs[i].router, configs[i].isAvailable);
-            emit RouterQuoterPairAvailabilityByAdminChanged(configs[i].router, configs[i].quoter, configs[i].isAvailable);
+            emit RouterQuoterPairAvailabilityByAdminChanged(
+                configs[i].router, configs[i].quoter, configs[i].isAvailable
+            );
         }
     }
 

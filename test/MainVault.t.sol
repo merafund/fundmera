@@ -2245,8 +2245,10 @@ contract MainVaultTest is Test {
         adminTokenConfigs[1] = IMainVault.TokenAvailability({token: address(secondToken), isAvailable: true});
         vault.setTokenAvailabilityByAdmin(adminTokenConfigs);
 
-        DataTypes.RouterQuoterPairAvailability[] memory adminRouterConfigs = new DataTypes.RouterQuoterPairAvailability[](1);
-        adminRouterConfigs[0] = DataTypes.RouterQuoterPairAvailability({router: routerAddress, quoter: routerAddress, isAvailable: true});
+        DataTypes.RouterQuoterPairAvailability[] memory adminRouterConfigs =
+            new DataTypes.RouterQuoterPairAvailability[](1);
+        adminRouterConfigs[0] =
+            DataTypes.RouterQuoterPairAvailability({router: routerAddress, quoter: routerAddress, isAvailable: true});
         vault.setRouterQuoterPairAvailabilityByAdmin(adminRouterConfigs);
         vm.stopPrank();
 

@@ -98,9 +98,15 @@ contract MainVaultSwapsTest is Test {
         vault.setTokenAvailabilityByAdmin(tokenAvailabilities);
         // Set up router-quoter pairs for admin
         DataTypes.RouterQuoterPairAvailability[] memory adminConfigs = new DataTypes.RouterQuoterPairAvailability[](3);
-        adminConfigs[0] = DataTypes.RouterQuoterPairAvailability({router: address(uniswapV2), quoter: address(uniswapV2), isAvailable: true});
-        adminConfigs[1] = DataTypes.RouterQuoterPairAvailability({router: address(uniswapV3), quoter: address(quoterV2), isAvailable: true});
-        adminConfigs[2] = DataTypes.RouterQuoterPairAvailability({router: address(quickswapV3), quoter: address(quoterQuickswap), isAvailable: true});
+        adminConfigs[0] = DataTypes.RouterQuoterPairAvailability({
+            router: address(uniswapV2), quoter: address(uniswapV2), isAvailable: true
+        });
+        adminConfigs[1] = DataTypes.RouterQuoterPairAvailability({
+            router: address(uniswapV3), quoter: address(quoterV2), isAvailable: true
+        });
+        adminConfigs[2] = DataTypes.RouterQuoterPairAvailability({
+            router: address(quickswapV3), quoter: address(quoterQuickswap), isAvailable: true
+        });
         vault.setRouterQuoterPairAvailabilityByAdmin(adminConfigs);
         vm.stopPrank();
 

@@ -69,9 +69,11 @@ contract PriceValidationTest is Test {
         DataTypes.RouterQuoterPair[] memory investorPairs = new DataTypes.RouterQuoterPair[](1);
         investorPairs[0] = DataTypes.RouterQuoterPair({router: address(router), quoter: address(quoter)});
         mainVault.setRouterQuoterPairAvailabilityByInvestor(investorPairs);
-        
+
         DataTypes.RouterQuoterPairAvailability[] memory adminConfigs = new DataTypes.RouterQuoterPairAvailability[](1);
-        adminConfigs[0] = DataTypes.RouterQuoterPairAvailability({router: address(router), quoter: address(quoter), isAvailable: true});
+        adminConfigs[0] = DataTypes.RouterQuoterPairAvailability({
+            router: address(router), quoter: address(quoter), isAvailable: true
+        });
         mainVault.setRouterQuoterPairAvailabilityByAdmin(adminConfigs);
 
         // Deploy and setup vault

@@ -51,7 +51,7 @@ contract SwapTestsSingleToken is Test {
         DataTypes.RouterQuoterPair[] memory investorPairs = new DataTypes.RouterQuoterPair[](1);
         investorPairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
         mainVault.setRouterQuoterPairAvailabilityByInvestor(investorPairs);
-        
+
         DataTypes.RouterQuoterPairAvailability[] memory adminConfigs = new DataTypes.RouterQuoterPairAvailability[](1);
         adminConfigs[0] = DataTypes.RouterQuoterPairAvailability({router: router, quoter: quoter, isAvailable: true});
         mainVault.setRouterQuoterPairAvailabilityByAdmin(adminConfigs);

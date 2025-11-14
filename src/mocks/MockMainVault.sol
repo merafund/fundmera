@@ -99,7 +99,9 @@ contract MockMainVault {
         }
     }
 
-    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPairAvailability[] calldata configs) external {
+    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPairAvailability[] calldata configs)
+        external
+    {
         for (uint256 i = 0; i < configs.length; i++) {
             availableRoutersByAdmin[configs[i].router] = configs[i].isAvailable;
             availableRouterQuoterPairs[configs[i].router][configs[i].quoter] = configs[i].isAvailable;
