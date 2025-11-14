@@ -138,7 +138,6 @@ contract NonBurnableReserveTest is Test {
         wrapper.checkNonBurnableReserve(mvBalanceAfter, totalMvBought, profitMV);
     }
 
-
     function testValidateMvPriceFromEntryPoint_OracleCheckCanceled() public {
         // Test when oracle check is canceled
         mainVault.setIsCanceledOracleCheck(true);

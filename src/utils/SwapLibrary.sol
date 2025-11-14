@@ -348,14 +348,14 @@ library SwapLibrary {
 
         uint8 decimalsMi = IERC20Metadata(address(tokenData.tokenMI)).decimals();
         uint8 decimalsMv = IERC20Metadata(address(tokenData.tokenMV)).decimals();
-        uint256 averagePriceMv = (uint256(tokenData.depositInMv) * (10 ** (18 + decimalsMi - decimalsMv))) / tokenData.mvBought;
+        uint256 averagePriceMv =
+            (uint256(tokenData.depositInMv) * (10 ** (18 + decimalsMi - decimalsMv))) / tokenData.mvBought;
 
         uint256 priceDecline;
         if (currentMvPrice >= averagePriceMv) {
             return;
         } else {
-            priceDecline =
-                ((averagePriceMv - currentMvPrice) * Constants.SHARE_DENOMINATOR) / averagePriceMv;
+            priceDecline = ((averagePriceMv - currentMvPrice) * Constants.SHARE_DENOMINATOR) / averagePriceMv;
         }
 
         require(priceDecline <= Constants.MAX_MV_PRICE_DECLINE_FROM_ENTRY, MvPriceDeclinedTooMuch());
