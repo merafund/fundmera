@@ -272,6 +272,9 @@ contract MainVault is
 
     /// @inheritdoc IMainVault
     function setTokenAvailabilityByAdmin(TokenAvailability[] calldata configs) external onlyRole(ADMIN_ROLE) {
+        if (_isLock()) {
+            pauseToTimestamp = uint64(block.timestamp + Constants.PAUSE_AFTER_UPDATE_ACCESS);
+        }
         for (uint256 i = 0; i < configs.length; i++) {
             availableTokensByAdmin[configs[i].token] = configs[i].isAvailable;
 
