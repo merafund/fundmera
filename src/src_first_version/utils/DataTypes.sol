@@ -20,7 +20,6 @@ library DataTypes {
         NotInitialized, // Swaps not initialized yet
         MiToMvInitialized, // First swap (MI to MV) initialized
         FullyInitialized // All swaps initialized
-
     }
 
     enum SwapType {
@@ -32,14 +31,12 @@ library DataTypes {
     enum Strategy {
         Zero, // Zero strategy - buy at lower price, sell at higher price
         First // First strategy - stepped buys and sells based on price changes
-
     }
 
     enum Router {
         UniswapV2, //0
         UniswapV3, // 1
         QuickswapV3 // 2
-
     }
 
     enum ProfitType {

@@ -67,6 +67,7 @@ contract MainVault is
     error AccessDenied();
     error InvestmentVaultNotAvailableForWithdraw();
     error WithdrawTimeNotReached();
+    error CurrentFactoryMustBeZero();
     // Role definitions
     // Each role is represented by a unique bytes32 value computed from the role name
 
@@ -127,13 +128,12 @@ contract MainVault is
 
     mapping(uint256 => bool) public availableInvestmentVaultForWithdraw;
     mapping(uint256 => uint64) public investmentVaultWithdrawAvailableTimestamp; // Timestamp when vault becomes available for withdrawal
-        // Upgrade approval storage for InvestorVault
-
 
     mapping(address => mapping(address => bool)) public availableRouterQuoterPairByInvestor;
     mapping(address => mapping(address => bool)) public availableRouterQuoterPairByAdmin;
     IFactory public factory;
-    
+    IFactory public proposedFactoryByAdmin;
+
     modifier isNotLocked() {
         require(!_isLock(), WithdrawalLocked());
         _;
@@ -361,9 +361,27 @@ contract MainVault is
         require(proposedMeraPriceOracleByAdmin != address(0), ZeroAddressNotAllowed());
         address oldOracle = address(meraPriceOracle);
         meraPriceOracle = IMeraPriceOracle(proposedMeraPriceOracleByAdmin);
-        proposedMeraPriceOracleByAdmin = address(0); // Reset proposed oracle after confirmation
+        proposedMeraPriceOracleByAdmin = address(0);
 
         emit MeraPriceOracleSet(oldOracle, address(meraPriceOracle));
+    }
+
+    /// @inheritdoc IMainVault
+    function setProposedFactoryByAdmin(address _proposedFactory) external onlyRole(ADMIN_ROLE) {
+        require(_proposedFactory != address(0), ZeroAddressNotAllowed());
+        require(address(factory) == address(0), CurrentFactoryMustBeZero());
+        proposedFactoryByAdmin = IFactory(_proposedFactory);
+        emit ProposedFactoryByAdminSet(_proposedFactory);
+    }
+
+    /// @inheritdoc IMainVault
+    function setCurrentFactory() external onlyRole(MAIN_INVESTOR_ROLE) {
+        require(address(proposedFactoryByAdmin) != address(0), ZeroAddressNotAllowed());
+        IFactory oldFactory = factory;
+        factory = proposedFactoryByAdmin;
+        proposedFactoryByAdmin = IFactory(address(0));
+
+        emit FactorySet(address(oldFactory), address(factory));
     }
 
     /// @inheritdoc IMainVault
@@ -388,7 +406,6 @@ contract MainVault is
 
         address oldImplementation = currentImplementationOfInvestmentVault;
         currentImplementationOfInvestmentVault = implementation;
-
 
         investorApprovedInvestorVaultImpl = address(0);
         investorApprovedInvestorVaultTimestamp = 0;

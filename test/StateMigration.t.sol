@@ -25,7 +25,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 
 contract MockERC20 is ERC20 {
     uint8 private _decimals;
-    
+
     constructor(string memory name, string memory symbol, uint8 decimals_) ERC20(name, symbol) {
         _decimals = decimals_;
         _mint(msg.sender, 1000000 * 10 ** decimals_);
@@ -72,7 +72,7 @@ contract MockFactory {
     function setInvestmentVaultImplementation(address _impl) external {
         investmentVaultImplementation = _impl;
     }
-    
+
     function createMainVault(
         address mainInvestor,
         address backupInvestor,
@@ -101,7 +101,6 @@ contract MockMeraPriceOracle {
         return data;
     }
 }
-
 
 /// @title StateMigrationTest
 /// @notice Test contract to verify state preservation during contract upgrades from V1 to V2
@@ -183,7 +182,7 @@ contract StateMigrationTest is Test {
     /// @notice Test MainVault state migration from V1 to V2
     function testMainVaultStateMigration() public {
         console.log("=== Testing MainVault State Migration ===");
-        
+
         // Initialize MainVault V1 with proxy
         IMainVaultV1.InitParams memory initParams = IMainVaultV1.InitParams({
             mainInvestor: mainInvestor,
@@ -211,7 +210,7 @@ contract StateMigrationTest is Test {
 
         // Fill state with non-zero values
         vm.startPrank(mainInvestor);
-        
+
         // Set token availability by investor
         IMainVaultV1.TokenAvailability[] memory tokenConfigs = new IMainVaultV1.TokenAvailability[](2);
         tokenConfigs[0] = IMainVaultV1.TokenAvailability({token: address(tokenMI), isAvailable: true});
@@ -232,15 +231,14 @@ contract StateMigrationTest is Test {
         vm.stopPrank();
 
         vm.startPrank(admin);
-        
+
         // Set token availability by admin
         mainVaultV1.setTokenAvailabilityByAdmin(tokenConfigs);
 
         // Set router availability by admin
         IMainVaultV1.RouterAvailability[] memory routerConfigs = new IMainVaultV1.RouterAvailability[](1);
         routerConfigs[0] = IMainVaultV1.RouterAvailability({
-            router: address(0x2222222222222222222222222222222222222222), 
-            isAvailable: true
+            router: address(0x2222222222222222222222222222222222222222), isAvailable: true
         });
         mainVaultV1.setRouterAvailabilityByAdmin(routerConfigs);
 
@@ -276,7 +274,7 @@ contract StateMigrationTest is Test {
         bool adminCanceledOracleBefore = mainVaultV1.adminIsCanceledOracleCheck();
         address pauserListBefore = address(mainVaultV1.pauserList());
         address oracleBefore = address(mainVaultV1.meraPriceOracle());
-        
+
         // Check token and router availability
         bool tokenMIAvailableByInvestorBefore = mainVaultV1.availableTokensByInvestor(address(tokenMI));
         bool tokenMIAvailableByAdminBefore = mainVaultV1.availableTokensByAdmin(address(tokenMI));
@@ -310,41 +308,37 @@ contract StateMigrationTest is Test {
         // Now perform the upgrade
         // Update factory to V2 implementations
         factory.setMainVaultImplementation(address(mainVaultV2Impl));
-        
+
         // Temporarily upgrade to V2 to set approval (V1 doesn't have approveMainVaultUpgrade method)
         // Get implementation slot (EIP-1967: keccak256("eip1967.proxy.implementation") - 1)
         bytes32 IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
         bytes32 currentImpl = vm.load(address(mainVaultProxy), IMPLEMENTATION_SLOT);
-        
+
         // Temporarily set V2 implementation
-        vm.store(
-            address(mainVaultProxy),
-            IMPLEMENTATION_SLOT,
-            bytes32(uint256(uint160(address(mainVaultV2Impl))))
-        );
-        
+        vm.store(address(mainVaultProxy), IMPLEMENTATION_SLOT, bytes32(uint256(uint160(address(mainVaultV2Impl)))));
+
         // Now that we're on V2, we need to set factory in storage
         // Factory is a new field in V2, so it needs to be initialized
         // Since V1 doesn't have factory, it will be address(0) in V2
         // Factory is stored at storage slot 21 (found via forge inspect)
         bytes32 factorySlot = bytes32(uint256(21));
         vm.store(address(mainVaultProxy), factorySlot, bytes32(uint256(uint160(address(factory)))));
-        
+
         // Verify factory is set correctly
         MainVault tempMainVaultV2 = MainVault(address(mainVaultProxy));
         require(address(tempMainVaultV2.factory()) == address(factory), "Factory not set correctly");
-        
+
         // Approve upgrade by main investor using V2 interface
         vm.prank(mainInvestor);
         tempMainVaultV2.approveMainVaultUpgrade(address(mainVaultV2Impl));
-        
+
         // Restore V1 implementation
         vm.store(address(mainVaultProxy), IMPLEMENTATION_SLOT, currentImpl);
-        
+
         // Perform upgrade through proper UUPS mechanism
         vm.prank(admin);
         UUPSUpgradeable(address(mainVaultProxy)).upgradeToAndCall(address(mainVaultV2Impl), "");
-        
+
         // Factory was already set before upgrade, so no need to set it again
 
         console.log("Upgrade completed");
@@ -369,7 +363,7 @@ contract StateMigrationTest is Test {
         address pauserListAfter = address(mainVaultV2.pauserList());
         address oracleAfter = address(mainVaultV2.meraPriceOracle());
         address factoryAfter = address(mainVaultV2.factory());
-        
+
         bool tokenMIAvailableByInvestorAfter = mainVaultV2.availableTokensByInvestor(address(tokenMI));
         bool tokenMIAvailableByAdminAfter = mainVaultV2.availableTokensByAdmin(address(tokenMI));
         bool routerAvailableByInvestorAfter = mainVaultV2.availableRouterByInvestor(routers[0]);
@@ -387,20 +381,42 @@ contract StateMigrationTest is Test {
         assertEq(profitLockedUntilAfter, profitLockedUntilBefore, "profitLockedUntil not preserved");
         assertEq(withdrawalLockedUntilAfter, withdrawalLockedUntilBefore, "withdrawalLockedUntil not preserved");
         assertEq(autoRenewAfter, autoRenewBefore, "autoRenewWithdrawalLock not preserved");
-        assertEq(currentInvestmentVaultImplAfter, currentInvestmentVaultImplBefore, "currentImplementationOfInvestmentVault not preserved");
-        assertEq(currentFixedProfitPercentAfter, currentFixedProfitPercentBefore, "currentFixedProfitPercent not preserved");
-        assertEq(proposedFixedProfitPercentAfter, proposedFixedProfitPercentBefore, "proposedFixedProfitPercent not preserved");
+        assertEq(
+            currentInvestmentVaultImplAfter,
+            currentInvestmentVaultImplBefore,
+            "currentImplementationOfInvestmentVault not preserved"
+        );
+        assertEq(
+            currentFixedProfitPercentAfter, currentFixedProfitPercentBefore, "currentFixedProfitPercent not preserved"
+        );
+        assertEq(
+            proposedFixedProfitPercentAfter,
+            proposedFixedProfitPercentBefore,
+            "proposedFixedProfitPercent not preserved"
+        );
         assertEq(proposedOracleAfter, proposedOracleBefore, "proposedOracle not preserved");
         assertEq(investorCanceledOracleAfter, investorCanceledOracleBefore, "investorCanceledOracle not preserved");
         assertEq(adminCanceledOracleAfter, adminCanceledOracleBefore, "adminCanceledOracle not preserved");
         assertEq(pauserListAfter, pauserListBefore, "pauserList not preserved");
         assertEq(oracleAfter, oracleBefore, "oracle not preserved");
         assertEq(uint8(profitTypeAfter), uint8(profitTypeBefore), "profitType not preserved");
-        
-        assertEq(tokenMIAvailableByInvestorAfter, tokenMIAvailableByInvestorBefore, "tokenMI availability by investor not preserved");
-        assertEq(tokenMIAvailableByAdminAfter, tokenMIAvailableByAdminBefore, "tokenMI availability by admin not preserved");
-        assertEq(routerAvailableByInvestorAfter, routerAvailableByInvestorBefore, "router availability by investor not preserved");
-        assertEq(routerAvailableByAdminAfter, routerAvailableByAdminBefore, "router availability by admin not preserved");
+
+        assertEq(
+            tokenMIAvailableByInvestorAfter,
+            tokenMIAvailableByInvestorBefore,
+            "tokenMI availability by investor not preserved"
+        );
+        assertEq(
+            tokenMIAvailableByAdminAfter, tokenMIAvailableByAdminBefore, "tokenMI availability by admin not preserved"
+        );
+        assertEq(
+            routerAvailableByInvestorAfter,
+            routerAvailableByInvestorBefore,
+            "router availability by investor not preserved"
+        );
+        assertEq(
+            routerAvailableByAdminAfter, routerAvailableByAdminBefore, "router availability by admin not preserved"
+        );
         assertEq(lockPeriodAvailableAfter, lockPeriodAvailableBefore, "lock period availability not preserved");
         assertEq(factoryAfter, address(factory), "factory not set");
 
@@ -410,7 +426,7 @@ contract StateMigrationTest is Test {
     /// @notice Test InvestmentVault state migration from V1 to V2
     function testInvestmentVaultStateMigration() public {
         console.log("=== Testing InvestmentVault State Migration ===");
-        
+
         // Setup MainVault V1 first (needed for InvestmentVault V1)
         IMainVaultV1.InitParams memory initParams = IMainVaultV1.InitParams({
             mainInvestor: mainInvestor,
@@ -473,8 +489,7 @@ contract StateMigrationTest is Test {
             uint256 depositInMvBefore,
             uint256 timestampBefore,
             DataTypesV1.ProfitType profitTypeBefore,
-            uint256 stepBefore,
-            ,
+            uint256 stepBefore,,
         ) = investmentVaultV1.tokenData();
 
         (
@@ -486,24 +501,12 @@ contract StateMigrationTest is Test {
             uint256 withdrawnProfitFeeBefore
         ) = investmentVaultV1.profitData();
 
-        (
-            bool closedBefore,
-            uint256 assetsDataLengthBefore,
-            ,
-            DataTypesV1.SwapInitState swapInitStateBefore
-        ) = investmentVaultV1.vaultState();
+        (bool closedBefore, uint256 assetsDataLengthBefore,, DataTypesV1.SwapInitState swapInitStateBefore) =
+            investmentVaultV1.vaultState();
 
         // Get asset data
-        (
-            uint256 asset1ShareBefore,
-            uint256 asset1StepBefore,
-            DataTypesV1.Strategy asset1StrategyBefore,
-            ,
-            ,
-            ,
-            ,
-            ,
-        ) = investmentVaultV1.assetsData(IERC20(address(tokenAsset1)));
+        (uint256 asset1ShareBefore, uint256 asset1StepBefore, DataTypesV1.Strategy asset1StrategyBefore,,,,,,) =
+            investmentVaultV1.assetsData(IERC20(address(tokenAsset1)));
 
         console.log("State before upgrade captured");
         console.log("Init deposit:", initDepositBefore);
@@ -523,10 +526,10 @@ contract StateMigrationTest is Test {
         // Perform upgrade
         // First, we need to set currentImplementationOfInvestmentVault in mainVault to V2
         // Using direct storage manipulation like we did for MainVault
-        
+
         // Get implementation slot for InvestmentVault proxy
         bytes32 IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
-        
+
         // Set the currentImplementationOfInvestmentVault in mainVaultV1 to investmentVaultV2Impl
         // This field is at a specific storage slot in MainVault
         // We need to find the slot for currentImplementationOfInvestmentVault
@@ -536,7 +539,7 @@ contract StateMigrationTest is Test {
             bytes32(uint256(6)), // Slot for currentImplementationOfInvestmentVault
             bytes32(uint256(uint160(address(investmentVaultV2Impl))))
         );
-        
+
         // Now directly change the implementation of InvestmentVault proxy
         vm.store(
             address(investmentVaultProxy),
@@ -560,8 +563,7 @@ contract StateMigrationTest is Test {
             uint256 depositInMvAfter,
             uint256 timestampAfter,
             DataTypes.ProfitType profitTypeAfter,
-            uint256 stepAfter,
-            ,
+            uint256 stepAfter,,
         ) = investmentVaultV2.tokenData();
 
         (
@@ -573,23 +575,11 @@ contract StateMigrationTest is Test {
             uint256 withdrawnProfitFeeAfter
         ) = investmentVaultV2.profitData();
 
-        (
-            bool closedAfter,
-            uint256 assetsDataLengthAfter,
-            ,
-            DataTypes.SwapInitState swapInitStateAfter
-        ) = investmentVaultV2.vaultState();
+        (bool closedAfter, uint256 assetsDataLengthAfter,, DataTypes.SwapInitState swapInitStateAfter) =
+            investmentVaultV2.vaultState();
 
-        (
-            uint256 asset1ShareAfter,
-            uint256 asset1StepAfter,
-            DataTypes.Strategy asset1StrategyAfter,
-            ,
-            ,
-            ,
-            ,
-            ,
-        ) = investmentVaultV2.assetsData(IERC20(address(tokenAsset1)));
+        (uint256 asset1ShareAfter, uint256 asset1StepAfter, DataTypes.Strategy asset1StrategyAfter,,,,,,) =
+            investmentVaultV2.assetsData(IERC20(address(tokenAsset1)));
 
         console.log("State after upgrade:");
         console.log("Capital of MI:", capitalOfMiAfter);
@@ -606,24 +596,23 @@ contract StateMigrationTest is Test {
         assertEq(timestampAfter, timestampBefore, "timestamp not preserved");
         assertEq(uint8(profitTypeAfter), uint8(profitTypeBefore), "profitType not preserved");
         assertEq(stepAfter, stepBefore, "step not preserved");
-        
+
         assertEq(profitMVAfter, profitMVBefore, "profitMV not preserved");
         assertEq(earntProfitInvestorAfter, earntProfitInvestorBefore, "earntProfitInvestor not preserved");
         assertEq(earntProfitFeeAfter, earntProfitFeeBefore, "earntProfitFee not preserved");
         assertEq(earntProfitTotalAfter, earntProfitTotalBefore, "earntProfitTotal not preserved");
         assertEq(withdrawnProfitInvestorAfter, withdrawnProfitInvestorBefore, "withdrawnProfitInvestor not preserved");
         assertEq(withdrawnProfitFeeAfter, withdrawnProfitFeeBefore, "withdrawnProfitFee not preserved");
-        
+
         assertEq(closedAfter, closedBefore, "closed not preserved");
         assertEq(assetsDataLengthAfter, assetsDataLengthBefore, "assetsDataLength not preserved");
         assertEq(uint8(swapInitStateAfter), uint8(swapInitStateBefore), "swapInitState not preserved");
-        
+
         assertEq(asset1ShareAfter, asset1ShareBefore, "asset1 share not preserved");
         assertEq(asset1StepAfter, asset1StepBefore, "asset1 step not preserved");
         assertEq(uint8(asset1StrategyAfter), uint8(asset1StrategyBefore), "asset1 strategy not preserved");
 
         console.log("=== InvestmentVault state migration test PASSED ===");
     }
-
 }
 

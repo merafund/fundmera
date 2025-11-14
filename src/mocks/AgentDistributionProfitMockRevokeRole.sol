@@ -21,16 +21,18 @@ contract AgentDistributionProfitMockRevokeRole is AgentDistributionProfit {
         address _emergencyAgentWallet,
         address _reserveAgentWallet,
         address _meraCapitalWallet
-    ) AgentDistributionProfit(
-        _fundWallet,
-        _agentWallet,
-        _adminWallet,
-        _emergencyAdminWallet,
-        _reserveAdminWallet,
-        _emergencyAgentWallet,
-        _reserveAgentWallet,
-        _meraCapitalWallet
-    ) {}
+    )
+        AgentDistributionProfit(
+            _fundWallet,
+            _agentWallet,
+            _adminWallet,
+            _emergencyAdminWallet,
+            _reserveAdminWallet,
+            _emergencyAgentWallet,
+            _reserveAgentWallet,
+            _meraCapitalWallet
+        )
+    {}
 
     // Override _revokeRole to simulate failed revocation only for MAIN_AGENT_ROLE
     function _revokeRole(bytes32 role, address account) internal virtual override returns (bool) {

@@ -47,8 +47,7 @@ interface IMeraPriceOracle is IPriceOracleGetter {
      * @param sources The addresses of the price sources
      * @param decimals The decimals of the assets
      */
-    function setAssetSources(address[] calldata assets, address[] calldata sources, uint8[] calldata decimals)
-        external;
+    function setAssetSources(address[] calldata assets, address[] calldata sources, uint8[] calldata decimals) external;
 
     /**
      * @notice Sets the fallback oracle

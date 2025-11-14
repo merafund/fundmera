@@ -11,8 +11,9 @@ pragma solidity 0.8.29;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {MultiAdminSingleHolderAccessControlUppgradable} from
-    "./utils/MultiAdminSingleHolderAccessControlUppgradable.sol";
+import {
+    MultiAdminSingleHolderAccessControlUppgradable
+} from "./utils/MultiAdminSingleHolderAccessControlUppgradable.sol";
 import {IAgentDistributionProfit} from "./interfaces/IAgentDistributionProfit.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";

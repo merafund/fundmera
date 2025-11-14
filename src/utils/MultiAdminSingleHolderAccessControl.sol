@@ -14,11 +14,7 @@ import {IMultiAdminSingleHolderAccessControl} from "../interfaces/IMultiAdminSin
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
-abstract contract MultiAdminSingleHolderAccessControl is
-    Context,
-    IMultiAdminSingleHolderAccessControl,
-    ERC165
-{
+abstract contract MultiAdminSingleHolderAccessControl is Context, IMultiAdminSingleHolderAccessControl, ERC165 {
     struct RoleData {
         address roleHolder; // Single holder - only one address can hold the role
         mapping(bytes32 => bool) adminRole; // Multiple admin roles can control this role

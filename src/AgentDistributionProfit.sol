@@ -9,17 +9,12 @@
 // https://github.com/merafund
 pragma solidity 0.8.29;
 
-import {
-    MultiAdminSingleHolderAccessControl
-} from "./utils/MultiAdminSingleHolderAccessControl.sol";
+import {MultiAdminSingleHolderAccessControl} from "./utils/MultiAdminSingleHolderAccessControl.sol";
 import {IAgentDistributionProfit} from "./interfaces/IAgentDistributionProfit.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract AgentDistributionProfit is
-    IAgentDistributionProfit,
-    MultiAdminSingleHolderAccessControl
-{
+contract AgentDistributionProfit is IAgentDistributionProfit, MultiAdminSingleHolderAccessControl {
     using SafeERC20 for IERC20;
 
     // Constants
@@ -144,5 +139,4 @@ contract AgentDistributionProfit is
         meraCapitalWallet = _meraCapitalWallet;
         emit MeraCapitalWalletSet(msg.sender, _meraCapitalWallet);
     }
-
 }

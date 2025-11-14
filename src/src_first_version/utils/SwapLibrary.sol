@@ -262,7 +262,7 @@ library SwapLibrary {
 
         require(
             tokenData.mvBought * tokenData.step * tokenData.initDeposit
-                / (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) >= mvReceived,
+                    / (tokenData.depositInMv * Constants.SHARE_DENOMINATOR) >= mvReceived,
             AssetBoughtTooMuch()
         );
 
@@ -274,8 +274,8 @@ library SwapLibrary {
             tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step) / Constants.SHARE_DENOMINATOR
                 > currentPrice
         ) {
-            tokenData.lastBuyPrice =
-                tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step) / Constants.SHARE_DENOMINATOR;
+            tokenData.lastBuyPrice = tokenData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - tokenData.step)
+                / Constants.SHARE_DENOMINATOR;
         } else {
             tokenData.lastBuyPrice = currentPrice < tokenData.lastBuyPrice ? currentPrice : tokenData.lastBuyPrice; // minimum between current price and last buy price
         }
@@ -387,7 +387,7 @@ library SwapLibrary {
 
         require(
             assetData.tokenBought * assetData.step * assetData.capital
-                / (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) >= assetReceived,
+                    / (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) >= assetReceived,
             AssetBoughtTooMuch()
         );
 
@@ -407,8 +407,8 @@ library SwapLibrary {
             assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step) / Constants.SHARE_DENOMINATOR
                 > currentPrice
         ) {
-            assetData.lastBuyPrice =
-                assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step) / Constants.SHARE_DENOMINATOR;
+            assetData.lastBuyPrice = assetData.lastBuyPrice * (Constants.SHARE_DENOMINATOR - assetData.step)
+                / Constants.SHARE_DENOMINATOR;
         } else {
             assetData.lastBuyPrice = currentPrice < assetData.lastBuyPrice ? currentPrice : assetData.lastBuyPrice; // minimum between current price and last buy price
         }
@@ -643,14 +643,15 @@ library SwapLibrary {
 
         // Execute the swap
         if (params.deadline == 0) {
-            amountOut = ISwapRouterBase(router).exactInput(
-                ISwapRouterBase.ExactInputParams({
-                    path: params.path,
-                    recipient: address(this),
-                    amountIn: params.amountIn,
-                    amountOutMinimum: params.amountOutMinimum
-                })
-            );
+            amountOut = ISwapRouterBase(router)
+                .exactInput(
+                    ISwapRouterBase.ExactInputParams({
+                        path: params.path,
+                        recipient: address(this),
+                        amountIn: params.amountIn,
+                        amountOutMinimum: params.amountOutMinimum
+                    })
+                );
         } else {
             amountOut = ISwapRouter(router).exactInput(routerParams);
         }
@@ -723,17 +724,18 @@ library SwapLibrary {
 
         // Execute the swap
         if (params.deadline == 0) {
-            amountOut = ISwapRouterBase(router).exactInputSingle(
-                ISwapRouterBase.ExactInputSingleParams({
-                    tokenIn: params.tokenIn,
-                    tokenOut: params.tokenOut,
-                    fee: params.fee,
-                    recipient: address(this),
-                    amountIn: params.amountIn,
-                    amountOutMinimum: params.amountOutMinimum,
-                    sqrtPriceLimitX96: params.sqrtPriceLimitX96
-                })
-            );
+            amountOut = ISwapRouterBase(router)
+                .exactInputSingle(
+                    ISwapRouterBase.ExactInputSingleParams({
+                        tokenIn: params.tokenIn,
+                        tokenOut: params.tokenOut,
+                        fee: params.fee,
+                        recipient: address(this),
+                        amountIn: params.amountIn,
+                        amountOutMinimum: params.amountOutMinimum,
+                        sqrtPriceLimitX96: params.sqrtPriceLimitX96
+                    })
+                );
         } else {
             amountOut = ISwapRouter(router).exactInputSingle(routerParams);
         }

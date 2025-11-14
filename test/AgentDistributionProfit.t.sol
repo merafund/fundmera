@@ -59,14 +59,7 @@ contract AgentDistributionProfitTest is Test {
 
         // Deploy AgentDistributionProfit directly (no proxy)
         profitDistributor = new AgentDistributionProfit(
-            fundWallet,
-            mainAgent,
-            admin,
-            emergencyAdmin,
-            backupAdmin,
-            emergencyAgent,
-            backupAgent,
-            meraCapitalWallet
+            fundWallet, mainAgent, admin, emergencyAdmin, backupAdmin, emergencyAgent, backupAgent, meraCapitalWallet
         );
 
         // Transfer tokens
@@ -410,14 +403,7 @@ contract AgentDistributionProfitTest is Test {
     function testGrantRole_RevokeRoleFails() public {
         // Deploy mock contract that always returns false for _revokeRole
         AgentDistributionProfitMockRevokeRole mockDistributor = new AgentDistributionProfitMockRevokeRole(
-            fundWallet,
-            mainAgent,
-            admin,
-            emergencyAdmin,
-            backupAdmin,
-            emergencyAgent,
-            backupAgent,
-            meraCapitalWallet
+            fundWallet, mainAgent, admin, emergencyAdmin, backupAdmin, emergencyAgent, backupAgent, meraCapitalWallet
         );
 
         // Get role from mock instance
@@ -568,5 +554,4 @@ contract AgentDistributionProfitTest is Test {
 
         vm.stopPrank();
     }
-
 }

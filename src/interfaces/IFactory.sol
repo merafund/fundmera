@@ -88,10 +88,7 @@ interface IFactory {
     /// @notice Updates the implementation addresses
     /// @param newMainVaultImpl The new MainVault implementation address
     /// @param newInvestmentVaultImpl The new InvestmentVault implementation address
-    function updateImplementations(
-        address newMainVaultImpl,
-        address newInvestmentVaultImpl
-    ) external;
+    function updateImplementations(address newMainVaultImpl, address newInvestmentVaultImpl) external;
 
     /// @notice Updates the fixed parameters for MainVault creation
     /// @param _manager The new manager address

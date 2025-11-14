@@ -189,6 +189,12 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @dev Emitted when MeraPriceOracle is updated by main investor
     event MeraPriceOracleSet(address oldOracle, address newOracle);
 
+    /// @dev Emitted when admin proposes a new Factory
+    event ProposedFactoryByAdminSet(address proposedFactory);
+
+    /// @dev Emitted when Factory is updated by main investor
+    event FactorySet(address oldFactory, address newFactory);
+
     /// @dev Emitted when investment vault availability for withdraw is changed
     event InvestmentVaultAvailabilityForWithdrawChanged(uint256 indexed vaultIndex, bool isAvailable);
 
@@ -557,6 +563,15 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
 
     /// @dev Can be called by main investor to confirm proposed MeraPriceOracle
     function setCurrentMeraPriceOracle() external;
+
+    /// @dev Sets the proposed Factory by admin
+    /// Only admin can call this function
+    /// Can only be called when current factory is zero
+    /// @param _proposedFactory The proposed Factory address
+    function setProposedFactoryByAdmin(address _proposedFactory) external;
+
+    /// @dev Can be called by main investor to confirm proposed Factory
+    function setCurrentFactory() external;
 
     /// @dev Get current fixed profit percent
     /// @return percent Current fixed profit percent

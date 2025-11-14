@@ -69,19 +69,21 @@ contract Factory is IFactory, Ownable {
         pauserList = params.pauserList;
         fundWallet = params.fundWallet;
         defaultAgentWallet = params.defaultAgentWallet;
-        meraCapitalWallet = params.meraCapitalWallet;   
+        meraCapitalWallet = params.meraCapitalWallet;
         meraPriceOracle = params.meraPriceOracle;
         // Deploy default AgentDistribution directly (no proxy)
-        defaultAgentDistribution = address(new AgentDistributionProfit(
-            params.fundWallet,
-            params.defaultAgentWallet,
-            params.admin,
-            params.emergencyAdmin,
-            params.backupAdmin,
-            params.emergencyAdmin, // Using emergencyAdmin as emergencyAgent for default distribution
-            params.backupAdmin, // Using backupAdmin as reserveAgent for default distribution
-            params.meraCapitalWallet
-        ));
+        defaultAgentDistribution = address(
+            new AgentDistributionProfit(
+                params.fundWallet,
+                params.defaultAgentWallet,
+                params.admin,
+                params.emergencyAdmin,
+                params.backupAdmin,
+                params.emergencyAdmin, // Using emergencyAdmin as emergencyAgent for default distribution
+                params.backupAdmin, // Using backupAdmin as reserveAgent for default distribution
+                params.meraCapitalWallet
+            )
+        );
 
         // Register default referral code
         referralToAgentDistribution[DEFAULT_REFERRAL_CODE] = defaultAgentDistribution;
@@ -260,10 +262,7 @@ contract Factory is IFactory, Ownable {
     }
 
     /// @inheritdoc IFactory
-    function updateImplementations(
-        address newMainVaultImpl,
-        address newInvestmentVaultImpl
-    ) external onlyOwner {
+    function updateImplementations(address newMainVaultImpl, address newInvestmentVaultImpl) external onlyOwner {
         if (newMainVaultImpl != address(0)) {
             mainVaultImplementation = newMainVaultImpl;
         }
