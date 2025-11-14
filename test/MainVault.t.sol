@@ -1272,7 +1272,6 @@ contract MainVaultTest is Test {
         );
 
         // Verify approval state is cleared
-        assertEq(vault.adminApprovedInvestorVaultImpl(), address(0), "Admin approval should be cleared");
         assertEq(vault.investorApprovedInvestorVaultImpl(), address(0), "Investor approval should be cleared");
     }
 
@@ -1858,7 +1857,6 @@ contract MainVaultTest is Test {
         vault.approveMainVaultUpgrade(newImplementation);
 
         // Verify approval state
-        assertEq(vault.adminApprovedMainVaultImpl(), address(0)); // Admin no longer approves
         assertEq(vault.investorApprovedMainVaultImpl(), newImplementation);
 
         vm.expectEmit(true, true, true, true);
@@ -1869,7 +1867,6 @@ contract MainVaultTest is Test {
         UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
 
         // Verify approval state is cleared
-        assertEq(vault.adminApprovedMainVaultImpl(), address(0));
         assertEq(vault.investorApprovedMainVaultImpl(), address(0));
     }
 

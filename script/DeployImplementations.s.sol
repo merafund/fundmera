@@ -22,7 +22,7 @@ contract DeployImplementationsScript is Script {
     // New implementations that will be deployed
     MainVault public newMainVaultImpl;
     InvestmentVault public newInvestmentVaultImpl;
-    AgentDistributionProfit public newAgentDistributionImpl;
+    address public newAgentDistributionImpl;
 
     // Flags to control which implementations to deploy
     bool public deployMainVault;
@@ -67,7 +67,8 @@ contract DeployImplementationsScript is Script {
 
         if (deployAgentDistribution) {
             console.log("Deploying new AgentDistribution implementation...");
-            newAgentDistributionImpl = new AgentDistributionProfit();
+            // AgentDistributionProfit is now deployed directly by Factory, not as implementation
+            newAgentDistributionImpl = address(0);
             newAgentDistributionAddr = address(newAgentDistributionImpl);
             console.log("New AgentDistribution implementation deployed at:", newAgentDistributionAddr);
         } else {

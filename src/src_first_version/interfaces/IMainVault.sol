@@ -12,6 +12,7 @@ pragma solidity ^0.8.29;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IInvestmentVault} from "./IInvestmentVault.sol";
 import {IMultiAdminSingleHolderAccessControl} from "./IMultiAdminSingleHolderAccessControl.sol";
+import {IERC5267} from "@openzeppelin/contracts/interfaces/IERC5267.sol";
 import {IPauserList} from "./IPauserList.sol";
 import {Constants} from "../utils/Constants.sol";
 import {DataTypes} from "../utils/DataTypes.sol";
@@ -19,7 +20,7 @@ import {IMeraPriceOracle} from "./IMeraPriceOracle.sol";
 
 /// @title IMainVault
 /// @dev Interface for Main Vault
-interface IMainVault is IMultiAdminSingleHolderAccessControl {
+interface IMainVault is IMultiAdminSingleHolderAccessControl, IERC5267 {
     function paused() external view returns (bool);
 
     /// @dev Main investor role
@@ -61,14 +62,6 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @dev Emitted when a router's availability is changed by an admin
     event RouterAvailabilityByAdminChanged(address indexed router, bool isAvailable);
 
-    /// @dev Emitted when a router-quoter pair's availability is changed by an investor
-    event RouterQuoterPairAvailabilityByInvestorChanged(
-        address indexed router, address indexed quoter, bool isAvailable
-    );
-
-    /// @dev Emitted when a router-quoter pair's availability is changed by an admin
-    event RouterQuoterPairAvailabilityByAdminChanged(address indexed router, address indexed quoter, bool isAvailable);
-
     /// @dev Emitted when a lock period's availability is changed
     event LockPeriodAvailabilityChanged(uint256 indexed period, bool isAvailable);
 
@@ -88,11 +81,11 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @dev Emitted when withdraw commit timestamp is set
     event WithdrawCommitTimestampSet(uint64 timestamp);
 
-    /// @dev Emitted when MainVault upgrade is approved by admin or investor
-    event MainVaultUpgradeApproved(address indexed implementation, address indexed approver);
+    /// @dev Emitted when a future implementation for Main Vault is set
+    event FutureMainVaultImplementationSet(address indexed implementation, uint64 deadline);
 
-    /// @dev Emitted when InvestorVault upgrade is approved by admin or investor
-    event InvestorVaultUpgradeApproved(address indexed implementation, address indexed approver);
+    /// @dev Emitted when a future implementation for Investor Vault is set
+    event FutureInvestorVaultImplementationSet(address indexed implementation, uint64 deadline);
 
     /// @dev Emitted when profit wallet address is changed
     event ProfitWalletSet(address indexed oldWallet, address indexed newWallet);
@@ -126,7 +119,7 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
 
     /// @dev Emitted when a new Investment Vault is deployed
     event InvestmentVaultDeployed(
-        address indexed vaultAddress, address indexed tokenMI, uint256 capitalOfMi, uint256 vaultId
+        address indexed vaultAddress, address indexed tokenMI, uint256 initDeposit, uint256 vaultId
     );
 
     /// @dev Emitted when exactInputSingle is executed
@@ -189,9 +182,6 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @dev Emitted when MeraPriceOracle is updated by main investor
     event MeraPriceOracleSet(address oldOracle, address newOracle);
 
-    /// @dev Emitted when investment vault availability for withdraw is changed
-    event InvestmentVaultAvailabilityForWithdrawChanged(uint256 indexed vaultIndex, bool isAvailable);
-
     /// @dev Initialization struct to prevent stack too deep errors
     struct InitParams {
         address mainInvestor;
@@ -216,10 +206,28 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
         bool isAvailable;
     }
 
+    /// @dev Router availability configuration struct
+    struct RouterAvailability {
+        address router;
+        bool isAvailable;
+    }
+
     /// @dev Lock period availability configuration struct
     struct LockPeriodAvailability {
         uint256 period;
         bool isAvailable;
+    }
+
+    /// @dev Future Main Vault Implementation configuration struct
+    struct FutureMainVaultImplementation {
+        address implementation;
+        uint64 deadline;
+    }
+
+    /// @dev Future Investor Vault Implementation configuration struct
+    struct FutureInvestorVaultImplementation {
+        address implementation;
+        uint64 deadline;
     }
 
     /// @dev Get token availability by investor
@@ -241,18 +249,6 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @param router Router address to check
     /// @return isAvailable True if router is available for admin
     function availableRouterByAdmin(address router) external view returns (bool);
-
-    /// @dev Get router-quoter pair availability by investor
-    /// @param router Router address to check
-    /// @param quoter Quoter address to check
-    /// @return isAvailable True if router-quoter pair is available for investor
-    function availableRouterQuoterPairByInvestor(address router, address quoter) external view returns (bool);
-
-    /// @dev Get router-quoter pair availability by admin
-    /// @param router Router address to check
-    /// @param quoter Quoter address to check
-    /// @return isAvailable True if router-quoter pair is available for admin
-    function availableRouterQuoterPairByAdmin(address router, address quoter) external view returns (bool);
 
     /// @dev Get lock period availability
     /// @param period Lock period to check
@@ -292,65 +288,68 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @return implementation Current implementation address
     function currentImplementationOfInvestmentVault() external view returns (address);
 
-    /// @dev Get investor approved MainVault implementation
-    /// @return implementation Investor approved implementation address
-    function investorApprovedMainVaultImpl() external view returns (address);
+    /// @dev Get next future implementation of main vault
+    /// @return implementation Next implementation address
+    function nextFutureImplementationOfMainVault() external view returns (address);
 
-    /// @dev Get investor approved MainVault implementation timestamp
-    /// @return timestamp Investor approval timestamp
-    function investorApprovedMainVaultTimestamp() external view returns (uint64);
+    /// @dev Get deadline for next future implementation of main vault
+    /// @return deadline Deadline timestamp
+    function nextFutureImplementationOfMainVaultDeadline() external view returns (uint64);
 
-    /// @dev Get investor approved InvestorVault implementation
-    /// @return implementation Investor approved implementation address
-    function investorApprovedInvestorVaultImpl() external view returns (address);
-
-    /// @dev Get investor approved InvestorVault implementation timestamp
-    /// @return timestamp Investor approval timestamp
-    function investorApprovedInvestorVaultTimestamp() external view returns (uint64);
+    /// @dev Get next future implementation of investor vault
+    /// @return implementation Next implementation address
+    function nextFutureImplementationOfInvestorVault() external view returns (address);
 
     /// @dev Manually triggers the withdrawal lock renewal check
     /// @dev Can only be called by admin to force check and potentially renew the withdrawal lock
     /// @return renewed True if the lock was renewed, false otherwise
     function checkAndRenewWithdrawalLock() external returns (bool renewed);
 
-    /// @dev Get upgrade time limit constant
-    /// @return limit Time limit for upgrade approval
-    function UPGRADE_TIME_LIMIT() external view returns (uint256);
+    /// @dev Get deadline for next future implementation of investor vault
+    /// @return deadline Deadline timestamp
+    function nextFutureImplementationOfInvestorVaultDeadline() external view returns (uint64);
 
     /// @dev Sets availability status for multiple tokens by investor
     /// @param configs Array of token availability configurations
     function setTokenAvailabilityByInvestor(TokenAvailability[] calldata configs) external;
 
+    /// @dev Sets availability status for multiple routers by investor
+    /// Always sets availability to true, can't be set to false
+    /// @param routers Array of router addresses to enable
+    function setRouterAvailabilityByInvestor(address[] calldata routers) external;
+
     /// @dev Sets availability status for multiple tokens by admin
     /// @param configs Array of token availability configurations
     function setTokenAvailabilityByAdmin(TokenAvailability[] calldata configs) external;
 
-    /// @dev Sets availability status for multiple router-quoter pairs by investor
-    /// @param pairs Array of router-quoter pairs to set availability
-    function setRouterQuoterPairAvailabilityByInvestor(DataTypes.RouterQuoterPair[] calldata pairs) external;
-
-    /// @dev Sets availability status for multiple router-quoter pairs by admin
-    /// @param pairs Array of router-quoter pairs to set availability
-    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPair[] calldata pairs) external;
+    /// @dev Sets availability status for multiple routers by admin
+    /// @param configs Array of router availability configurations
+    function setRouterAvailabilityByAdmin(RouterAvailability[] calldata configs) external;
 
     /// @dev Sets availability status for multiple lock periods
     /// Only admin can call this function
     /// @param configs Array of lock period availability configurations
     function setLockPeriodsAvailability(LockPeriodAvailability[] calldata configs) external;
 
-    /// @dev Approves a new implementation for the Main Vault
-    /// Can only be called by main investor
-    /// The implementation must match the one stored in factory
+    /// @dev Sets the future implementation of the Main Vault
+    /// Only admin can call this function, and it requires a valid signature from the main investor
     ///
-    /// @param newImplementation Address of the new implementation
-    function approveMainVaultUpgrade(address newImplementation) external;
+    /// @param futureImplementation Structure containing the implementation address and deadline
+    /// @param signature EIP-712 signature from the main investor
+    function setFutureMainVaultImplementation(
+        FutureMainVaultImplementation calldata futureImplementation,
+        bytes calldata signature
+    ) external;
 
-    /// @dev Approves a new implementation for the Investor Vault
-    /// Can only be called by main investor
-    /// The implementation must match the one stored in factory
+    /// @dev Sets the future implementation of the Investor Vault
+    /// Only admin can call this function, and it requires a valid signature from the main investor
     ///
-    /// @param newImplementation Address of the new implementation
-    function approveInvestorVaultUpgrade(address newImplementation) external;
+    /// @param futureImplementation Structure containing the implementation address and deadline
+    /// @param signature EIP-712 signature from the main investor
+    function setFutureInvestorVaultImplementation(
+        FutureInvestorVaultImplementation calldata futureImplementation,
+        bytes calldata signature
+    ) external;
 
     /// @dev Sets the profit wallet address
     /// Only the main investor can call this function
@@ -424,7 +423,7 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @dev Deploys a new Investment Vault using the current implementation
     /// Only admin can call this function
     /// Uses the current implementation to deploy a proxy
-    /// Transfers tokenMI in the amount of capitalOfMi to the new vault
+    /// Transfers tokenMI in the amount of initDeposit to the new vault
     /// Initializes the vault with the provided data
     ///
     /// @param initData Initialization data for the new Investment Vault
@@ -446,14 +445,6 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     ///
     /// @param withdrawals Array of withdrawal requests containing vault index, token, and amount
     function withdrawFromInvestmentVaults(WithdrawFromVaultData[] calldata withdrawals) external;
-
-    /// @dev Withdraws tokens from investment vaults if they are available for withdrawal
-    /// Only the main investor can call this function
-    /// Each vault must be marked as available for withdrawal by admin
-    /// This function does not require withdrawal lock or commit timestamp checks
-    ///
-    /// @param withdrawals Array of withdrawal requests containing vault index, token, and amount
-    function withdrawFromInvestmentVaultsIfWithdrawAvailable(WithdrawFromVaultData[] calldata withdrawals) external;
 
     /// @dev Swaps an exact amount of `tokenIn` for as much as possible of `tokenOut`, receiving tokens to this contract
     /// @param params The simplified parameters necessary for the swap
@@ -565,20 +556,4 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @dev Get profit type
     /// @return profitType Profit type
     function profitType() external view returns (DataTypes.ProfitType);
-
-    /// @dev Get investment vault availability for withdraw
-    /// @param vaultIndex Investment vault index
-    /// @return isAvailable True if vault is available for withdraw
-    function availableInvestmentVaultForWithdraw(uint256 vaultIndex) external view returns (bool);
-
-    /// @dev Get investment vault withdraw available timestamp
-    /// @param vaultIndex Investment vault index
-    /// @return timestamp Timestamp when vault becomes available for withdrawal
-    function investmentVaultWithdrawAvailableTimestamp(uint256 vaultIndex) external view returns (uint64);
-
-    /// @dev Set investment vault availability for withdraw
-    /// Only admin can call this function
-    /// @param vaultIndex Investment vault index (must be less than investmentVaultsCount)
-    /// @param isAvailable Whether the vault is available for withdraw
-    function setAvailableInvestmentVaultForWithdraw(uint256 vaultIndex, bool isAvailable) external;
 }

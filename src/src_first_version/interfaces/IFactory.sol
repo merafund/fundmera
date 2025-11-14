@@ -29,6 +29,7 @@ interface IFactory {
         uint256 feePercentage;
         address pauserList;
         // AgentDistribution parameters
+        address agentDistributionImplementation;
         address fundWallet;
         address defaultAgentWallet;
         address meraCapitalWallet;
@@ -45,9 +46,9 @@ interface IFactory {
         string referralCode
     );
 
-    event DistributionContractCreated(address indexed distributionAddress, string referralCode, address agentWallet);
+    event DistributionContractCreated(address indexed proxyAddress, string referralCode, address agentWallet);
     event ReferralCodeRegistered(string indexed referralCode, address indexed agentDistribution);
-    event DefaultAgentDistributionCreated(address indexed distributionAddress, address agentWallet);
+    event DefaultAgentDistributionCreated(address indexed proxyAddress, address agentWallet);
     event FounderWalletUpdated(address indexed oldFundWallet, address indexed newFundWallet);
     event MeraCapitalWalletUpdated(address indexed oldMeraCapitalWallet, address indexed newMeraCapitalWallet);
     event DeployerUpdated(address indexed oldDeployer, address indexed newDeployer);
@@ -77,7 +78,7 @@ interface IFactory {
     /// @param agentWallet The address of the agent wallet
     /// @param reserveAgentWallet The address of the reserve agent wallet
     /// @param emergencyAgentWallet The address of the emergency agent wallet
-    /// @return The address of the created AgentDistributionProfit contract
+    /// @return The address of the created AgentDistributionProfit proxy
     function createAgentDistribution(
         string calldata referralCode,
         address agentWallet,
@@ -88,9 +89,11 @@ interface IFactory {
     /// @notice Updates the implementation addresses
     /// @param newMainVaultImpl The new MainVault implementation address
     /// @param newInvestmentVaultImpl The new InvestmentVault implementation address
+    /// @param newAgentDistributionImpl The new AgentDistribution implementation address
     function updateImplementations(
         address newMainVaultImpl,
-        address newInvestmentVaultImpl
+        address newInvestmentVaultImpl,
+        address newAgentDistributionImpl
     ) external;
 
     /// @notice Updates the fixed parameters for MainVault creation
@@ -127,12 +130,4 @@ interface IFactory {
     /// @notice Sets the Mera Price Oracle
     /// @param _meraPriceOracle The new Mera Price Oracle address
     function setMeraPriceOracle(address _meraPriceOracle) external;
-
-    /// @notice Gets the current MainVault implementation address
-    /// @return The MainVault implementation address
-    function mainVaultImplementation() external view returns (address);
-
-    /// @notice Gets the current InvestmentVault implementation address
-    /// @return The InvestmentVault implementation address
-    function investmentVaultImplementation() external view returns (address);
 }

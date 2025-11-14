@@ -9,9 +9,9 @@
 // https://github.com/merafund
 pragma solidity ^0.8.29;
 
-import {MainVault} from "./MainVault.sol";
+import {MainVaultV1 as MainVault} from "./MainVault.sol";
 import {IMainVault} from "./interfaces/IMainVault.sol";
-import {AgentDistributionProfit} from "./AgentDistributionProfit.sol";
+import {AgentDistributionProfitV1 as AgentDistributionProfit} from "./AgentDistributionProfit.sol";
 import {IAgentDistributionProfit} from "./interfaces/IAgentDistributionProfit.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -31,7 +31,8 @@ contract Factory is IFactory, Ownable {
     address public pauserList;
     address public meraCapitalWallet;
     address public meraPriceOracle;
-    // AgentDistributionProfit default instance
+    // AgentDistributionProfit implementation and default instance
+    address public agentDistributionImplementation;
     address public defaultAgentDistribution;
     string public constant DEFAULT_REFERRAL_CODE = "DEFAULT";
 
@@ -54,10 +55,9 @@ contract Factory is IFactory, Ownable {
         require(params.backupAdmin != address(0), ZeroAddress());
         require(params.emergencyAdmin != address(0), ZeroAddress());
         require(params.pauserList != address(0), ZeroAddress());
+        require(params.agentDistributionImplementation != address(0), ZeroAddress());
         require(params.fundWallet != address(0), ZeroAddress());
         require(params.defaultAgentWallet != address(0), ZeroAddress());
-        require(params.meraCapitalWallet != address(0), ZeroAddress());
-        require(params.meraPriceOracle != address(0), ZeroAddress());
 
         mainVaultImplementation = params.mainVaultImplementation;
         investmentVaultImplementation = params.investmentVaultImplementation;
@@ -67,12 +67,14 @@ contract Factory is IFactory, Ownable {
         emergencyAdmin = params.emergencyAdmin;
         feePercentage = params.feePercentage;
         pauserList = params.pauserList;
+        agentDistributionImplementation = params.agentDistributionImplementation;
         fundWallet = params.fundWallet;
         defaultAgentWallet = params.defaultAgentWallet;
-        meraCapitalWallet = params.meraCapitalWallet;   
+        meraCapitalWallet = params.meraCapitalWallet;
         meraPriceOracle = params.meraPriceOracle;
-        // Deploy default AgentDistribution directly (no proxy)
-        defaultAgentDistribution = address(new AgentDistributionProfit(
+        // Deploy default AgentDistribution
+        bytes memory initData = abi.encodeWithSelector(
+            AgentDistributionProfit.initialize.selector,
             params.fundWallet,
             params.defaultAgentWallet,
             params.admin,
@@ -81,7 +83,10 @@ contract Factory is IFactory, Ownable {
             params.emergencyAdmin, // Using emergencyAdmin as emergencyAgent for default distribution
             params.backupAdmin, // Using backupAdmin as reserveAgent for default distribution
             params.meraCapitalWallet
-        ));
+        );
+
+        ERC1967Proxy proxy = new ERC1967Proxy(params.agentDistributionImplementation, initData);
+        defaultAgentDistribution = address(proxy);
 
         // Register default referral code
         referralToAgentDistribution[DEFAULT_REFERRAL_CODE] = defaultAgentDistribution;
@@ -112,7 +117,6 @@ contract Factory is IFactory, Ownable {
         require(mainInvestor != address(0), ZeroAddress());
         require(backupInvestor != address(0), ZeroAddress());
         require(emergencyInvestor != address(0), ZeroAddress());
-        require(profitWallet != address(0), ZeroAddress());
 
         // Get profit wallet from referral code or use default
         address feeWallet = referralToAgentDistribution[referralCode];
@@ -166,7 +170,6 @@ contract Factory is IFactory, Ownable {
         require(mainInvestor != address(0), ZeroAddress());
         require(backupInvestor != address(0), ZeroAddress());
         require(emergencyInvestor != address(0), ZeroAddress());
-        require(profitWallet != address(0), ZeroAddress());
 
         // Get profit wallet from referral code or use default
         address feeWallet = referralToAgentDistribution[referralCode];
@@ -236,8 +239,9 @@ contract Factory is IFactory, Ownable {
         require(emergencyAgentWallet != address(0), ZeroAddress());
         require(referralToAgentDistribution[referralCode] == address(0), ReferralCodeAlreadyUsed());
 
-        // Deploy AgentDistributionProfit directly (no proxy)
-        AgentDistributionProfit newDistribution = new AgentDistributionProfit(
+        // Encode initialization call
+        bytes memory initData = abi.encodeWithSelector(
+            AgentDistributionProfit.initialize.selector,
             fundWallet,
             agentWallet,
             admin,
@@ -247,28 +251,35 @@ contract Factory is IFactory, Ownable {
             reserveAgentWallet,
             meraCapitalWallet
         );
-        address distributionAddress = address(newDistribution);
+
+        // Deploy proxy
+        ERC1967Proxy proxy = new ERC1967Proxy(agentDistributionImplementation, initData);
+        address proxyAddress = address(proxy);
 
         // Register referral code
-        referralToAgentDistribution[referralCode] = distributionAddress;
-        agentDistributionToReferral[distributionAddress] = referralCode;
+        referralToAgentDistribution[referralCode] = proxyAddress;
+        agentDistributionToReferral[proxyAddress] = referralCode;
 
-        emit DistributionContractCreated(distributionAddress, referralCode, agentWallet);
-        emit ReferralCodeRegistered(referralCode, distributionAddress);
+        emit DistributionContractCreated(proxyAddress, referralCode, agentWallet);
+        emit ReferralCodeRegistered(referralCode, proxyAddress);
 
-        return distributionAddress;
+        return proxyAddress;
     }
 
     /// @inheritdoc IFactory
     function updateImplementations(
         address newMainVaultImpl,
-        address newInvestmentVaultImpl
+        address newInvestmentVaultImpl,
+        address newAgentDistributionImpl
     ) external onlyOwner {
         if (newMainVaultImpl != address(0)) {
             mainVaultImplementation = newMainVaultImpl;
         }
         if (newInvestmentVaultImpl != address(0)) {
             investmentVaultImplementation = newInvestmentVaultImpl;
+        }
+        if (newAgentDistributionImpl != address(0)) {
+            agentDistributionImplementation = newAgentDistributionImpl;
         }
     }
 

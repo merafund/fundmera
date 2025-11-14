@@ -60,9 +60,7 @@ contract FactoryScript is Script {
         InvestmentVault investmentVaultImpl = new InvestmentVault();
         console.log("InvestmentVault implementation deployed at:", address(investmentVaultImpl));
 
-        // Deploy AgentDistributionProfit implementation
-        AgentDistributionProfit agentDistributionImpl = new AgentDistributionProfit();
-        console.log("AgentDistributionProfit implementation deployed at:", address(agentDistributionImpl));
+        // AgentDistributionProfit is now deployed directly by Factory, not as implementation
 
         // Deploy PauserList separately
         PauserList pauserList = new PauserList(admin);
@@ -92,7 +90,6 @@ contract FactoryScript is Script {
             emergencyAdmin: emergencyAdmin,
             feePercentage: feePercentage,
             pauserList: address(pauserList),
-            agentDistributionImplementation: address(agentDistributionImpl),
             fundWallet: fundWallet,
             defaultAgentWallet: defaultAgentWallet,
             meraCapitalWallet: meraCapitalWallet,
@@ -121,7 +118,7 @@ contract FactoryScript is Script {
         console.log("- Default Agent:    ", defaultAgentWallet);
         console.log("- MainVault Impl:   ", address(mainVaultImpl));
         console.log("- InvestmentVault Impl:", address(investmentVaultImpl));
-        console.log("- AgentDistribution Impl:", address(agentDistributionImpl));
+        // AgentDistributionProfit is deployed directly by Factory
         console.log("- PauserList:       ", address(pauserList));
     }
 }

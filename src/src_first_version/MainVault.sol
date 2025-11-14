@@ -10,12 +10,13 @@
 pragma solidity 0.8.29;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {
-    MultiAdminSingleHolderAccessControlUppgradable
-} from "./utils/MultiAdminSingleHolderAccessControlUppgradable.sol";
+import {MultiAdminSingleHolderAccessControlUppgradable} from
+    "./utils/MultiAdminSingleHolderAccessControlUppgradable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
@@ -29,18 +30,19 @@ import {Constants} from "./utils/Constants.sol";
 import {DataTypes} from "./utils/DataTypes.sol";
 import {MainVaultSwapLibrary} from "./utils/MainVaultSwapLibrary.sol";
 import {IMeraPriceOracle} from "./interfaces/IMeraPriceOracle.sol";
-import {IFactory} from "./interfaces/IFactory.sol";
 /// @title MainVault
 /// @dev Main storage for tokens with UUPS upgrade support and role system
 
-contract MainVault is
+contract MainVaultV1 is
     Initializable,
     UUPSUpgradeable,
     MultiAdminSingleHolderAccessControlUppgradable,
+    EIP712Upgradeable,
     PausableUpgradeable,
     IMainVault
 {
     using SafeERC20 for IERC20;
+    using ECDSA for bytes32;
 
     // Custom Errors
     error InvalidSigner();
@@ -60,13 +62,6 @@ contract MainVault is
     error NotPauser();
     error InitializePause();
     error WithdrawCommitTimestampExpired();
-    error InvalidUpgradeAddress();
-    error ImplementationNotApprovedByAdmin();
-    error ImplementationNotApprovedByInvestor();
-    error UpgradeDeadlineExpired();
-    error AccessDenied();
-    error InvestmentVaultNotAvailableForWithdraw();
-    error WithdrawTimeNotReached();
     // Role definitions
     // Each role is represented by a unique bytes32 value computed from the role name
 
@@ -78,8 +73,12 @@ contract MainVault is
     bytes32 public constant BACKUP_ADMIN_ROLE = keccak256("BACKUP_ADMIN_ROLE"); // Backup admin role
     bytes32 public constant EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE"); // Emergency admin role
 
-    // Constants for upgrade time limit
-    uint256 public constant UPGRADE_TIME_LIMIT = 1 days; // Time limit for upgrade approval
+    // EIP-712 Type Hashes
+    bytes32 private constant _FUTURE_MAIN_VAULT_IMPLEMENTATION_TYPEHASH =
+        keccak256("FutureMainVaultImplementation(address implementation,uint64 deadline)");
+
+    bytes32 private constant _FUTURE_INVESTOR_VAULT_IMPLEMENTATION_TYPEHASH =
+        keccak256("FutureInvestorVaultImplementation(address implementation,uint64 deadline)");
 
     // Allowed tokens and routers mappings
     mapping(address => bool) public availableTokensByInvestor;
@@ -87,9 +86,6 @@ contract MainVault is
 
     mapping(address => bool) public availableTokensByAdmin;
     mapping(address => bool) public availableRouterByAdmin;
-
-    // Router-quoter pairs mappings
-
     mapping(uint256 => bool) public availableLock;
 
     mapping(uint256 => address) public investmentVaults;
@@ -105,11 +101,11 @@ contract MainVault is
 
     address public currentImplementationOfInvestmentVault;
 
-    // Upgrade approval storage for MainVault
-    address public investorApprovedMainVaultImpl;
-    uint64 public investorApprovedMainVaultTimestamp;
-    address public investorApprovedInvestorVaultImpl;
-    uint64 public investorApprovedInvestorVaultTimestamp;
+    // we can optimize this storage
+    address public nextFutureImplementationOfMainVault;
+    uint64 public nextFutureImplementationOfMainVaultDeadline;
+    address public nextFutureImplementationOfInvestorVault;
+    uint64 public nextFutureImplementationOfInvestorVaultDeadline;
 
     uint64 public withdrawCommitTimestamp;
     uint64 public pauseToTimestamp;
@@ -125,15 +121,6 @@ contract MainVault is
     IPauserList public pauserList;
     IMeraPriceOracle public meraPriceOracle;
 
-    mapping(uint256 => bool) public availableInvestmentVaultForWithdraw;
-    mapping(uint256 => uint64) public investmentVaultWithdrawAvailableTimestamp; // Timestamp when vault becomes available for withdrawal
-        // Upgrade approval storage for InvestorVault
-
-
-    mapping(address => mapping(address => bool)) public availableRouterQuoterPairByInvestor;
-    mapping(address => mapping(address => bool)) public availableRouterQuoterPairByAdmin;
-    IFactory public factory;
-    
     modifier isNotLocked() {
         require(!_isLock(), WithdrawalLocked());
         _;
@@ -161,6 +148,7 @@ contract MainVault is
     function initialize(InitParams calldata params) public virtual initializer {
         __UUPSUpgradeable_init();
         __AccessControl_init();
+        __EIP712_init("MainVault", "1");
         __Pausable_init();
 
         // Set initial wallets and configuration
@@ -170,7 +158,7 @@ contract MainVault is
         currentImplementationOfInvestmentVault = params.currentImplementationOfInvestmentVault;
         autoRenewWithdrawalLock = false; // Default to no auto-renewal
         pauserList = IPauserList(params.pauserList);
-        factory = IFactory(msg.sender);
+
         meraPriceOracle = IMeraPriceOracle(params.meraPriceOracle);
 
         if (params.meraPriceOracle == address(0)) {
@@ -229,30 +217,44 @@ contract MainVault is
         //set lock
         require(availableLock[params.lockPeriod], LockPeriodNotAvailable());
         withdrawalLockedUntil = uint64(block.timestamp + params.lockPeriod);
-
-        if (params.lockPeriod > 0) {
-            autoRenewWithdrawalLock = true;
-        }
     }
 
     /// @inheritdoc IMainVault
-    function approveMainVaultUpgrade(address newImplementation) external onlyRole(MAIN_INVESTOR_ROLE) {
-        require(newImplementation != address(0), InvalidUpgradeAddress());
-        require(newImplementation == factory.mainVaultImplementation(), "Implementation must match factory");
+    function setFutureMainVaultImplementation(
+        FutureMainVaultImplementation calldata futureImplementation,
+        bytes calldata signature
+    ) external onlyRole(ADMIN_ROLE) {
+        // Verify the signature comes from the main investor
+        address signer = _verifyFutureMainVaultImplementationSignature(futureImplementation, signature);
+        require(hasRole(MAIN_INVESTOR_ROLE, signer), InvalidSigner());
 
-        investorApprovedMainVaultImpl = newImplementation;
-        investorApprovedMainVaultTimestamp = uint64(block.timestamp);
-        emit MainVaultUpgradeApproved(newImplementation, msg.sender);
+        // Verify deadline is in the future
+        require(futureImplementation.deadline > uint64(block.timestamp), TimestampMustBeInTheFuture());
+
+        // Set the future implementation
+        nextFutureImplementationOfMainVault = futureImplementation.implementation;
+        nextFutureImplementationOfMainVaultDeadline = futureImplementation.deadline;
+
+        emit FutureMainVaultImplementationSet(futureImplementation.implementation, futureImplementation.deadline);
     }
 
     /// @inheritdoc IMainVault
-    function approveInvestorVaultUpgrade(address newImplementation) external onlyRole(MAIN_INVESTOR_ROLE) {
-        require(newImplementation != address(0), InvalidUpgradeAddress());
-        require(newImplementation == factory.investmentVaultImplementation(), "Implementation must match factory");
+    function setFutureInvestorVaultImplementation(
+        FutureInvestorVaultImplementation calldata futureImplementation,
+        bytes calldata signature
+    ) external onlyRole(ADMIN_ROLE) {
+        // Verify the signature comes from the main investor
+        address signer = _verifyFutureInvestorVaultImplementationSignature(futureImplementation, signature);
+        require(hasRole(MAIN_INVESTOR_ROLE, signer), InvalidSigner());
 
-        investorApprovedInvestorVaultImpl = newImplementation;
-        investorApprovedInvestorVaultTimestamp = uint64(block.timestamp);
-        emit InvestorVaultUpgradeApproved(newImplementation, msg.sender);
+        // Verify deadline is in the future
+        require(futureImplementation.deadline > uint64(block.timestamp), TimestampMustBeInTheFuture());
+
+        // Set the future implementation
+        nextFutureImplementationOfInvestorVault = futureImplementation.implementation;
+        nextFutureImplementationOfInvestorVaultDeadline = futureImplementation.deadline;
+
+        emit FutureInvestorVaultImplementationSet(futureImplementation.implementation, futureImplementation.deadline);
     }
 
     /// @inheritdoc IMainVault
@@ -271,6 +273,19 @@ contract MainVault is
     }
 
     /// @inheritdoc IMainVault
+    function setRouterAvailabilityByInvestor(address[] calldata routers) external onlyRole(MAIN_INVESTOR_ROLE) {
+        if (_isLock()) {
+            pauseToTimestamp = uint64(block.timestamp + Constants.PAUSE_AFTER_UPDATE_ACCESS);
+        }
+        // Process each router address in the array
+        for (uint256 i = 0; i < routers.length; i++) {
+            availableRouterByInvestor[routers[i]] = true;
+
+            emit RouterAvailabilityByInvestorChanged(routers[i], true);
+        }
+    }
+
+    /// @inheritdoc IMainVault
     function setTokenAvailabilityByAdmin(TokenAvailability[] calldata configs) external onlyRole(ADMIN_ROLE) {
         for (uint256 i = 0; i < configs.length; i++) {
             availableTokensByAdmin[configs[i].token] = configs[i].isAvailable;
@@ -279,41 +294,12 @@ contract MainVault is
         }
     }
 
-    /// @dev Set router-quoter pair availability by investor
-    /// @param pairs Array of router-quoter pairs to set availability
-    function setRouterQuoterPairAvailabilityByInvestor(DataTypes.RouterQuoterPair[] calldata pairs)
-        external
-        onlyRole(MAIN_INVESTOR_ROLE)
-    {
-        if (_isLock()) {
-            pauseToTimestamp = uint64(block.timestamp + Constants.PAUSE_AFTER_UPDATE_ACCESS);
-        }
-        for (uint256 i = 0; i < pairs.length; i++) {
-            // Set both router and router-quoter pair as available
-            availableRouterByInvestor[pairs[i].router] = true;
-            availableRouterQuoterPairByInvestor[pairs[i].router][pairs[i].quoter] = true;
+    /// @inheritdoc IMainVault
+    function setRouterAvailabilityByAdmin(RouterAvailability[] calldata configs) external onlyRole(ADMIN_ROLE) {
+        for (uint256 i = 0; i < configs.length; i++) {
+            availableRouterByAdmin[configs[i].router] = configs[i].isAvailable;
 
-            emit RouterAvailabilityByInvestorChanged(pairs[i].router, true);
-            emit RouterQuoterPairAvailabilityByInvestorChanged(pairs[i].router, pairs[i].quoter, true);
-        }
-    }
-
-    /// @dev Set router-quoter pair availability by admin
-    /// @param pairs Array of router-quoter pairs to set availability
-    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPair[] calldata pairs)
-        external
-        onlyRole(ADMIN_ROLE)
-    {
-        if (_isLock()) {
-            pauseToTimestamp = uint64(block.timestamp + Constants.PAUSE_AFTER_UPDATE_ACCESS_FOR_ADMIN);
-        }
-        for (uint256 i = 0; i < pairs.length; i++) {
-            // Set both router and router-quoter pair as available
-            availableRouterByAdmin[pairs[i].router] = true;
-            availableRouterQuoterPairByAdmin[pairs[i].router][pairs[i].quoter] = true;
-
-            emit RouterAvailabilityByAdminChanged(pairs[i].router, true);
-            emit RouterQuoterPairAvailabilityByAdminChanged(pairs[i].router, pairs[i].quoter, true);
+            emit RouterAvailabilityByAdminChanged(configs[i].router, configs[i].isAvailable);
         }
     }
 
@@ -344,7 +330,6 @@ contract MainVault is
     function setCurrentFixedProfitPercent() external onlyRole(MAIN_INVESTOR_ROLE) {
         uint32 oldPercent = currentFixedProfitPercent;
         currentFixedProfitPercent = proposedFixedProfitPercentByAdmin;
-        proposedFixedProfitPercentByAdmin = 0;
 
         emit CurrentFixedProfitPercentSet(oldPercent, currentFixedProfitPercent);
     }
@@ -374,24 +359,22 @@ contract MainVault is
         profitWallet = wallet;
 
         // Set profit locked until at least 7 days from now
-        profitLockedUntil =
-            uint64(Math.max(profitLockedUntil, block.timestamp + Constants.WITHDRAWAL_PROFIT_LOCK_PERIOD));
+        profitLockedUntil = uint64(Math.max(profitLockedUntil, block.timestamp + 7 days));
 
         emit ProfitWalletSet(oldWallet, wallet);
     }
 
     /// @inheritdoc IMainVault
     function setCurrentImplementationOfInvestmentVault(address implementation) external onlyRole(ADMIN_ROLE) {
-        require(implementation != address(0), InvalidUpgradeAddress());
-        require(implementation == investorApprovedInvestorVaultImpl, ImplementationNotApprovedByInvestor());
-        require(block.timestamp - investorApprovedInvestorVaultTimestamp < UPGRADE_TIME_LIMIT, UpgradeDeadlineExpired());
+        require(implementation == nextFutureImplementationOfInvestorVault, InvalidImplementationAddress());
+        require(block.timestamp <= nextFutureImplementationOfInvestorVaultDeadline, InvalidImplementationDeadline());
 
         address oldImplementation = currentImplementationOfInvestmentVault;
+
         currentImplementationOfInvestmentVault = implementation;
 
-
-        investorApprovedInvestorVaultImpl = address(0);
-        investorApprovedInvestorVaultTimestamp = 0;
+        nextFutureImplementationOfInvestorVault = address(0);
+        nextFutureImplementationOfInvestorVaultDeadline = 0;
 
         emit CurrentImplementationOfInvestmentVaultSet(oldImplementation, implementation);
     }
@@ -508,7 +491,7 @@ contract MainVault is
 
     /**
      * @dev Deploys a new Investment Vault
-     * Only the admin can call this function
+     * Only the main investor can call this function
      */
     function deployInvestmentVault(DataTypes.InvestmentVaultInitData calldata initData)
         external
@@ -522,10 +505,10 @@ contract MainVault is
 
         require(address(initData.mainVault) == address(this), InvalidMainVaultAddress());
 
-        require(initData.capitalOfMi > 0, ZeroAmountNotAllowed());
+        require(initData.initDeposit > 0, ZeroAmountNotAllowed());
 
         uint256 balance = initData.tokenMI.balanceOf(address(this));
-        require(balance >= initData.capitalOfMi, InsufficientBalance());
+        require(balance >= initData.initDeposit, InsufficientBalance());
 
         bytes memory initializationData = abi.encodeWithSelector(IInvestmentVault.initialize.selector, initData);
 
@@ -537,9 +520,9 @@ contract MainVault is
         investmentVaults[vaultId] = vaultAddress;
         investmentVaultsCount++;
 
-        initData.tokenMI.safeTransfer(vaultAddress, initData.capitalOfMi);
+        initData.tokenMI.safeTransfer(vaultAddress, initData.initDeposit);
 
-        emit InvestmentVaultDeployed(vaultAddress, address(initData.tokenMI), initData.capitalOfMi, vaultId);
+        emit InvestmentVaultDeployed(vaultAddress, address(initData.tokenMI), initData.initDeposit, vaultId);
     }
 
     /// @inheritdoc IMainVault
@@ -559,36 +542,6 @@ contract MainVault is
             if (withdrawal.vaultIndex >= investmentVaultsCount) {
                 revert InvalidVaultIndex();
             }
-
-            address vaultAddress = investmentVaults[withdrawal.vaultIndex];
-
-            IInvestmentVault vault = IInvestmentVault(vaultAddress);
-            vault.withdraw(withdrawal.token, withdrawal.amount, address(this));
-
-            emit WithdrawnFromInvestmentVault(vaultAddress, address(withdrawal.token), withdrawal.amount, msg.sender);
-        }
-    }
-
-    /// @notice Withdraws tokens from investment vaults if they are available for withdrawal
-    /// @dev Only the main investor can call this function
-    /// @dev Each vault must be marked as available for withdrawal by admin
-    /// @dev This function does not require withdrawal lock or commit timestamp checks
-    /// @param withdrawals Array of withdrawal requests containing vault index, token, and amount
-    function withdrawFromInvestmentVaultsIfWithdrawAvailable(WithdrawFromVaultData[] calldata withdrawals)
-        external
-        onlyRole(MAIN_INVESTOR_ROLE)
-    {
-        for (uint256 i = 0; i < withdrawals.length; i++) {
-            WithdrawFromVaultData calldata withdrawal = withdrawals[i];
-
-            require(withdrawal.vaultIndex < investmentVaultsCount, InvalidVaultIndex());
-            require(
-                availableInvestmentVaultForWithdraw[withdrawal.vaultIndex], InvestmentVaultNotAvailableForWithdraw()
-            );
-            require(
-                block.timestamp >= investmentVaultWithdrawAvailableTimestamp[withdrawal.vaultIndex],
-                WithdrawTimeNotReached()
-            );
 
             address vaultAddress = investmentVaults[withdrawal.vaultIndex];
 
@@ -730,24 +683,6 @@ contract MainVault is
     }
 
     /// @inheritdoc IMainVault
-    function setAvailableInvestmentVaultForWithdraw(uint256 vaultIndex, bool isAvailable)
-        external
-        onlyRole(ADMIN_ROLE)
-    {
-        require(vaultIndex < investmentVaultsCount, InvalidVaultIndex());
-
-        availableInvestmentVaultForWithdraw[vaultIndex] = isAvailable;
-
-        // Set activation timestamp (current time + delay)
-        if (isAvailable) {
-            investmentVaultWithdrawAvailableTimestamp[vaultIndex] =
-                uint64(block.timestamp + Constants.WITHDRAW_AVAILABLE_DELAY);
-        }
-
-        emit InvestmentVaultAvailabilityForWithdrawChanged(vaultIndex, isAvailable);
-    }
-
-    /// @inheritdoc IMainVault
     function isCanceledOracleCheck() external view returns (bool) {
         return investorIsCanceledOracleCheck && adminIsCanceledOracleCheck;
     }
@@ -769,8 +704,7 @@ contract MainVault is
     {
         // Set lock for 7 days when assigning MAIN_INVESTOR_ROLE
         if (role == MAIN_INVESTOR_ROLE) {
-            withdrawalLockedUntil =
-                uint64(Math.max(withdrawalLockedUntil, block.timestamp + Constants.WITHDRAWAL_PROFIT_LOCK_PERIOD));
+            withdrawalLockedUntil = uint64(Math.max(withdrawalLockedUntil, block.timestamp + 7 days));
         }
 
         // If emergency investor equals backup admin, remove lock and disable auto-renewal
@@ -818,15 +752,55 @@ contract MainVault is
         return block.timestamp < withdrawalLockedUntil;
     }
 
+    /// @dev Verifies the EIP-712 signature for a future Main Vault implementation
+    /// @param futureImplementation The implementation data that was signed
+    /// @param signature The signature to verify
+    /// @return The signer's address
+    function _verifyFutureMainVaultImplementationSignature(
+        FutureMainVaultImplementation calldata futureImplementation,
+        bytes calldata signature
+    ) internal view returns (address) {
+        bytes32 structHash = keccak256(
+            abi.encode(
+                _FUTURE_MAIN_VAULT_IMPLEMENTATION_TYPEHASH,
+                futureImplementation.implementation,
+                futureImplementation.deadline
+            )
+        );
+
+        bytes32 hash = _hashTypedDataV4(structHash);
+        return ECDSA.recover(hash, signature);
+    }
+
+    /// @dev Verifies the EIP-712 signature for a future Investor Vault implementation
+    /// @param futureImplementation The implementation data that was signed
+    /// @param signature The signature to verify
+    /// @return The signer's address
+    function _verifyFutureInvestorVaultImplementationSignature(
+        FutureInvestorVaultImplementation calldata futureImplementation,
+        bytes calldata signature
+    ) internal view returns (address) {
+        bytes32 structHash = keccak256(
+            abi.encode(
+                _FUTURE_INVESTOR_VAULT_IMPLEMENTATION_TYPEHASH,
+                futureImplementation.implementation,
+                futureImplementation.deadline
+            )
+        );
+
+        bytes32 hash = _hashTypedDataV4(structHash);
+        return ECDSA.recover(hash, signature);
+    }
+
     /// @dev Contract upgrade authorization function (UUPS pattern)
-    /// Can only be called by admin, requires approval from main investor within the time limit
+    /// Only the admin role can authorize contract upgrades
     ///
     /// @param newImplementation Address of the new implementation
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(ADMIN_ROLE) {
-        require(newImplementation == investorApprovedMainVaultImpl, ImplementationNotApprovedByInvestor());
-        require(block.timestamp - investorApprovedMainVaultTimestamp < UPGRADE_TIME_LIMIT, UpgradeDeadlineExpired());
+        require(newImplementation == nextFutureImplementationOfMainVault, InvalidImplementationAddress());
+        require(block.timestamp <= nextFutureImplementationOfMainVaultDeadline, InvalidImplementationDeadline());
 
-        investorApprovedMainVaultImpl = address(0);
-        investorApprovedMainVaultTimestamp = 0;
+        nextFutureImplementationOfMainVault = address(0);
+        nextFutureImplementationOfMainVaultDeadline = 0;
     }
 }

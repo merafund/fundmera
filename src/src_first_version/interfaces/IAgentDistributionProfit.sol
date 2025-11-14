@@ -15,12 +15,34 @@ interface IAgentDistributionProfit {
     // Errors
     error ZeroAddress();
     error AccessDenied();
+    error InvalidUpgradeAddress();
+    error ImplementationNotApprovedByFund();
+    error ImplementationNotApprovedByAgent();
+    error UpgradeDeadlineExpired();
     error AgentPercentageCanOnlyIncrease();
+    error ImplementationNotApprovedByAdmin();
     error AgentPercentageOutOfRange();
 
     // Events
+    event UpgradeApproved(address implementation, address approver);
     event FundWalletSet(address sender, address newFundWallet);
     event MeraCapitalWalletSet(address sender, address newMeraCapitalWallet);
+
+    // Structs
+    struct FutureMainVaultImplementation {
+        address implementation;
+        uint64 deadline;
+    }
+
+    struct FutureInvestorVaultImplementation {
+        address implementation;
+        uint64 deadline;
+    }
+
+    // Approves an upgrade to a new implementation.
+    // Requirements:
+    // - `newImplementation` cannot be the zero address.
+    function approveUpgrade(address newImplementation) external;
 
     // Distributes profit among the specified tokens.
     // Requirements:

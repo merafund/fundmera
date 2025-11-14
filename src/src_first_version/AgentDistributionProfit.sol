@@ -9,20 +9,24 @@
 // https://github.com/merafund
 pragma solidity 0.8.29;
 
-import {
-    MultiAdminSingleHolderAccessControl
-} from "./utils/MultiAdminSingleHolderAccessControl.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {MultiAdminSingleHolderAccessControlUppgradable} from
+    "./utils/MultiAdminSingleHolderAccessControlUppgradable.sol";
 import {IAgentDistributionProfit} from "./interfaces/IAgentDistributionProfit.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract AgentDistributionProfit is
+contract AgentDistributionProfitV1 is
     IAgentDistributionProfit,
-    MultiAdminSingleHolderAccessControl
+    Initializable,
+    UUPSUpgradeable,
+    MultiAdminSingleHolderAccessControlUppgradable
 {
     using SafeERC20 for IERC20;
 
     // Constants
+    uint256 public constant UPGRADE_TIME_LIMIT = 1 days; // Time limit for upgrade approval
     uint256 public constant MIN_AGENT_PERCENTAGE = 2000; // 20%
     uint256 public constant MAX_AGENT_PERCENTAGE = 3000; // 30%
     uint256 public constant MAX_PERCENTAGE = 10000; // 100%
@@ -40,15 +44,24 @@ contract AgentDistributionProfit is
     address public fundWallet;
     address public meraCapitalWallet;
     uint256 public agentPercentage;
-    uint256 private unusedFundProfit;
-    uint256 private unusedMeraCapitalProfit;
+    uint256 public fundProfit;
+    uint256 public meraCapitalProfit;
+    address public adminApproved;
+    address public agentApproved;
+    uint256 public adminApprovedTimestamp;
+    uint256 public agentApprovedTimestamp;
 
     modifier onlyAdminOrAgent() {
         require(hasRole(ADMIN_ROLE, msg.sender) || hasRole(MAIN_AGENT_ROLE, msg.sender), AccessDenied());
         _;
     }
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         address _fundWallet,
         address _agentWallet,
         address _adminWallet,
@@ -57,7 +70,7 @@ contract AgentDistributionProfit is
         address _emergencyAgentWallet,
         address _reserveAgentWallet,
         address _meraCapitalWallet
-    ) {
+    ) external virtual initializer {
         require(_fundWallet != address(0), ZeroAddress());
         require(_agentWallet != address(0), ZeroAddress());
         require(_adminWallet != address(0), ZeroAddress());
@@ -66,6 +79,9 @@ contract AgentDistributionProfit is
         require(_emergencyAgentWallet != address(0), ZeroAddress());
         require(_reserveAgentWallet != address(0), ZeroAddress());
         require(_meraCapitalWallet != address(0), ZeroAddress());
+
+        __UUPSUpgradeable_init();
+        __AccessControl_init();
 
         fundWallet = _fundWallet;
         meraCapitalWallet = _meraCapitalWallet;
@@ -86,9 +102,6 @@ contract AgentDistributionProfit is
         _setRoleAdmin(BACKUP_ADMIN_ROLE, BACKUP_ADMIN_ROLE);
         _setRoleAdmin(EMERGENCY_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE);
 
-        _setRoleAdmin(MAIN_AGENT_ROLE, BACKUP_AGENT_ROLE);
-        _setRoleAdmin(ADMIN_ROLE, BACKUP_ADMIN_ROLE);
-
         // Emergency agent can manage main and backup agents
         _setRoleAdmin(MAIN_AGENT_ROLE, EMERGENCY_AGENT_ROLE);
         _setRoleAdmin(BACKUP_AGENT_ROLE, EMERGENCY_AGENT_ROLE);
@@ -96,6 +109,21 @@ contract AgentDistributionProfit is
         // Emergency admin can manage all admin roles
         _setRoleAdmin(ADMIN_ROLE, EMERGENCY_ADMIN_ROLE);
         _setRoleAdmin(BACKUP_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE);
+    }
+
+    ///@inheritdoc IAgentDistributionProfit
+    function approveUpgrade(address newImplementation) external onlyAdminOrAgent {
+        require(newImplementation != address(0), InvalidUpgradeAddress());
+
+        if (hasRole(ADMIN_ROLE, msg.sender)) {
+            adminApproved = newImplementation;
+            adminApprovedTimestamp = block.timestamp;
+            emit UpgradeApproved(newImplementation, msg.sender);
+        } else {
+            agentApproved = newImplementation;
+            agentApprovedTimestamp = block.timestamp;
+            emit UpgradeApproved(newImplementation, msg.sender);
+        }
     }
 
     ///@inheritdoc IAgentDistributionProfit
@@ -108,11 +136,19 @@ contract AgentDistributionProfit is
             uint256 fundAmount = balance - agentAmount - meraCapitalAmount;
 
             if (fundAmount > 0) {
-                IERC20(token).safeTransfer(fundWallet, fundAmount);
+                if (hasRole(ADMIN_ROLE, msg.sender)) {
+                    IERC20(token).safeTransfer(fundWallet, fundAmount);
+                } else {
+                    fundProfit += fundAmount;
+                }
             }
 
             if (meraCapitalAmount > 0) {
-                IERC20(token).safeTransfer(meraCapitalWallet, meraCapitalAmount);
+                if (hasRole(ADMIN_ROLE, msg.sender)) {
+                    IERC20(token).safeTransfer(meraCapitalWallet, meraCapitalAmount);
+                } else {
+                    meraCapitalProfit += meraCapitalAmount;
+                }
             }
 
             if (agentAmount > 0) {
@@ -145,4 +181,11 @@ contract AgentDistributionProfit is
         emit MeraCapitalWalletSet(msg.sender, _meraCapitalWallet);
     }
 
+    function _authorizeUpgrade(address newImplementation) internal view override onlyAdminOrAgent {
+        require(newImplementation != address(0), InvalidUpgradeAddress());
+        require(newImplementation == adminApproved, ImplementationNotApprovedByAdmin());
+        require(newImplementation == agentApproved, ImplementationNotApprovedByAgent());
+        require(block.timestamp - adminApprovedTimestamp < UPGRADE_TIME_LIMIT, UpgradeDeadlineExpired());
+        require(block.timestamp - agentApprovedTimestamp < UPGRADE_TIME_LIMIT, UpgradeDeadlineExpired());
+    }
 }

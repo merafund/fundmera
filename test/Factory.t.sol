@@ -79,8 +79,8 @@ contract FactoryTest is Test {
         InvestmentVault investmentVaultImplementation = new InvestmentVault();
         investmentVaultImpl = address(investmentVaultImplementation);
 
-        AgentDistributionProfit agentDistributionImplementation = new AgentDistributionProfit();
-        agentDistributionImpl = address(agentDistributionImplementation);
+        // AgentDistributionProfit is now deployed directly by Factory, not as implementation
+        agentDistributionImpl = address(0);
 
         // Prepare constructor parameters
         address meraPriceOracle = makeAddr("meraPriceOracle");
@@ -94,7 +94,6 @@ contract FactoryTest is Test {
             emergencyAdmin: emergencyAdmin,
             feePercentage: FEE_PERCENTAGE,
             pauserList: pauserList,
-            agentDistributionImplementation: agentDistributionImpl,
             fundWallet: fundWallet,
             defaultAgentWallet: defaultAgentWallet,
             meraCapitalWallet: meraCapitalWallet
@@ -113,7 +112,6 @@ contract FactoryTest is Test {
         assertEq(factory.emergencyAdmin(), emergencyAdmin);
         assertEq(factory.feePercentage(), FEE_PERCENTAGE);
         assertEq(factory.pauserList(), pauserList);
-        assertEq(factory.agentDistributionImplementation(), agentDistributionImpl);
         assertEq(factory.fundWallet(), fundWallet);
         assertEq(factory.defaultAgentWallet(), defaultAgentWallet);
         assertEq(factory.meraCapitalWallet(), meraCapitalWallet);
@@ -237,35 +235,31 @@ contract FactoryTest is Test {
     function test_UpdateImplementations() public {
         address newMainVaultImpl = address(new MainVault());
         address newInvestmentVaultImpl = address(new InvestmentVault());
-        address newAgentDistributionImpl = address(new AgentDistributionProfit());
 
         vm.startPrank(owner);
-        factory.updateImplementations(newMainVaultImpl, newInvestmentVaultImpl, newAgentDistributionImpl);
+        factory.updateImplementations(newMainVaultImpl, newInvestmentVaultImpl);
         vm.stopPrank();
 
         assertEq(factory.mainVaultImplementation(), newMainVaultImpl);
         assertEq(factory.investmentVaultImplementation(), newInvestmentVaultImpl);
-        assertEq(factory.agentDistributionImplementation(), newAgentDistributionImpl);
     }
 
     function test_UpdateImplementationsPartially() public {
         address newMainVaultImpl = address(new MainVault());
         address oldInvestmentVaultImpl = factory.investmentVaultImplementation();
-        address oldAgentDistributionImpl = factory.agentDistributionImplementation();
 
         vm.startPrank(owner);
-        factory.updateImplementations(newMainVaultImpl, address(0), address(0));
+        factory.updateImplementations(newMainVaultImpl, address(0));
         vm.stopPrank();
 
         assertEq(factory.mainVaultImplementation(), newMainVaultImpl);
         assertEq(factory.investmentVaultImplementation(), oldInvestmentVaultImpl);
-        assertEq(factory.agentDistributionImplementation(), oldAgentDistributionImpl);
     }
 
     function test_RevertUpdateImplementationsIfNotOwner() public {
         vm.startPrank(ALICE);
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", ALICE));
-        factory.updateImplementations(address(0), address(0), address(0));
+        factory.updateImplementations(address(0), address(0));
         vm.stopPrank();
     }
 
@@ -430,7 +424,6 @@ contract FactoryTest is Test {
             emergencyAdmin: emergencyAdmin,
             feePercentage: FEE_PERCENTAGE,
             pauserList: pauserList,
-            agentDistributionImplementation: agentDistributionImpl,
             fundWallet: fundWallet,
             defaultAgentWallet: defaultAgentWallet,
             meraCapitalWallet: meraCapitalWallet
@@ -475,12 +468,6 @@ contract FactoryTest is Test {
         vm.expectRevert(IFactory.ZeroAddress.selector);
         new Factory(params);
         params.pauserList = pauserList;
-
-        // Test agentDistributionImplementation
-        params.agentDistributionImplementation = address(0);
-        vm.expectRevert(IFactory.ZeroAddress.selector);
-        new Factory(params);
-        params.agentDistributionImplementation = agentDistributionImpl;
 
         // Test fundWallet
         params.fundWallet = address(0);
