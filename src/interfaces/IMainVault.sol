@@ -336,8 +336,8 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     function setRouterQuoterPairAvailabilityByInvestor(DataTypes.RouterQuoterPair[] calldata pairs) external;
 
     /// @dev Sets availability status for multiple router-quoter pairs by admin
-    /// @param pairs Array of router-quoter pairs to set availability
-    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPair[] calldata pairs) external;
+    /// @param configs Array of router-quoter pair availability configurations
+    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPairAvailability[] calldata configs) external;
 
     /// @dev Sets availability status for multiple lock periods
     /// Only admin can call this function

@@ -66,10 +66,13 @@ contract PriceValidationTest is Test {
         mainVault.setIsCanceledOracleCheck(false);
 
         // Set up router-quoter pairs
-        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
-        pairs[0] = DataTypes.RouterQuoterPair({router: address(router), quoter: address(quoter)});
-        mainVault.setRouterQuoterPairAvailabilityByInvestor(pairs);
-        mainVault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+        DataTypes.RouterQuoterPair[] memory investorPairs = new DataTypes.RouterQuoterPair[](1);
+        investorPairs[0] = DataTypes.RouterQuoterPair({router: address(router), quoter: address(quoter)});
+        mainVault.setRouterQuoterPairAvailabilityByInvestor(investorPairs);
+        
+        DataTypes.RouterQuoterPairAvailability[] memory adminConfigs = new DataTypes.RouterQuoterPairAvailability[](1);
+        adminConfigs[0] = DataTypes.RouterQuoterPairAvailability({router: address(router), quoter: address(quoter), isAvailable: true});
+        mainVault.setRouterQuoterPairAvailabilityByAdmin(adminConfigs);
 
         // Deploy and setup vault
         implementation = new InvestmentVault();

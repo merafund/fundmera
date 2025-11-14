@@ -220,4 +220,11 @@ library DataTypes {
         address router; // Router address
         address quoter; // Quoter address
     }
+
+    /// @dev Structure for router-quoter pair availability configuration
+    struct RouterQuoterPairAvailability {
+        address router; // Router address
+        address quoter; // Quoter address
+        bool isAvailable; // Availability status
+    }
 }

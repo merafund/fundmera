@@ -302,21 +302,21 @@ contract MainVault is
     }
 
     /// @dev Set router-quoter pair availability by admin
-    /// @param pairs Array of router-quoter pairs to set availability
-    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPair[] calldata pairs)
+    /// @param configs Array of router-quoter pair availability configurations
+    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPairAvailability[] calldata configs)
         external
         onlyRole(ADMIN_ROLE)
     {
         if (_isLock()) {
             pauseToTimestamp = uint64(block.timestamp + Constants.PAUSE_AFTER_UPDATE_ACCESS_FOR_ADMIN);
         }
-        for (uint256 i = 0; i < pairs.length; i++) {
-            // Set both router and router-quoter pair as available
-            availableRouterByAdmin[pairs[i].router] = true;
-            availableRouterQuoterPairByAdmin[pairs[i].router][pairs[i].quoter] = true;
+        for (uint256 i = 0; i < configs.length; i++) {
+            // Set router and router-quoter pair availability based on config
+            availableRouterByAdmin[configs[i].router] = configs[i].isAvailable;
+            availableRouterQuoterPairByAdmin[configs[i].router][configs[i].quoter] = configs[i].isAvailable;
 
-            emit RouterAvailabilityByAdminChanged(pairs[i].router, true);
-            emit RouterQuoterPairAvailabilityByAdminChanged(pairs[i].router, pairs[i].quoter, true);
+            emit RouterAvailabilityByAdminChanged(configs[i].router, configs[i].isAvailable);
+            emit RouterQuoterPairAvailabilityByAdminChanged(configs[i].router, configs[i].quoter, configs[i].isAvailable);
         }
     }
 

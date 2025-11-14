@@ -88,10 +88,13 @@ contract InvestmentVaultTest is Test {
 
     // Helper function to set up router-quoter pairs
     function _setupRouterQuoterPairs(address router, address quoter) internal {
-        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
-        pairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
-        mainVault.setRouterQuoterPairAvailabilityByInvestor(pairs);
-        mainVault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+        DataTypes.RouterQuoterPair[] memory investorPairs = new DataTypes.RouterQuoterPair[](1);
+        investorPairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
+        mainVault.setRouterQuoterPairAvailabilityByInvestor(investorPairs);
+        
+        DataTypes.RouterQuoterPairAvailability[] memory adminConfigs = new DataTypes.RouterQuoterPairAvailability[](1);
+        adminConfigs[0] = DataTypes.RouterQuoterPairAvailability({router: router, quoter: quoter, isAvailable: true});
+        mainVault.setRouterQuoterPairAvailabilityByAdmin(adminConfigs);
     }
 
     uint256 public constant INVEST_AMOUNT = 1000 * 10 ** 18;
@@ -1681,9 +1684,9 @@ contract InvestmentVaultTest is Test {
 
         mainVault = new MockMainVault();
         // Set up router-quoter pairs only for admin, not for investor
-        DataTypes.RouterQuoterPair[] memory adminPairs = new DataTypes.RouterQuoterPair[](1);
-        adminPairs[0] = DataTypes.RouterQuoterPair({router: address(router), quoter: address(router)});
-        mainVault.setRouterQuoterPairAvailabilityByAdmin(adminPairs);
+        DataTypes.RouterQuoterPairAvailability[] memory adminConfigs = new DataTypes.RouterQuoterPairAvailability[](1);
+        adminConfigs[0] = DataTypes.RouterQuoterPairAvailability({router: address(router), quoter: address(router), isAvailable: true});
+        mainVault.setRouterQuoterPairAvailabilityByAdmin(adminConfigs);
         // Don't set investor pairs
 
         mainVault.setAvailableToken(address(tokenMI), true);
