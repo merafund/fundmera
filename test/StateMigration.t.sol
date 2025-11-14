@@ -342,7 +342,9 @@ contract StateMigrationTest is Test {
             assertTrue(_mvFeeWalletBefore != address(0), "feeWallet is zero");
             assertTrue(_mvProfitWalletBefore != address(0), "profitWallet is zero");
             assertTrue(_mvWithdrawalLockedUntilBefore > 0, "withdrawalLockedUntil is zero");
-            assertTrue(_mvCurrentInvestmentVaultImplBefore != address(0), "currentImplementationOfInvestmentVault is zero");
+            assertTrue(
+                _mvCurrentInvestmentVaultImplBefore != address(0), "currentImplementationOfInvestmentVault is zero"
+            );
             assertTrue(_mvCurrentFixedProfitPercentBefore > 0, "currentFixedProfitPercent is zero");
             assertTrue(_mvProposedFixedProfitPercentBefore > 0, "proposedFixedProfitPercent is zero");
             assertTrue(_mvProposedOracleBefore != address(0), "proposedOracle is zero");
@@ -436,7 +438,9 @@ contract StateMigrationTest is Test {
             uint32 currentFixedProfitPercentAfter = mainVaultV2.currentFixedProfitPercent();
             uint32 proposedFixedProfitPercentAfter = mainVaultV2.proposedFixedProfitPercentByAdmin();
             assertEq(
-                currentFixedProfitPercentAfter, _mvCurrentFixedProfitPercentBefore, "currentFixedProfitPercent not preserved"
+                currentFixedProfitPercentAfter,
+                _mvCurrentFixedProfitPercentBefore,
+                "currentFixedProfitPercent not preserved"
             );
             assertEq(
                 proposedFixedProfitPercentAfter,
@@ -451,7 +455,9 @@ contract StateMigrationTest is Test {
         {
             bool investorCanceledOracleAfter = mainVaultV2.investorIsCanceledOracleCheck();
             bool adminCanceledOracleAfter = mainVaultV2.adminIsCanceledOracleCheck();
-            assertEq(investorCanceledOracleAfter, _mvInvestorCanceledOracleBefore, "investorCanceledOracle not preserved");
+            assertEq(
+                investorCanceledOracleAfter, _mvInvestorCanceledOracleBefore, "investorCanceledOracle not preserved"
+            );
             assertEq(adminCanceledOracleAfter, _mvAdminCanceledOracleBefore, "adminCanceledOracle not preserved");
         }
         {
@@ -475,7 +481,9 @@ contract StateMigrationTest is Test {
                 "tokenMI availability by investor not preserved"
             );
             assertEq(
-                tokenMIAvailableByAdminAfter, _mvTokenMIAvailableByAdminBefore, "tokenMI availability by admin not preserved"
+                tokenMIAvailableByAdminAfter,
+                _mvTokenMIAvailableByAdminBefore,
+                "tokenMI availability by admin not preserved"
             );
             assertEq(
                 routerAvailableByInvestorAfter,
@@ -483,7 +491,9 @@ contract StateMigrationTest is Test {
                 "router availability by investor not preserved"
             );
             assertEq(
-                routerAvailableByAdminAfter, _mvRouterAvailableByAdminBefore, "router availability by admin not preserved"
+                routerAvailableByAdminAfter,
+                _mvRouterAvailableByAdminBefore,
+                "router availability by admin not preserved"
             );
             assertEq(lockPeriodAvailableAfter, _mvLockPeriodAvailableBefore, "lock period availability not preserved");
             assertEq(factoryAfter, address(factory), "factory not set");
@@ -681,7 +691,9 @@ contract StateMigrationTest is Test {
             assertEq(earntProfitInvestorAfter, _earntProfitInvestorBefore, "earntProfitInvestor not preserved");
             assertEq(earntProfitFeeAfter, _earntProfitFeeBefore, "earntProfitFee not preserved");
             assertEq(earntProfitTotalAfter, _earntProfitTotalBefore, "earntProfitTotal not preserved");
-            assertEq(withdrawnProfitInvestorAfter, _withdrawnProfitInvestorBefore, "withdrawnProfitInvestor not preserved");
+            assertEq(
+                withdrawnProfitInvestorAfter, _withdrawnProfitInvestorBefore, "withdrawnProfitInvestor not preserved"
+            );
             assertEq(withdrawnProfitFeeAfter, _withdrawnProfitFeeBefore, "withdrawnProfitFee not preserved");
         }
 
