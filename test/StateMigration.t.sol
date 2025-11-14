@@ -153,6 +153,52 @@ contract StateMigrationTest is Test {
     address public fundWallet = address(16);
     address public meraCapitalWallet = address(17);
 
+    // Temporary storage variables for state migration tests to avoid stack too deep
+    address private _mainVaultBefore;
+    address private _tokenMIAddrBefore;
+    address private _tokenMVAddrBefore;
+    uint256 private _initDepositBefore;
+    uint256 private _mvBoughtBefore;
+    uint256 private _shareMIBefore;
+    uint256 private _depositInMvBefore;
+    uint256 private _timestampBefore;
+    uint8 private _profitTypeBefore;
+    uint256 private _stepBefore;
+    uint256 private _profitMVBefore;
+    uint256 private _earntProfitInvestorBefore;
+    uint256 private _earntProfitFeeBefore;
+    uint256 private _earntProfitTotalBefore;
+    uint256 private _withdrawnProfitInvestorBefore;
+    uint256 private _withdrawnProfitFeeBefore;
+    bool private _closedBefore;
+    uint256 private _assetsDataLengthBefore;
+    uint8 private _swapInitStateBefore;
+    uint256 private _asset1ShareBefore;
+    uint256 private _asset1StepBefore;
+    uint8 private _asset1StrategyBefore;
+
+    // Temporary storage variables for MainVault state migration test
+    uint256 private _mvFeePercentageBefore;
+    address private _mvFeeWalletBefore;
+    address private _mvProfitWalletBefore;
+    uint64 private _mvProfitLockedUntilBefore;
+    uint64 private _mvWithdrawalLockedUntilBefore;
+    bool private _mvAutoRenewBefore;
+    address private _mvCurrentInvestmentVaultImplBefore;
+    uint8 private _mvProfitTypeBefore;
+    uint32 private _mvCurrentFixedProfitPercentBefore;
+    uint32 private _mvProposedFixedProfitPercentBefore;
+    address private _mvProposedOracleBefore;
+    bool private _mvInvestorCanceledOracleBefore;
+    bool private _mvAdminCanceledOracleBefore;
+    address private _mvPauserListBefore;
+    address private _mvOracleBefore;
+    bool private _mvTokenMIAvailableByInvestorBefore;
+    bool private _mvTokenMIAvailableByAdminBefore;
+    bool private _mvRouterAvailableByInvestorBefore;
+    bool private _mvRouterAvailableByAdminBefore;
+    bool private _mvLockPeriodAvailableBefore;
+
     function setUp() public {
         // Deploy tokens
         tokenMI = new MockERC20("Main Investment", "MI", 18);
@@ -258,52 +304,58 @@ contract StateMigrationTest is Test {
 
         vm.stopPrank();
 
-        // Capture state before upgrade
-        uint256 feePercentageBefore = mainVaultV1.feePercentage();
-        address feeWalletBefore = mainVaultV1.feeWallet();
-        address profitWalletBefore = mainVaultV1.profitWallet();
-        uint64 profitLockedUntilBefore = mainVaultV1.profitLockedUntil();
-        uint64 withdrawalLockedUntilBefore = mainVaultV1.withdrawalLockedUntil();
-        bool autoRenewBefore = mainVaultV1.autoRenewWithdrawalLock();
-        address currentInvestmentVaultImplBefore = mainVaultV1.currentImplementationOfInvestmentVault();
-        DataTypesV1.ProfitType profitTypeBefore = mainVaultV1.profitType();
-        uint32 currentFixedProfitPercentBefore = mainVaultV1.currentFixedProfitPercent();
-        uint32 proposedFixedProfitPercentBefore = mainVaultV1.proposedFixedProfitPercentByAdmin();
-        address proposedOracleBefore = mainVaultV1.proposedMeraPriceOracleByAdmin();
-        bool investorCanceledOracleBefore = mainVaultV1.investorIsCanceledOracleCheck();
-        bool adminCanceledOracleBefore = mainVaultV1.adminIsCanceledOracleCheck();
-        address pauserListBefore = address(mainVaultV1.pauserList());
-        address oracleBefore = address(mainVaultV1.meraPriceOracle());
+        // Capture state before upgrade - using storage variables to avoid stack too deep
+        {
+            _mvFeePercentageBefore = mainVaultV1.feePercentage();
+            _mvFeeWalletBefore = mainVaultV1.feeWallet();
+            _mvProfitWalletBefore = mainVaultV1.profitWallet();
+            _mvProfitLockedUntilBefore = mainVaultV1.profitLockedUntil();
+            _mvWithdrawalLockedUntilBefore = mainVaultV1.withdrawalLockedUntil();
+            _mvAutoRenewBefore = mainVaultV1.autoRenewWithdrawalLock();
+            _mvCurrentInvestmentVaultImplBefore = mainVaultV1.currentImplementationOfInvestmentVault();
+            _mvProfitTypeBefore = uint8(mainVaultV1.profitType());
+            _mvCurrentFixedProfitPercentBefore = mainVaultV1.currentFixedProfitPercent();
+            _mvProposedFixedProfitPercentBefore = mainVaultV1.proposedFixedProfitPercentByAdmin();
+            _mvProposedOracleBefore = mainVaultV1.proposedMeraPriceOracleByAdmin();
+            _mvInvestorCanceledOracleBefore = mainVaultV1.investorIsCanceledOracleCheck();
+            _mvAdminCanceledOracleBefore = mainVaultV1.adminIsCanceledOracleCheck();
+            _mvPauserListBefore = address(mainVaultV1.pauserList());
+            _mvOracleBefore = address(mainVaultV1.meraPriceOracle());
 
-        // Check token and router availability
-        bool tokenMIAvailableByInvestorBefore = mainVaultV1.availableTokensByInvestor(address(tokenMI));
-        bool tokenMIAvailableByAdminBefore = mainVaultV1.availableTokensByAdmin(address(tokenMI));
-        bool routerAvailableByInvestorBefore = mainVaultV1.availableRouterByInvestor(routers[0]);
-        bool routerAvailableByAdminBefore = mainVaultV1.availableRouterByAdmin(routerConfigs[0].router);
-        bool lockPeriodAvailableBefore = mainVaultV1.availableLock(30 days);
+            // Check token and router availability
+            _mvTokenMIAvailableByInvestorBefore = mainVaultV1.availableTokensByInvestor(address(tokenMI));
+            _mvTokenMIAvailableByAdminBefore = mainVaultV1.availableTokensByAdmin(address(tokenMI));
+            _mvRouterAvailableByInvestorBefore = mainVaultV1.availableRouterByInvestor(routers[0]);
+            _mvRouterAvailableByAdminBefore = mainVaultV1.availableRouterByAdmin(routerConfigs[0].router);
+            _mvLockPeriodAvailableBefore = mainVaultV1.availableLock(30 days);
+        }
 
-        console.log("State before upgrade captured");
-        console.log("Fee percentage:", feePercentageBefore);
-        console.log("Profit type (0=Dynamic, 1=Fixed):", uint8(profitTypeBefore));
+        {
+            console.log("State before upgrade captured");
+            console.log("Fee percentage:", _mvFeePercentageBefore);
+            console.log("Profit type (0=Dynamic, 1=Fixed):", _mvProfitTypeBefore);
+        }
 
         // Verify all values are non-zero
-        assertTrue(feePercentageBefore > 0, "feePercentage is zero");
-        assertTrue(feeWalletBefore != address(0), "feeWallet is zero");
-        assertTrue(profitWalletBefore != address(0), "profitWallet is zero");
-        assertTrue(withdrawalLockedUntilBefore > 0, "withdrawalLockedUntil is zero");
-        assertTrue(currentInvestmentVaultImplBefore != address(0), "currentImplementationOfInvestmentVault is zero");
-        assertTrue(currentFixedProfitPercentBefore > 0, "currentFixedProfitPercent is zero");
-        assertTrue(proposedFixedProfitPercentBefore > 0, "proposedFixedProfitPercent is zero");
-        assertTrue(proposedOracleBefore != address(0), "proposedOracle is zero");
-        assertTrue(pauserListBefore != address(0), "pauserList is zero");
-        assertTrue(oracleBefore != address(0), "oracle is zero");
-        assertTrue(tokenMIAvailableByInvestorBefore, "tokenMI not available by investor");
-        assertTrue(tokenMIAvailableByAdminBefore, "tokenMI not available by admin");
-        assertTrue(routerAvailableByInvestorBefore, "router not available by investor");
-        assertTrue(routerAvailableByAdminBefore, "router not available by admin");
-        assertTrue(lockPeriodAvailableBefore, "lock period not available");
-        assertTrue(investorCanceledOracleBefore, "investor oracle check not canceled");
-        assertTrue(adminCanceledOracleBefore, "admin oracle check not canceled");
+        {
+            assertTrue(_mvFeePercentageBefore > 0, "feePercentage is zero");
+            assertTrue(_mvFeeWalletBefore != address(0), "feeWallet is zero");
+            assertTrue(_mvProfitWalletBefore != address(0), "profitWallet is zero");
+            assertTrue(_mvWithdrawalLockedUntilBefore > 0, "withdrawalLockedUntil is zero");
+            assertTrue(_mvCurrentInvestmentVaultImplBefore != address(0), "currentImplementationOfInvestmentVault is zero");
+            assertTrue(_mvCurrentFixedProfitPercentBefore > 0, "currentFixedProfitPercent is zero");
+            assertTrue(_mvProposedFixedProfitPercentBefore > 0, "proposedFixedProfitPercent is zero");
+            assertTrue(_mvProposedOracleBefore != address(0), "proposedOracle is zero");
+            assertTrue(_mvPauserListBefore != address(0), "pauserList is zero");
+            assertTrue(_mvOracleBefore != address(0), "oracle is zero");
+            assertTrue(_mvTokenMIAvailableByInvestorBefore, "tokenMI not available by investor");
+            assertTrue(_mvTokenMIAvailableByAdminBefore, "tokenMI not available by admin");
+            assertTrue(_mvRouterAvailableByInvestorBefore, "router not available by investor");
+            assertTrue(_mvRouterAvailableByAdminBefore, "router not available by admin");
+            assertTrue(_mvLockPeriodAvailableBefore, "lock period not available");
+            assertTrue(_mvInvestorCanceledOracleBefore, "investor oracle check not canceled");
+            assertTrue(_mvAdminCanceledOracleBefore, "admin oracle check not canceled");
+        }
 
         // Now perform the upgrade
         // Update factory to V2 implementations
@@ -346,79 +398,96 @@ contract StateMigrationTest is Test {
         // Wrap proxy with V2 interface
         MainVault mainVaultV2 = MainVault(address(mainVaultProxy));
 
-        // Verify state after upgrade
-        uint256 feePercentageAfter = mainVaultV2.feePercentage();
-        address feeWalletAfter = mainVaultV2.feeWallet();
-        address profitWalletAfter = mainVaultV2.profitWallet();
-        uint64 profitLockedUntilAfter = mainVaultV2.profitLockedUntil();
-        uint64 withdrawalLockedUntilAfter = mainVaultV2.withdrawalLockedUntil();
-        bool autoRenewAfter = mainVaultV2.autoRenewWithdrawalLock();
-        address currentInvestmentVaultImplAfter = mainVaultV2.currentImplementationOfInvestmentVault();
-        DataTypes.ProfitType profitTypeAfter = mainVaultV2.profitType();
-        uint32 currentFixedProfitPercentAfter = mainVaultV2.currentFixedProfitPercent();
-        uint32 proposedFixedProfitPercentAfter = mainVaultV2.proposedFixedProfitPercentByAdmin();
-        address proposedOracleAfter = mainVaultV2.proposedMeraPriceOracleByAdmin();
-        bool investorCanceledOracleAfter = mainVaultV2.investorIsCanceledOracleCheck();
-        bool adminCanceledOracleAfter = mainVaultV2.adminIsCanceledOracleCheck();
-        address pauserListAfter = address(mainVaultV2.pauserList());
-        address oracleAfter = address(mainVaultV2.meraPriceOracle());
-        address factoryAfter = address(mainVaultV2.factory());
+        // Verify state after upgrade - check values immediately after reading to minimize stack usage
+        {
+            uint256 feePercentageAfter = mainVaultV2.feePercentage();
+            assertEq(feePercentageAfter, _mvFeePercentageBefore, "feePercentage not preserved");
+        }
+        {
+            address feeWalletAfter = mainVaultV2.feeWallet();
+            address profitWalletAfter = mainVaultV2.profitWallet();
+            assertEq(feeWalletAfter, _mvFeeWalletBefore, "feeWallet not preserved");
+            assertEq(profitWalletAfter, _mvProfitWalletBefore, "profitWallet not preserved");
+        }
+        {
+            uint64 profitLockedUntilAfter = mainVaultV2.profitLockedUntil();
+            uint64 withdrawalLockedUntilAfter = mainVaultV2.withdrawalLockedUntil();
+            bool autoRenewAfter = mainVaultV2.autoRenewWithdrawalLock();
+            assertEq(profitLockedUntilAfter, _mvProfitLockedUntilBefore, "profitLockedUntil not preserved");
+            assertEq(withdrawalLockedUntilAfter, _mvWithdrawalLockedUntilBefore, "withdrawalLockedUntil not preserved");
+            assertEq(autoRenewAfter, _mvAutoRenewBefore, "autoRenewWithdrawalLock not preserved");
+        }
+        {
+            address currentInvestmentVaultImplAfter = mainVaultV2.currentImplementationOfInvestmentVault();
+            assertEq(
+                currentInvestmentVaultImplAfter,
+                _mvCurrentInvestmentVaultImplBefore,
+                "currentImplementationOfInvestmentVault not preserved"
+            );
+        }
+        {
+            uint8 profitTypeAfter = uint8(mainVaultV2.profitType());
+            assertEq(profitTypeAfter, _mvProfitTypeBefore, "profitType not preserved");
+            console.log("State after upgrade:");
+            console.log("Fee percentage:", _mvFeePercentageBefore);
+            console.log("Profit type:", profitTypeAfter);
+        }
+        {
+            uint32 currentFixedProfitPercentAfter = mainVaultV2.currentFixedProfitPercent();
+            uint32 proposedFixedProfitPercentAfter = mainVaultV2.proposedFixedProfitPercentByAdmin();
+            assertEq(
+                currentFixedProfitPercentAfter, _mvCurrentFixedProfitPercentBefore, "currentFixedProfitPercent not preserved"
+            );
+            assertEq(
+                proposedFixedProfitPercentAfter,
+                _mvProposedFixedProfitPercentBefore,
+                "proposedFixedProfitPercent not preserved"
+            );
+        }
+        {
+            address proposedOracleAfter = mainVaultV2.proposedMeraPriceOracleByAdmin();
+            assertEq(proposedOracleAfter, _mvProposedOracleBefore, "proposedOracle not preserved");
+        }
+        {
+            bool investorCanceledOracleAfter = mainVaultV2.investorIsCanceledOracleCheck();
+            bool adminCanceledOracleAfter = mainVaultV2.adminIsCanceledOracleCheck();
+            assertEq(investorCanceledOracleAfter, _mvInvestorCanceledOracleBefore, "investorCanceledOracle not preserved");
+            assertEq(adminCanceledOracleAfter, _mvAdminCanceledOracleBefore, "adminCanceledOracle not preserved");
+        }
+        {
+            address pauserListAfter = address(mainVaultV2.pauserList());
+            address oracleAfter = address(mainVaultV2.meraPriceOracle());
+            assertEq(pauserListAfter, _mvPauserListBefore, "pauserList not preserved");
+            assertEq(oracleAfter, _mvOracleBefore, "oracle not preserved");
+        }
 
-        bool tokenMIAvailableByInvestorAfter = mainVaultV2.availableTokensByInvestor(address(tokenMI));
-        bool tokenMIAvailableByAdminAfter = mainVaultV2.availableTokensByAdmin(address(tokenMI));
-        bool routerAvailableByInvestorAfter = mainVaultV2.availableRouterByInvestor(routers[0]);
-        bool routerAvailableByAdminAfter = mainVaultV2.availableRouterByAdmin(routerConfigs[0].router);
-        bool lockPeriodAvailableAfter = mainVaultV2.availableLock(30 days);
+        {
+            bool tokenMIAvailableByInvestorAfter = mainVaultV2.availableTokensByInvestor(address(tokenMI));
+            bool tokenMIAvailableByAdminAfter = mainVaultV2.availableTokensByAdmin(address(tokenMI));
+            bool routerAvailableByInvestorAfter = mainVaultV2.availableRouterByInvestor(routers[0]);
+            bool routerAvailableByAdminAfter = mainVaultV2.availableRouterByAdmin(routerConfigs[0].router);
+            bool lockPeriodAvailableAfter = mainVaultV2.availableLock(30 days);
+            address factoryAfter = address(mainVaultV2.factory());
 
-        console.log("State after upgrade:");
-        console.log("Fee percentage:", feePercentageAfter);
-        console.log("Profit type:", uint8(profitTypeAfter));
-
-        // Assert all state preserved
-        assertEq(feePercentageAfter, feePercentageBefore, "feePercentage not preserved");
-        assertEq(feeWalletAfter, feeWalletBefore, "feeWallet not preserved");
-        assertEq(profitWalletAfter, profitWalletBefore, "profitWallet not preserved");
-        assertEq(profitLockedUntilAfter, profitLockedUntilBefore, "profitLockedUntil not preserved");
-        assertEq(withdrawalLockedUntilAfter, withdrawalLockedUntilBefore, "withdrawalLockedUntil not preserved");
-        assertEq(autoRenewAfter, autoRenewBefore, "autoRenewWithdrawalLock not preserved");
-        assertEq(
-            currentInvestmentVaultImplAfter,
-            currentInvestmentVaultImplBefore,
-            "currentImplementationOfInvestmentVault not preserved"
-        );
-        assertEq(
-            currentFixedProfitPercentAfter, currentFixedProfitPercentBefore, "currentFixedProfitPercent not preserved"
-        );
-        assertEq(
-            proposedFixedProfitPercentAfter,
-            proposedFixedProfitPercentBefore,
-            "proposedFixedProfitPercent not preserved"
-        );
-        assertEq(proposedOracleAfter, proposedOracleBefore, "proposedOracle not preserved");
-        assertEq(investorCanceledOracleAfter, investorCanceledOracleBefore, "investorCanceledOracle not preserved");
-        assertEq(adminCanceledOracleAfter, adminCanceledOracleBefore, "adminCanceledOracle not preserved");
-        assertEq(pauserListAfter, pauserListBefore, "pauserList not preserved");
-        assertEq(oracleAfter, oracleBefore, "oracle not preserved");
-        assertEq(uint8(profitTypeAfter), uint8(profitTypeBefore), "profitType not preserved");
-
-        assertEq(
-            tokenMIAvailableByInvestorAfter,
-            tokenMIAvailableByInvestorBefore,
-            "tokenMI availability by investor not preserved"
-        );
-        assertEq(
-            tokenMIAvailableByAdminAfter, tokenMIAvailableByAdminBefore, "tokenMI availability by admin not preserved"
-        );
-        assertEq(
-            routerAvailableByInvestorAfter,
-            routerAvailableByInvestorBefore,
-            "router availability by investor not preserved"
-        );
-        assertEq(
-            routerAvailableByAdminAfter, routerAvailableByAdminBefore, "router availability by admin not preserved"
-        );
-        assertEq(lockPeriodAvailableAfter, lockPeriodAvailableBefore, "lock period availability not preserved");
-        assertEq(factoryAfter, address(factory), "factory not set");
+            assertEq(
+                tokenMIAvailableByInvestorAfter,
+                _mvTokenMIAvailableByInvestorBefore,
+                "tokenMI availability by investor not preserved"
+            );
+            assertEq(
+                tokenMIAvailableByAdminAfter, _mvTokenMIAvailableByAdminBefore, "tokenMI availability by admin not preserved"
+            );
+            assertEq(
+                routerAvailableByInvestorAfter,
+                _mvRouterAvailableByInvestorBefore,
+                "router availability by investor not preserved"
+            );
+            assertEq(
+                routerAvailableByAdminAfter, _mvRouterAvailableByAdminBefore, "router availability by admin not preserved"
+            );
+            assertEq(lockPeriodAvailableAfter, _mvLockPeriodAvailableBefore, "lock period availability not preserved");
+            assertEq(factoryAfter, address(factory), "factory not set");
+        }
 
         console.log("=== MainVault state migration test PASSED ===");
     }
@@ -478,141 +547,159 @@ contract StateMigrationTest is Test {
         investmentVaultProxy = new ERC1967Proxy(address(investmentVaultV1Impl), invInitData);
         investmentVaultV1 = InvestmentVaultV1(address(investmentVaultProxy));
 
-        // Capture state before upgrade
-        address mainVaultBefore = address(investmentVaultV1.mainVault());
-        (
-            IERC20 tokenMIBefore,
-            IERC20 tokenMVBefore,
-            uint256 initDepositBefore,
-            uint256 mvBoughtBefore,
-            uint256 shareMIBefore,
-            uint256 depositInMvBefore,
-            uint256 timestampBefore,
-            DataTypesV1.ProfitType profitTypeBefore,
-            uint256 stepBefore,,
-        ) = investmentVaultV1.tokenData();
+        // Capture state before upgrade - using storage variables to avoid stack too deep
+        {
+            _mainVaultBefore = address(investmentVaultV1.mainVault());
+            (
+                IERC20 tokenMIBefore,
+                IERC20 tokenMVBefore,
+                uint256 initDeposit,
+                uint256 mvBought,
+                uint256 shareMI,
+                uint256 depositInMv,
+                uint256 timestamp,
+                DataTypesV1.ProfitType profitTypeEnum,
+                uint256 step,,
+            ) = investmentVaultV1.tokenData();
+            _tokenMIAddrBefore = address(tokenMIBefore);
+            _tokenMVAddrBefore = address(tokenMVBefore);
+            _initDepositBefore = initDeposit;
+            _mvBoughtBefore = mvBought;
+            _shareMIBefore = shareMI;
+            _depositInMvBefore = depositInMv;
+            _timestampBefore = timestamp;
+            _profitTypeBefore = uint8(profitTypeEnum);
+            _stepBefore = step;
 
-        (
-            uint256 profitMVBefore,
-            uint256 earntProfitInvestorBefore,
-            uint256 earntProfitFeeBefore,
-            uint256 earntProfitTotalBefore,
-            uint256 withdrawnProfitInvestorBefore,
-            uint256 withdrawnProfitFeeBefore
-        ) = investmentVaultV1.profitData();
+            (
+                uint256 profitMV,
+                uint256 earntProfitInvestor,
+                uint256 earntProfitFee,
+                uint256 earntProfitTotal,
+                uint256 withdrawnProfitInvestor,
+                uint256 withdrawnProfitFee
+            ) = investmentVaultV1.profitData();
+            _profitMVBefore = profitMV;
+            _earntProfitInvestorBefore = earntProfitInvestor;
+            _earntProfitFeeBefore = earntProfitFee;
+            _earntProfitTotalBefore = earntProfitTotal;
+            _withdrawnProfitInvestorBefore = withdrawnProfitInvestor;
+            _withdrawnProfitFeeBefore = withdrawnProfitFee;
 
-        (bool closedBefore, uint256 assetsDataLengthBefore,, DataTypesV1.SwapInitState swapInitStateBefore) =
-            investmentVaultV1.vaultState();
+            (bool closed, uint256 assetsDataLength,, DataTypesV1.SwapInitState swapInitStateEnum) =
+                investmentVaultV1.vaultState();
+            _closedBefore = closed;
+            _assetsDataLengthBefore = assetsDataLength;
+            _swapInitStateBefore = uint8(swapInitStateEnum);
 
-        // Get asset data
-        (uint256 asset1ShareBefore, uint256 asset1StepBefore, DataTypesV1.Strategy asset1StrategyBefore,,,,,,) =
-            investmentVaultV1.assetsData(IERC20(address(tokenAsset1)));
-
-        console.log("State before upgrade captured");
-        console.log("Init deposit:", initDepositBefore);
-        console.log("Assets count:", assetsDataLengthBefore);
+            // Get asset data
+            (uint256 asset1Share, uint256 asset1Step, DataTypesV1.Strategy asset1StrategyEnum,,,,,,) =
+                investmentVaultV1.assetsData(IERC20(address(tokenAsset1)));
+            _asset1ShareBefore = asset1Share;
+            _asset1StepBefore = asset1Step;
+            _asset1StrategyBefore = uint8(asset1StrategyEnum);
+        }
 
         // Verify non-zero values
-        assertTrue(address(tokenMIBefore) != address(0), "tokenMI is zero");
-        assertTrue(address(tokenMVBefore) != address(0), "tokenMV is zero");
-        assertTrue(initDepositBefore > 0, "initDeposit is zero");
-        assertTrue(shareMIBefore > 0, "shareMI is zero");
-        assertTrue(timestampBefore > 0, "timestamp is zero");
-        assertTrue(stepBefore > 0, "step is zero");
-        assertTrue(assetsDataLengthBefore > 0, "assetsDataLength is zero");
-        assertTrue(asset1ShareBefore > 0, "asset1 share is zero");
-        assertTrue(asset1StepBefore > 0, "asset1 step is zero");
+        {
+            assertTrue(_tokenMIAddrBefore != address(0), "tokenMI is zero");
+            assertTrue(_tokenMVAddrBefore != address(0), "tokenMV is zero");
+            assertTrue(_initDepositBefore > 0, "initDeposit is zero");
+            assertTrue(_shareMIBefore > 0, "shareMI is zero");
+            assertTrue(_timestampBefore > 0, "timestamp is zero");
+            assertTrue(_stepBefore > 0, "step is zero");
+            assertTrue(_assetsDataLengthBefore > 0, "assetsDataLength is zero");
+            assertTrue(_asset1ShareBefore > 0, "asset1 share is zero");
+            assertTrue(_asset1StepBefore > 0, "asset1 step is zero");
+        }
 
         // Perform upgrade
-        // First, we need to set currentImplementationOfInvestmentVault in mainVault to V2
-        // Using direct storage manipulation like we did for MainVault
+        {
+            // Get implementation slot for InvestmentVault proxy
+            bytes32 IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
-        // Get implementation slot for InvestmentVault proxy
-        bytes32 IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+            // Set the currentImplementationOfInvestmentVault in mainVaultV1 to investmentVaultV2Impl
+            // This field is at a specific storage slot in MainVault
+            // We need to find the slot for currentImplementationOfInvestmentVault
+            // It's slot 6 in MainVault storage layout (after mappings)
+            vm.store(
+                address(mainVaultProxy),
+                bytes32(uint256(6)), // Slot for currentImplementationOfInvestmentVault
+                bytes32(uint256(uint160(address(investmentVaultV2Impl))))
+            );
 
-        // Set the currentImplementationOfInvestmentVault in mainVaultV1 to investmentVaultV2Impl
-        // This field is at a specific storage slot in MainVault
-        // We need to find the slot for currentImplementationOfInvestmentVault
-        // It's slot 6 in MainVault storage layout (after mappings)
-        vm.store(
-            address(mainVaultProxy),
-            bytes32(uint256(6)), // Slot for currentImplementationOfInvestmentVault
-            bytes32(uint256(uint160(address(investmentVaultV2Impl))))
-        );
+            // Now directly change the implementation of InvestmentVault proxy
+            vm.store(
+                address(investmentVaultProxy),
+                IMPLEMENTATION_SLOT,
+                bytes32(uint256(uint160(address(investmentVaultV2Impl))))
+            );
+        }
 
-        // Now directly change the implementation of InvestmentVault proxy
-        vm.store(
-            address(investmentVaultProxy),
-            IMPLEMENTATION_SLOT,
-            bytes32(uint256(uint160(address(investmentVaultV2Impl))))
-        );
-
-        console.log("Upgrade completed");
-
-        // Wrap with V2 interface
+        // Wrap with V2 interface and capture state after upgrade
         InvestmentVault investmentVaultV2 = InvestmentVault(address(investmentVaultProxy));
 
-        // Verify state after upgrade
-        address mainVaultAfter = address(investmentVaultV2.mainVault());
-        (
-            IERC20 tokenMIAfter,
-            IERC20 tokenMVAfter,
-            uint256 capitalOfMiAfter,
-            uint256 mvBoughtAfter,
-            uint256 shareMVAfter,
-            uint256 depositInMvAfter,
-            uint256 timestampAfter,
-            DataTypes.ProfitType profitTypeAfter,
-            uint256 stepAfter,,
-        ) = investmentVaultV2.tokenData();
+        // Assert state preserved - check values immediately after reading to minimize stack usage
+        {
+            address mainVaultAfter = address(investmentVaultV2.mainVault());
+            assertEq(mainVaultAfter, _mainVaultBefore, "mainVault not preserved");
+        }
 
-        (
-            uint256 profitMVAfter,
-            uint256 earntProfitInvestorAfter,
-            uint256 earntProfitFeeAfter,
-            uint256 earntProfitTotalAfter,
-            uint256 withdrawnProfitInvestorAfter,
-            uint256 withdrawnProfitFeeAfter
-        ) = investmentVaultV2.profitData();
+        {
+            (
+                IERC20 tokenMIAfter,
+                IERC20 tokenMVAfter,
+                uint256 capitalOfMiAfter,
+                uint256 mvBoughtAfter,
+                uint256 shareMVAfter,
+                uint256 depositInMvAfter,
+                uint256 timestampAfter,
+                DataTypes.ProfitType profitTypeAfterEnum,
+                uint256 stepAfter,,
+            ) = investmentVaultV2.tokenData();
+            assertEq(address(tokenMIAfter), _tokenMIAddrBefore, "tokenMI not preserved");
+            assertEq(address(tokenMVAfter), _tokenMVAddrBefore, "tokenMV not preserved");
+            assertEq(capitalOfMiAfter, _initDepositBefore, "capitalOfMi/initDeposit not preserved");
+            assertEq(mvBoughtAfter, _mvBoughtBefore, "mvBought not preserved");
+            assertEq(shareMVAfter, _shareMIBefore, "shareMV/shareMI not preserved");
+            assertEq(depositInMvAfter, _depositInMvBefore, "depositInMv not preserved");
+            assertEq(timestampAfter, _timestampBefore, "timestamp not preserved");
+            assertEq(uint8(profitTypeAfterEnum), _profitTypeBefore, "profitType not preserved");
+            assertEq(stepAfter, _stepBefore, "step not preserved");
+        }
 
-        (bool closedAfter, uint256 assetsDataLengthAfter,, DataTypes.SwapInitState swapInitStateAfter) =
-            investmentVaultV2.vaultState();
+        {
+            (
+                uint256 profitMVAfter,
+                uint256 earntProfitInvestorAfter,
+                uint256 earntProfitFeeAfter,
+                uint256 earntProfitTotalAfter,
+                uint256 withdrawnProfitInvestorAfter,
+                uint256 withdrawnProfitFeeAfter
+            ) = investmentVaultV2.profitData();
+            assertEq(profitMVAfter, _profitMVBefore, "profitMV not preserved");
+            assertEq(earntProfitInvestorAfter, _earntProfitInvestorBefore, "earntProfitInvestor not preserved");
+            assertEq(earntProfitFeeAfter, _earntProfitFeeBefore, "earntProfitFee not preserved");
+            assertEq(earntProfitTotalAfter, _earntProfitTotalBefore, "earntProfitTotal not preserved");
+            assertEq(withdrawnProfitInvestorAfter, _withdrawnProfitInvestorBefore, "withdrawnProfitInvestor not preserved");
+            assertEq(withdrawnProfitFeeAfter, _withdrawnProfitFeeBefore, "withdrawnProfitFee not preserved");
+        }
 
-        (uint256 asset1ShareAfter, uint256 asset1StepAfter, DataTypes.Strategy asset1StrategyAfter,,,,,,) =
-            investmentVaultV2.assetsData(IERC20(address(tokenAsset1)));
+        {
+            (bool closedAfter, uint256 assetsDataLengthAfter,, DataTypes.SwapInitState swapInitStateAfterEnum) =
+                investmentVaultV2.vaultState();
+            assertEq(closedAfter, _closedBefore, "closed not preserved");
+            assertEq(assetsDataLengthAfter, _assetsDataLengthBefore, "assetsDataLength not preserved");
+            assertEq(uint8(swapInitStateAfterEnum), _swapInitStateBefore, "swapInitState not preserved");
+        }
 
-        console.log("State after upgrade:");
-        console.log("Capital of MI:", capitalOfMiAfter);
-        console.log("Assets count:", assetsDataLengthAfter);
-
-        // Assert state preserved
-        assertEq(mainVaultAfter, mainVaultBefore, "mainVault not preserved");
-        assertEq(address(tokenMIAfter), address(tokenMIBefore), "tokenMI not preserved");
-        assertEq(address(tokenMVAfter), address(tokenMVBefore), "tokenMV not preserved");
-        assertEq(capitalOfMiAfter, initDepositBefore, "capitalOfMi/initDeposit not preserved");
-        assertEq(mvBoughtAfter, mvBoughtBefore, "mvBought not preserved");
-        assertEq(shareMVAfter, shareMIBefore, "shareMV/shareMI not preserved");
-        assertEq(depositInMvAfter, depositInMvBefore, "depositInMv not preserved");
-        assertEq(timestampAfter, timestampBefore, "timestamp not preserved");
-        assertEq(uint8(profitTypeAfter), uint8(profitTypeBefore), "profitType not preserved");
-        assertEq(stepAfter, stepBefore, "step not preserved");
-
-        assertEq(profitMVAfter, profitMVBefore, "profitMV not preserved");
-        assertEq(earntProfitInvestorAfter, earntProfitInvestorBefore, "earntProfitInvestor not preserved");
-        assertEq(earntProfitFeeAfter, earntProfitFeeBefore, "earntProfitFee not preserved");
-        assertEq(earntProfitTotalAfter, earntProfitTotalBefore, "earntProfitTotal not preserved");
-        assertEq(withdrawnProfitInvestorAfter, withdrawnProfitInvestorBefore, "withdrawnProfitInvestor not preserved");
-        assertEq(withdrawnProfitFeeAfter, withdrawnProfitFeeBefore, "withdrawnProfitFee not preserved");
-
-        assertEq(closedAfter, closedBefore, "closed not preserved");
-        assertEq(assetsDataLengthAfter, assetsDataLengthBefore, "assetsDataLength not preserved");
-        assertEq(uint8(swapInitStateAfter), uint8(swapInitStateBefore), "swapInitState not preserved");
-
-        assertEq(asset1ShareAfter, asset1ShareBefore, "asset1 share not preserved");
-        assertEq(asset1StepAfter, asset1StepBefore, "asset1 step not preserved");
-        assertEq(uint8(asset1StrategyAfter), uint8(asset1StrategyBefore), "asset1 strategy not preserved");
-
-        console.log("=== InvestmentVault state migration test PASSED ===");
+        {
+            (uint256 asset1ShareAfter, uint256 asset1StepAfter, DataTypes.Strategy asset1StrategyAfterEnum,,,,,,) =
+                investmentVaultV2.assetsData(IERC20(address(tokenAsset1)));
+            assertEq(asset1ShareAfter, _asset1ShareBefore, "asset1 share not preserved");
+            assertEq(asset1StepAfter, _asset1StepBefore, "asset1 step not preserved");
+            assertEq(uint8(asset1StrategyAfterEnum), _asset1StrategyBefore, "asset1 strategy not preserved");
+        }
     }
 }
 
