@@ -22,9 +22,16 @@ contract ReturnTemporaryWallet is Ownable {
     error RecipientAddressLocked();
     error ZeroAddressNotAllowed();
     error RecipientNotSet();
+    error NotAuthorized();
 
     // Recipient address
     address public recipient;
+
+    // Modifier to allow only owner or recipient to call functions
+    modifier onlyOwnerOrRecipient() {
+        require(msg.sender == owner() || msg.sender == recipient, NotAuthorized());
+        _;
+    }
 
     // Flag that prevents changing recipient after it's been set
     bool public recipientLocked;
@@ -53,7 +60,7 @@ contract ReturnTemporaryWallet is Ownable {
     /// @notice Transfers tokens from this contract to the recipient address
     /// @param token The token contract address
     /// @param amount The amount of tokens to transfer
-    function transferToken(address token, uint256 amount) external onlyOwner {
+    function transferToken(address token, uint256 amount) external onlyOwnerOrRecipient {
         require(recipient != address(0), RecipientNotSet());
         require(token != address(0), ZeroAddressNotAllowed());
         IERC20(token).safeTransfer(recipient, amount);

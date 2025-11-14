@@ -172,14 +172,46 @@ contract ReturnTemporaryWalletTest is Test {
         vm.stopPrank();
 
         vm.startPrank(nonOwner);
-        vm.expectRevert();
+        vm.expectRevert(ReturnTemporaryWallet.NotAuthorized.selector);
         wallet.transferToken(address(token), TRANSFER_AMOUNT);
         vm.stopPrank();
+    }
+
+    function test_TransferToken_Success_WhenCalledByRecipient() public {
+        // Set recipient first
+        vm.startPrank(owner);
+        wallet.setRecipient(recipient);
+        vm.stopPrank();
+
+        uint256 initialRecipientBalance = token.balanceOf(recipient);
+        uint256 initialWalletBalance = token.balanceOf(address(wallet));
+
+        // Call transferToken as recipient
+        vm.startPrank(recipient);
+        wallet.transferToken(address(token), TRANSFER_AMOUNT);
+        vm.stopPrank();
+
+        assertEq(
+            token.balanceOf(recipient), initialRecipientBalance + TRANSFER_AMOUNT, "Recipient should receive tokens"
+        );
+        assertEq(
+            token.balanceOf(address(wallet)),
+            initialWalletBalance - TRANSFER_AMOUNT,
+            "Wallet should have tokens deducted"
+        );
     }
 
     function test_TransferToken_RevertWhenRecipientNotSet() public {
         vm.startPrank(owner);
         vm.expectRevert(ReturnTemporaryWallet.RecipientNotSet.selector);
+        wallet.transferToken(address(token), TRANSFER_AMOUNT);
+        vm.stopPrank();
+    }
+
+    function test_TransferToken_RevertWhenRecipientNotSet_AndCalledByRecipient() public {
+        // Try to call transferToken as recipient before recipient is set
+        vm.startPrank(recipient);
+        vm.expectRevert(ReturnTemporaryWallet.NotAuthorized.selector);
         wallet.transferToken(address(token), TRANSFER_AMOUNT);
         vm.stopPrank();
     }
