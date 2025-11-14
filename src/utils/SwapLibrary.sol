@@ -10,6 +10,7 @@
 pragma solidity ^0.8.29;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IUniswapV2Router02} from "../interfaces/IUniswapV2Router02.sol";
 import {ISwapRouter} from "../interfaces/ISwapRouter.sol";
@@ -334,38 +335,29 @@ library SwapLibrary {
             return;
         }
 
-        // Skip validation if no entry point price is set (first time initialization)
-        if (tokenData.lastBuyPrice == 0) {
-            return;
-        }
-
-        // Get price oracle from MainVault
         IMeraPriceOracle oracle = mainVault.meraPriceOracle();
 
-        // Prepare array of assets for oracle query [MI, MV]
         address[] memory assets = new address[](2);
         assets[0] = address(tokenData.tokenMI);
         assets[1] = address(tokenData.tokenMV);
 
-        // Get price data from oracle
         IMeraPriceOracle.AssetPriceData[] memory priceData = oracle.getAssetsPriceData(assets);
 
-        // Calculate current MV price in MI terms (MI per MV) with 18 decimals
         uint256 currentMvPrice =
             (priceData[1].price * (10 ** (18 + priceData[0].decimals - priceData[1].decimals))) / priceData[0].price;
 
-        // Calculate price decline percentage (scaled to 1e18)
+        uint8 decimalsMi = IERC20Metadata(address(tokenData.tokenMI)).decimals();
+        uint8 decimalsMv = IERC20Metadata(address(tokenData.tokenMV)).decimals();
+        uint256 averagePriceMv = (uint256(tokenData.depositInMv) * (10 ** (18 + decimalsMi - decimalsMv))) / tokenData.mvBought;
+
         uint256 priceDecline;
-        if (currentMvPrice >= tokenData.lastBuyPrice) {
-            // Price hasn't declined, allow initialization
+        if (currentMvPrice >= averagePriceMv) {
             return;
         } else {
-            // Calculate decline percentage
             priceDecline =
-                ((tokenData.lastBuyPrice - currentMvPrice) * Constants.SHARE_DENOMINATOR) / tokenData.lastBuyPrice;
+                ((averagePriceMv - currentMvPrice) * Constants.SHARE_DENOMINATOR) / averagePriceMv;
         }
 
-        // Check if decline is within allowed range (0.5%)
         require(priceDecline <= Constants.MAX_MV_PRICE_DECLINE_FROM_ENTRY, MvPriceDeclinedTooMuch());
     }
 
@@ -451,9 +443,7 @@ library SwapLibrary {
         DataTypes.AssetData storage assetData = assetsData[swapParams.toToken];
         require(assetData.tokenBought > 0 && assetData.deposit > 0, PositionNotOpened());
 
-        if (tokenData.lastBuyPrice > 0) {
-            _validateMvPriceFromEntryPoint(tokenData, mainVault);
-        }
+        _validateMvPriceFromEntryPoint(tokenData, mainVault);
 
         // Calculate the average price before this swap (MV/Asset)
         uint256 averagePriceBefore = (uint256(assetData.deposit) * Constants.SHARE_DENOMINATOR) / assetData.tokenBought;
