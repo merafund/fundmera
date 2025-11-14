@@ -48,7 +48,6 @@ contract AgentDistributionProfitTest is Test {
     uint256 public constant DISTRIBUTION_AMOUNT = 1000 * 10 ** 18;
 
     event FundWalletSet(address sender, address newFundWallet);
-    event MeraCapitalWalletSet(address sender, address newMeraCapitalWallet);
 
     function setUp() public {
         vm.startPrank(owner);
@@ -320,51 +319,6 @@ contract AgentDistributionProfitTest is Test {
         vm.stopPrank();
     }
 
-    function testSetMeraCapitalWallet() public {
-        address newMeraWallet = address(123);
-
-        vm.startPrank(admin);
-
-        vm.expectEmit(true, true, false, true);
-        emit MeraCapitalWalletSet(admin, newMeraWallet);
-        profitDistributor.setMeraCapitalWallet(newMeraWallet);
-
-        assertEq(profitDistributor.meraCapitalWallet(), newMeraWallet, "Mera Capital wallet should be updated");
-
-        vm.stopPrank();
-    }
-
-    function testSetMeraCapitalWallet_ZeroAddress() public {
-        vm.startPrank(admin);
-
-        vm.expectRevert(IAgentDistributionProfit.ZeroAddress.selector);
-        profitDistributor.setMeraCapitalWallet(address(0));
-
-        vm.stopPrank();
-    }
-
-    function testSetMeraCapitalWallet_OnlyAdmin() public {
-        address newMeraWallet = address(123);
-
-        // Try with non-admin addresses
-        vm.startPrank(user1);
-        vm.expectRevert();
-        profitDistributor.setMeraCapitalWallet(newMeraWallet);
-        vm.stopPrank();
-
-        vm.startPrank(mainAgent);
-        vm.expectRevert();
-        profitDistributor.setMeraCapitalWallet(newMeraWallet);
-        vm.stopPrank();
-
-        // Should work with admin
-        vm.startPrank(admin);
-        profitDistributor.setMeraCapitalWallet(newMeraWallet);
-        assertEq(
-            profitDistributor.meraCapitalWallet(), newMeraWallet, "Admin should be able to set Mera Capital wallet"
-        );
-        vm.stopPrank();
-    }
 
     function testSetFundWallet_UpdateExisting() public {
         address firstWallet = address(123);
@@ -383,22 +337,6 @@ contract AgentDistributionProfitTest is Test {
         vm.stopPrank();
     }
 
-    function testSetMeraCapitalWallet_UpdateExisting() public {
-        address firstWallet = address(123);
-        address secondWallet = address(456);
-
-        vm.startPrank(admin);
-
-        // Set first wallet
-        profitDistributor.setMeraCapitalWallet(firstWallet);
-        assertEq(profitDistributor.meraCapitalWallet(), firstWallet, "First wallet should be set");
-
-        // Set second wallet
-        profitDistributor.setMeraCapitalWallet(secondWallet);
-        assertEq(profitDistributor.meraCapitalWallet(), secondWallet, "Second wallet should be set");
-
-        vm.stopPrank();
-    }
 
     function testGrantRole_RevokeRoleFails() public {
         // Deploy mock contract that always returns false for _revokeRole
@@ -545,13 +483,4 @@ contract AgentDistributionProfitTest is Test {
         vm.stopPrank();
     }
 
-    function testSetMeraCapitalWallet_Unauthorized() public {
-        vm.startPrank(user1); // Non-admin user
-
-        address newMeraWallet = address(123);
-        vm.expectRevert();
-        profitDistributor.setMeraCapitalWallet(newMeraWallet);
-
-        vm.stopPrank();
-    }
 }

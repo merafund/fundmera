@@ -132,11 +132,4 @@ contract AgentDistributionProfit is IAgentDistributionProfit, MultiAdminSingleHo
         fundWallet = _fundWallet;
         emit FundWalletSet(msg.sender, _fundWallet);
     }
-
-    ///@inheritdoc IAgentDistributionProfit
-    function setMeraCapitalWallet(address _meraCapitalWallet) external onlyRole(ADMIN_ROLE) {
-        require(_meraCapitalWallet != address(0), ZeroAddress());
-        meraCapitalWallet = _meraCapitalWallet;
-        emit MeraCapitalWalletSet(msg.sender, _meraCapitalWallet);
-    }
 }

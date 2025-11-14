@@ -20,7 +20,6 @@ interface IAgentDistributionProfit {
 
     // Events
     event FundWalletSet(address sender, address newFundWallet);
-    event MeraCapitalWalletSet(address sender, address newMeraCapitalWallet);
 
     // Distributes profit among the specified tokens.
     // Requirements:
@@ -37,9 +36,4 @@ interface IAgentDistributionProfit {
     // Requirements:
     // - `_fundWallet` cannot be the zero address.
     function setFundWallet(address _fundWallet) external;
-
-    // Sets the Mera Capital wallet address.
-    // Requirements:
-    // - `_meraCapitalWallet` cannot be the zero address.
-    function setMeraCapitalWallet(address _meraCapitalWallet) external;
 }
