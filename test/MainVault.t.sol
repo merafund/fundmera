@@ -1337,7 +1337,7 @@ contract MainVaultTest is Test {
 
         // Investor cannot approve different implementation
         vm.prank(mainInvestor);
-        vm.expectRevert("Implementation must match factory");
+        vm.expectRevert(MainVault.InvestmentVaultImplementationMismatch.selector);
         vault.approveInvestorVaultUpgrade(implementation2);
     }
 
@@ -1911,7 +1911,7 @@ contract MainVaultTest is Test {
 
         // Investor cannot approve different implementation (without first approving)
         vm.prank(mainInvestor);
-        vm.expectRevert("Implementation must match factory");
+        vm.expectRevert(MainVault.MainVaultImplementationMismatch.selector);
         vault.approveMainVaultUpgrade(implementation2);
 
         // Only admin can upgrade to approved implementation

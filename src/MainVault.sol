@@ -68,6 +68,8 @@ contract MainVault is
     error InvestmentVaultNotAvailableForWithdraw();
     error WithdrawTimeNotReached();
     error CurrentFactoryMustBeZero();
+    error MainVaultImplementationMismatch();
+    error InvestmentVaultImplementationMismatch();
     // Role definitions
     // Each role is represented by a unique bytes32 value computed from the role name
 
@@ -238,7 +240,7 @@ contract MainVault is
     /// @inheritdoc IMainVault
     function approveMainVaultUpgrade(address newImplementation) external onlyRole(MAIN_INVESTOR_ROLE) {
         require(newImplementation != address(0), InvalidUpgradeAddress());
-        require(newImplementation == factory.mainVaultImplementation(), "Implementation must match factory");
+        require(newImplementation == factory.mainVaultImplementation(), MainVaultImplementationMismatch());
 
         investorApprovedMainVaultImpl = newImplementation;
         investorApprovedMainVaultTimestamp = uint64(block.timestamp);
@@ -248,7 +250,7 @@ contract MainVault is
     /// @inheritdoc IMainVault
     function approveInvestorVaultUpgrade(address newImplementation) external onlyRole(MAIN_INVESTOR_ROLE) {
         require(newImplementation != address(0), InvalidUpgradeAddress());
-        require(newImplementation == factory.investmentVaultImplementation(), "Implementation must match factory");
+        require(newImplementation == factory.investmentVaultImplementation(), InvestmentVaultImplementationMismatch());
 
         investorApprovedInvestorVaultImpl = newImplementation;
         investorApprovedInvestorVaultTimestamp = uint64(block.timestamp);
