@@ -20,20 +20,8 @@ abstract contract MultiAdminSingleHolderAccessControl is Context, IMultiAdminSin
         mapping(bytes32 => bool) adminRole; // Multiple admin roles can control this role
     }
 
-    /// @custom:storage-location erc7201:openzeppelin.storage.AccessControl
-    struct AccessControlStorage {
-        mapping(bytes32 role => RoleData) _roles;
-        mapping(address account => bytes32[] roles) _accountRoles;
-    }
-
-    bytes32 private constant AccessControlStorageLocation =
-        0xdbadc8f809858f78abc0d8ad2d539141b11227e3823afc1897c7978d63569f00; //keccak256(abi.encode(uint256(keccak256("merafund.storage.MultiAdminSingleHolderAccessControl")) - 1)) & ~bytes32(uint256(0xff));
-
-    function _getAccessControlStorage() private pure returns (AccessControlStorage storage $) {
-        assembly {
-            $.slot := AccessControlStorageLocation
-        }
-    }
+    mapping(bytes32 role => RoleData) private _roles;
+    mapping(address account => bytes32[] roles) private _accountRoles;
 
     /**
      * @dev Modifier that checks that an account has a specific role. Reverts
@@ -57,8 +45,7 @@ abstract contract MultiAdminSingleHolderAccessControl is Context, IMultiAdminSin
      * @dev Returns `true` if `account` has been granted `role`.
      */
     function hasRole(bytes32 role, address account) public view virtual returns (bool) {
-        AccessControlStorage storage $ = _getAccessControlStorage();
-        return $._roles[role].roleHolder == account;
+        return _roles[role].roleHolder == account;
     }
 
     /**
@@ -66,8 +53,7 @@ abstract contract MultiAdminSingleHolderAccessControl is Context, IMultiAdminSin
      * Returns address(0) if no one holds the role.
      */
     function getRoleHolder(bytes32 role) public view virtual returns (address) {
-        AccessControlStorage storage $ = _getAccessControlStorage();
-        return $._roles[role].roleHolder;
+        return _roles[role].roleHolder;
     }
 
     /**
@@ -92,8 +78,7 @@ abstract contract MultiAdminSingleHolderAccessControl is Context, IMultiAdminSin
      * @dev Returns true if adminRole can control role
      */
     function isRoleAdmin(bytes32 role, bytes32 adminRole) public view virtual returns (bool) {
-        AccessControlStorage storage $ = _getAccessControlStorage();
-        return $._roles[role].adminRole[adminRole];
+        return _roles[role].adminRole[adminRole];
     }
 
     /**
@@ -118,11 +103,10 @@ abstract contract MultiAdminSingleHolderAccessControl is Context, IMultiAdminSin
      * @dev Internal function to check if caller has admin rights for the role
      */
     function _checkRoleAdmin(bytes32 role) internal view virtual {
-        AccessControlStorage storage $ = _getAccessControlStorage();
-        bytes32[] memory userRoles = $._accountRoles[_msgSender()];
+        bytes32[] memory userRoles = _accountRoles[_msgSender()];
         // Check if caller has DEFAULT_ADMIN_ROLE and it's set as admin for this role
         for (uint256 i = 0; i < userRoles.length; i++) {
-            if ($._roles[role].adminRole[userRoles[i]]) {
+            if (_roles[role].adminRole[userRoles[i]]) {
                 return;
             }
         }
@@ -139,8 +123,7 @@ abstract contract MultiAdminSingleHolderAccessControl is Context, IMultiAdminSin
      * Emits a {RoleAdminAdded} event.
      */
     function _setRoleAdmin(bytes32 role, bytes32 adminRole) internal virtual {
-        AccessControlStorage storage $ = _getAccessControlStorage();
-        $._roles[role].adminRole[adminRole] = true;
+        _roles[role].adminRole[adminRole] = true;
         emit RoleAdminAdded(role, adminRole);
     }
 
@@ -150,8 +133,7 @@ abstract contract MultiAdminSingleHolderAccessControl is Context, IMultiAdminSin
      * Emits a {RoleAdminRemoved} event.
      */
     function _removeRoleAdmin(bytes32 role, bytes32 adminRole) internal virtual {
-        AccessControlStorage storage $ = _getAccessControlStorage();
-        $._roles[role].adminRole[adminRole] = false;
+        _roles[role].adminRole[adminRole] = false;
         emit RoleAdminRemoved(role, adminRole);
     }
 
@@ -164,8 +146,7 @@ abstract contract MultiAdminSingleHolderAccessControl is Context, IMultiAdminSin
      * May emit {RoleRevoked} and {RoleGranted} events.
      */
     function _grantRole(bytes32 role, address account) internal virtual returns (bool) {
-        AccessControlStorage storage $ = _getAccessControlStorage();
-        address currentHolder = $._roles[role].roleHolder;
+        address currentHolder = _roles[role].roleHolder;
 
         // If role is already held by the same account, do nothing
         if (currentHolder == account) {
@@ -174,12 +155,12 @@ abstract contract MultiAdminSingleHolderAccessControl is Context, IMultiAdminSin
 
         // Revoke from current holder if exists
         if (currentHolder != address(0)) {
-            $._roles[role].roleHolder = address(0);
-            for (uint256 i = 0; i < $._accountRoles[currentHolder].length; i++) {
-                if ($._accountRoles[currentHolder][i] == role) {
-                    $._accountRoles[currentHolder][i] =
-                        $._accountRoles[currentHolder][$._accountRoles[currentHolder].length - 1];
-                    $._accountRoles[currentHolder].pop();
+            _roles[role].roleHolder = address(0);
+            for (uint256 i = 0; i < _accountRoles[currentHolder].length; i++) {
+                if (_accountRoles[currentHolder][i] == role) {
+                    _accountRoles[currentHolder][i] =
+                        _accountRoles[currentHolder][_accountRoles[currentHolder].length - 1];
+                    _accountRoles[currentHolder].pop();
                     break;
                 }
             }
@@ -187,8 +168,8 @@ abstract contract MultiAdminSingleHolderAccessControl is Context, IMultiAdminSin
         }
 
         // Grant to new account
-        $._roles[role].roleHolder = account;
-        $._accountRoles[account].push(role);
+        _roles[role].roleHolder = account;
+        _accountRoles[account].push(role);
         emit RoleGranted(role, account, _msgSender());
         return true;
     }
@@ -201,13 +182,12 @@ abstract contract MultiAdminSingleHolderAccessControl is Context, IMultiAdminSin
      * May emit a {RoleRevoked} event.
      */
     function _revokeRole(bytes32 role, address account) internal virtual returns (bool) {
-        AccessControlStorage storage $ = _getAccessControlStorage();
-        if ($._roles[role].roleHolder == account) {
-            $._roles[role].roleHolder = address(0);
-            for (uint256 i = 0; i < $._accountRoles[account].length; i++) {
-                if ($._accountRoles[account][i] == role) {
-                    $._accountRoles[account][i] = $._accountRoles[account][$._accountRoles[account].length - 1];
-                    $._accountRoles[account].pop();
+        if (_roles[role].roleHolder == account) {
+            _roles[role].roleHolder = address(0);
+            for (uint256 i = 0; i < _accountRoles[account].length; i++) {
+                if (_accountRoles[account][i] == role) {
+                    _accountRoles[account][i] = _accountRoles[account][_accountRoles[account].length - 1];
+                    _accountRoles[account].pop();
                     break;
                 }
             }

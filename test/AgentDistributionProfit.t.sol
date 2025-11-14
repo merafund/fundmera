@@ -319,7 +319,6 @@ contract AgentDistributionProfitTest is Test {
         vm.stopPrank();
     }
 
-
     function testSetFundWallet_UpdateExisting() public {
         address firstWallet = address(123);
         address secondWallet = address(456);
@@ -336,7 +335,6 @@ contract AgentDistributionProfitTest is Test {
 
         vm.stopPrank();
     }
-
 
     function testGrantRole_RevokeRoleFails() public {
         // Deploy mock contract that always returns false for _revokeRole
@@ -482,5 +480,4 @@ contract AgentDistributionProfitTest is Test {
 
         vm.stopPrank();
     }
-
 }
