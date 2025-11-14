@@ -108,8 +108,7 @@ interface IFactory {
 
     /// @notice Updates fund wallet for all future AgentDistribution contracts
     /// @param _fundWallet The new fund wallet address
-    /// @param _meraCapitalWallet The new Mera Capital wallet address
-    function updateFundWallets(address _fundWallet, address _meraCapitalWallet) external;
+    function updateFundWallets(address _fundWallet) external;
 
     /// @notice Gets the AgentDistribution contract address for a referral code
     /// @param referralCode The referral code to query

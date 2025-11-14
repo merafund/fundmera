@@ -295,15 +295,11 @@ contract Factory is IFactory, Ownable {
     }
 
     /// @inheritdoc IFactory
-    function updateFundWallets(address _fundWallet, address _meraCapitalWallet) external onlyOwner {
+    function updateFundWallets(address _fundWallet) external onlyOwner {
         require(_fundWallet != address(0), "Zero address not allowed");
-        require(_meraCapitalWallet != address(0), "Zero address not allowed");
         address oldFundWallet = fundWallet;
-        address oldMeraCapitalWallet = meraCapitalWallet;
         fundWallet = _fundWallet;
-        meraCapitalWallet = _meraCapitalWallet;
         emit FounderWalletUpdated(oldFundWallet, _fundWallet);
-        emit MeraCapitalWalletUpdated(oldMeraCapitalWallet, _meraCapitalWallet);
     }
 
     /// @inheritdoc IFactory

@@ -373,41 +373,31 @@ contract FactoryTest is Test {
 
     function test_UpdateFundWallets() public {
         address newFundWallet = makeAddr("newFundWallet");
-        address newMeraCapitalWallet = makeAddr("newMeraCapitalWallet");
         address oldFundWallet = factory.fundWallet();
-        address oldMeraCapitalWallet = factory.meraCapitalWallet();
 
         vm.startPrank(owner);
 
         vm.expectEmit(true, true, true, true);
         emit FounderWalletUpdated(oldFundWallet, newFundWallet);
-        emit MeraCapitalWalletUpdated(oldMeraCapitalWallet, newMeraCapitalWallet);
 
-        factory.updateFundWallets(newFundWallet, newMeraCapitalWallet);
+        factory.updateFundWallets(newFundWallet);
         vm.stopPrank();
 
         assertEq(factory.fundWallet(), newFundWallet);
-        assertEq(factory.meraCapitalWallet(), newMeraCapitalWallet);
     }
 
     function test_RevertUpdateFundWalletsIfNotOwner() public {
         vm.startPrank(ALICE);
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", ALICE));
-        factory.updateFundWallets(address(0x1), address(0x2));
+        factory.updateFundWallets(address(0x1));
         vm.stopPrank();
     }
 
     function test_RevertUpdateFundWalletsWithZeroAddresses() public {
-        address newFundWallet = makeAddr("newFundWallet");
-        address newMeraCapitalWallet = makeAddr("newMeraCapitalWallet");
-
         vm.startPrank(owner);
 
         vm.expectRevert("Zero address not allowed");
-        factory.updateFundWallets(address(0), newMeraCapitalWallet);
-
-        vm.expectRevert("Zero address not allowed");
-        factory.updateFundWallets(newFundWallet, address(0));
+        factory.updateFundWallets(address(0));
 
         vm.stopPrank();
     }
