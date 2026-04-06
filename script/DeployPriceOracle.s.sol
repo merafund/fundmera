@@ -30,13 +30,15 @@ contract DeployPriceOracleScript is Script {
     function run() public {
         vm.startBroadcast();
 
-        // Get network configuration for current chain
+        // Get network configuration for current chain (may be empty on testnets)
         NetworkConfig.NetworkAssets memory config = NetworkConfig.getNetworkConfig(block.chainid);
 
-        require(config.assets.length > 0, "No configuration found for current network");
-
-        console.log("Deploying MeraPriceOracle for chain ID:", block.chainid);
-        console.log("Number of assets:", config.assets.length);
+        if (config.assets.length == 0) {
+            console.log("Deploying MeraPriceOracle for chain ID (empty feeds):", block.chainid);
+        } else {
+            console.log("Deploying MeraPriceOracle for chain ID:", block.chainid);
+            console.log("Number of assets:", config.assets.length);
+        }
 
         address fallbackOracle = address(0);
 
