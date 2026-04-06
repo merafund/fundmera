@@ -31,8 +31,7 @@ contract Factory is IFactory, Ownable {
     address public pauserList;
     address public meraCapitalWallet;
     address public meraPriceOracle;
-    // AgentDistributionProfit implementation and default instance
-    address public agentDistributionImplementation;
+    // AgentDistributionProfit default instance
     address public defaultAgentDistribution;
     string public constant DEFAULT_REFERRAL_CODE = "DEFAULT";
 
@@ -55,7 +54,6 @@ contract Factory is IFactory, Ownable {
         require(params.backupAdmin != address(0), ZeroAddress());
         require(params.emergencyAdmin != address(0), ZeroAddress());
         require(params.pauserList != address(0), ZeroAddress());
-        require(params.agentDistributionImplementation != address(0), ZeroAddress());
         require(params.fundWallet != address(0), ZeroAddress());
         require(params.defaultAgentWallet != address(0), ZeroAddress());
         require(params.meraCapitalWallet != address(0), ZeroAddress());
@@ -69,26 +67,23 @@ contract Factory is IFactory, Ownable {
         emergencyAdmin = params.emergencyAdmin;
         feePercentage = params.feePercentage;
         pauserList = params.pauserList;
-        agentDistributionImplementation = params.agentDistributionImplementation;
         fundWallet = params.fundWallet;
         defaultAgentWallet = params.defaultAgentWallet;
         meraCapitalWallet = params.meraCapitalWallet;
         meraPriceOracle = params.meraPriceOracle;
-        // Deploy default AgentDistribution
-        bytes memory initData = abi.encodeWithSelector(
-            AgentDistributionProfit.initialize.selector,
-            params.fundWallet,
-            params.defaultAgentWallet,
-            params.admin,
-            params.emergencyAdmin,
-            params.backupAdmin,
-            params.emergencyAdmin, // Using emergencyAdmin as emergencyAgent for default distribution
-            params.backupAdmin, // Using backupAdmin as reserveAgent for default distribution
-            params.meraCapitalWallet
+        // Deploy default AgentDistribution directly (no proxy)
+        defaultAgentDistribution = address(
+            new AgentDistributionProfit(
+                params.fundWallet,
+                params.defaultAgentWallet,
+                params.admin,
+                params.emergencyAdmin,
+                params.backupAdmin,
+                params.emergencyAdmin, // Using emergencyAdmin as emergencyAgent for default distribution
+                params.backupAdmin, // Using backupAdmin as reserveAgent for default distribution
+                params.meraCapitalWallet
+            )
         );
-
-        ERC1967Proxy proxy = new ERC1967Proxy(params.agentDistributionImplementation, initData);
-        defaultAgentDistribution = address(proxy);
 
         // Register default referral code
         referralToAgentDistribution[DEFAULT_REFERRAL_CODE] = defaultAgentDistribution;
@@ -243,9 +238,8 @@ contract Factory is IFactory, Ownable {
         require(emergencyAgentWallet != address(0), ZeroAddress());
         require(referralToAgentDistribution[referralCode] == address(0), ReferralCodeAlreadyUsed());
 
-        // Encode initialization call
-        bytes memory initData = abi.encodeWithSelector(
-            AgentDistributionProfit.initialize.selector,
+        // Deploy AgentDistributionProfit directly (no proxy)
+        AgentDistributionProfit newDistribution = new AgentDistributionProfit(
             fundWallet,
             agentWallet,
             admin,
@@ -255,35 +249,25 @@ contract Factory is IFactory, Ownable {
             reserveAgentWallet,
             meraCapitalWallet
         );
-
-        // Deploy proxy
-        ERC1967Proxy proxy = new ERC1967Proxy(agentDistributionImplementation, initData);
-        address proxyAddress = address(proxy);
+        address distributionAddress = address(newDistribution);
 
         // Register referral code
-        referralToAgentDistribution[referralCode] = proxyAddress;
-        agentDistributionToReferral[proxyAddress] = referralCode;
+        referralToAgentDistribution[referralCode] = distributionAddress;
+        agentDistributionToReferral[distributionAddress] = referralCode;
 
-        emit DistributionContractCreated(proxyAddress, referralCode, agentWallet);
-        emit ReferralCodeRegistered(referralCode, proxyAddress);
+        emit DistributionContractCreated(distributionAddress, referralCode, agentWallet);
+        emit ReferralCodeRegistered(referralCode, distributionAddress);
 
-        return proxyAddress;
+        return distributionAddress;
     }
 
     /// @inheritdoc IFactory
-    function updateImplementations(
-        address newMainVaultImpl,
-        address newInvestmentVaultImpl,
-        address newAgentDistributionImpl
-    ) external onlyOwner {
+    function updateImplementations(address newMainVaultImpl, address newInvestmentVaultImpl) external onlyOwner {
         if (newMainVaultImpl != address(0)) {
             mainVaultImplementation = newMainVaultImpl;
         }
         if (newInvestmentVaultImpl != address(0)) {
             investmentVaultImplementation = newInvestmentVaultImpl;
-        }
-        if (newAgentDistributionImpl != address(0)) {
-            agentDistributionImplementation = newAgentDistributionImpl;
         }
     }
 
@@ -311,15 +295,11 @@ contract Factory is IFactory, Ownable {
     }
 
     /// @inheritdoc IFactory
-    function updateFundWallets(address _fundWallet, address _meraCapitalWallet) external onlyOwner {
+    function updateFundWallets(address _fundWallet) external onlyOwner {
         require(_fundWallet != address(0), "Zero address not allowed");
-        require(_meraCapitalWallet != address(0), "Zero address not allowed");
         address oldFundWallet = fundWallet;
-        address oldMeraCapitalWallet = meraCapitalWallet;
         fundWallet = _fundWallet;
-        meraCapitalWallet = _meraCapitalWallet;
         emit FounderWalletUpdated(oldFundWallet, _fundWallet);
-        emit MeraCapitalWalletUpdated(oldMeraCapitalWallet, _meraCapitalWallet);
     }
 
     /// @inheritdoc IFactory

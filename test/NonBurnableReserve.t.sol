@@ -138,15 +138,6 @@ contract NonBurnableReserveTest is Test {
         wrapper.checkNonBurnableReserve(mvBalanceAfter, totalMvBought, profitMV);
     }
 
-    function testValidateMvPriceFromEntryPoint_NoEntryPrice() public {
-        // Test when lastBuyPrice is 0 (no entry point set)
-        tokenData.lastBuyPrice = 0;
-        testWrapper.setTokenData(tokenData);
-
-        // Should not revert - no validation when no entry price is set
-        testWrapper.validateMvPriceFromEntryPoint(address(mainVault));
-    }
-
     function testValidateMvPriceFromEntryPoint_OracleCheckCanceled() public {
         // Test when oracle check is canceled
         mainVault.setIsCanceledOracleCheck(true);

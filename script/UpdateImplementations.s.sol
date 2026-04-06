@@ -26,7 +26,7 @@ contract UpdateImplementationsScript is Script {
     // New implementations that will be deployed
     MainVault public newMainVaultImpl;
     InvestmentVault public newInvestmentVaultImpl;
-    AgentDistributionProfit public newAgentDistributionImpl;
+    address public newAgentDistributionImpl;
 
     // Flags to control which implementations to deploy and update
     bool public deployMainVault;
@@ -77,7 +77,8 @@ contract UpdateImplementationsScript is Script {
 
         if (deployAgentDistribution) {
             console.log("Deploying new AgentDistribution implementation...");
-            newAgentDistributionImpl = new AgentDistributionProfit();
+            // AgentDistributionProfit is now deployed directly by Factory, not as implementation
+            newAgentDistributionImpl = address(0);
             newAgentDistributionAddr = address(newAgentDistributionImpl);
             console.log("New AgentDistribution implementation deployed at:", newAgentDistributionAddr);
         } else {
@@ -93,15 +94,15 @@ contract UpdateImplementationsScript is Script {
         console.log("Current implementations:");
         console.log("- MainVault:         ", factory.mainVaultImplementation());
         console.log("- InvestmentVault:   ", factory.investmentVaultImplementation());
-        console.log("- AgentDistribution: ", factory.agentDistributionImplementation());
+        // AgentDistributionProfit is deployed directly by Factory
 
         // Update implementations in Factory
-        factory.updateImplementations(newMainVaultAddr, newInvestmentVaultAddr, newAgentDistributionAddr);
+        factory.updateImplementations(newMainVaultAddr, newInvestmentVaultAddr);
 
         console.log("\nNew implementations set:");
         console.log("- MainVault:         ", factory.mainVaultImplementation());
         console.log("- InvestmentVault:   ", factory.investmentVaultImplementation());
-        console.log("- AgentDistribution: ", factory.agentDistributionImplementation());
+        // AgentDistributionProfit is deployed directly by Factory
 
         // Wait for 5 seconds before ending
         vm.sleep(5000);

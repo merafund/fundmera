@@ -1,4 +1,4 @@
-.PHONY: all build test clean deploy-local-contracts deploy-testnet-contracts deploy-mainnet-contracts deploy-polygon-contracts deploy-libraries deploy-holesky-contracts deploy-factory-testnet deploy-factory-polygon deploy-factory-holesky deploy-factory-mainnet deploy-all-factory-testnet deploy-all-factory-polygon deploy-all-factory-holesky deploy-all-factory-mainnet deploy-all-factory-base deploy-factory-base deploy-libraries-base deploy-base-contracts deploy-all-base deploy-arbitrum-contracts deploy-bsc-contracts deploy-libraries-arbitrum deploy-libraries-bsc deploy-factory-arbitrum deploy-factory-bsc deploy-all-factory-arbitrum deploy-all-factory-bsc deploy-all-arbitrum deploy-all-bsc update-implementations-arbitrum update-implementations-bsc verify help swap-tokens deploy-implementations-local deploy-implementations-testnet deploy-implementations-polygon deploy-implementations-holesky deploy-implementations-base deploy-implementations-arbitrum deploy-implementations-bsc deploy-implementations-mainnet deploy-price-oracle-local deploy-price-oracle-testnet deploy-price-oracle-polygon deploy-price-oracle-holesky deploy-price-oracle-base deploy-price-oracle-arbitrum deploy-price-oracle-bsc deploy-price-oracle-mainnet
+.PHONY: all build test clean deploy-local-contracts deploy-testnet-contracts deploy-mainnet-contracts deploy-polygon-contracts deploy-libraries deploy-holesky-contracts deploy-factory-testnet deploy-factory-polygon deploy-factory-holesky deploy-factory-mainnet deploy-all-factory-testnet deploy-all-factory-polygon deploy-all-factory-holesky deploy-all-factory-mainnet deploy-all-factory-base deploy-factory-base deploy-libraries-base deploy-base-contracts deploy-all-base deploy-arbitrum-contracts deploy-bsc-contracts deploy-libraries-arbitrum deploy-libraries-bsc deploy-factory-arbitrum deploy-factory-bsc deploy-all-factory-arbitrum deploy-all-factory-bsc deploy-all-arbitrum deploy-all-bsc update-implementations-arbitrum update-implementations-bsc verify help swap-tokens deploy-implementations-local deploy-implementations-testnet deploy-implementations-polygon deploy-implementations-holesky deploy-implementations-base deploy-implementations-arbitrum deploy-implementations-bsc deploy-implementations-mainnet deploy-price-oracle-local deploy-price-oracle-testnet deploy-price-oracle-polygon deploy-price-oracle-holesky deploy-price-oracle-base deploy-price-oracle-arbitrum deploy-price-oracle-bsc deploy-price-oracle-mainnet deploy-return-temporary-wallet-local deploy-return-temporary-wallet-testnet deploy-return-temporary-wallet-polygon deploy-return-temporary-wallet-holesky deploy-return-temporary-wallet-base deploy-return-temporary-wallet-arbitrum deploy-return-temporary-wallet-bsc deploy-return-temporary-wallet-mainnet
 include .env
 
 LOCAL_RPC_URL := http://127.0.0.1:8545
@@ -13,6 +13,7 @@ DEPLOY_SCRIPT := script/MainVault.s.sol
 LIBRARIES_SCRIPT := script/DeployLibraries.s.sol
 FACTORY_SCRIPT := script/Factory.s.sol
 PRICE_ORACLE_SCRIPT := script/DeployPriceOracle.s.sol
+RETURN_TEMPORARY_WALLET_SCRIPT := script/DeployReturnTemporaryWallet.s.sol
 PRIVATE_KEY := ${PRIVATE_KEY}
 CHAIN_ID := 137
 
@@ -778,6 +779,102 @@ deploy-price-oracle-mainnet:
 		--verifier etherscan \
 		-vvv
 
+# Deploy ReturnTemporaryWallet commands
+deploy-return-temporary-wallet-local:
+	forge clean
+	@echo "Deploying ReturnTemporaryWallet to local network..."
+	forge script ${RETURN_TEMPORARY_WALLET_SCRIPT} \
+		--rpc-url ${LOCAL_RPC_URL} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		-vvv
+
+deploy-return-temporary-wallet-testnet:
+	forge clean
+	@echo "Deploying ReturnTemporaryWallet to testnet..."
+	forge script ${RETURN_TEMPORARY_WALLET_SCRIPT} \
+		--rpc-url ${TESTNET_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${POLYGONSCAN_API_KEY} \
+		--verifier etherscan \
+		-vvv
+
+deploy-return-temporary-wallet-polygon:
+	forge clean
+	@echo "Deploying ReturnTemporaryWallet to Polygon network..."
+	forge script ${RETURN_TEMPORARY_WALLET_SCRIPT} \
+		--rpc-url ${POLYGON_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${POLYGONSCAN_API_KEY} \
+		--verifier etherscan \
+		--legacy \
+		-vvv
+
+deploy-return-temporary-wallet-holesky:
+	forge clean
+	@echo "Deploying ReturnTemporaryWallet to Holesky test network..."
+	forge script ${RETURN_TEMPORARY_WALLET_SCRIPT} \
+		--rpc-url ${HOLESKY_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${ETHERSCAN_API_KEY} \
+		--verifier etherscan \
+		-vvv
+
+deploy-return-temporary-wallet-base:
+	forge clean
+	@echo "Deploying ReturnTemporaryWallet to Base network..."
+	forge script ${RETURN_TEMPORARY_WALLET_SCRIPT} \
+		--rpc-url ${BASE_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${BASESCAN_API_KEY} \
+		--verifier etherscan \
+		-vvv
+
+deploy-return-temporary-wallet-arbitrum:
+	forge clean
+	@echo "Deploying ReturnTemporaryWallet to Arbitrum network..."
+	forge script ${RETURN_TEMPORARY_WALLET_SCRIPT} \
+		--rpc-url ${ARBITRUM_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${ARBISCAN_API_KEY} \
+		--verifier etherscan \
+		-vvv
+
+deploy-return-temporary-wallet-bsc:
+	forge clean
+	@echo "Deploying ReturnTemporaryWallet to BSC network..."
+	forge script ${RETURN_TEMPORARY_WALLET_SCRIPT} \
+		--rpc-url ${BSC_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${BSCSCAN_API_KEY} \
+		--verifier etherscan \
+		--legacy \
+		-vvv
+
+deploy-return-temporary-wallet-mainnet:
+	forge clean
+	@echo "Deploying ReturnTemporaryWallet to Mainnet..."
+	forge script ${RETURN_TEMPORARY_WALLET_SCRIPT} \
+		--rpc-url ${MAINNET_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${ETHERSCAN_API_KEY} \
+		--verifier etherscan \
+		-vvv
+
 help:
 	@echo "Available commands:"
 	@echo "  make build          - Build contracts"
@@ -842,6 +939,14 @@ help:
 	@echo "  make deploy-price-oracle-arbitrum - Deploy price oracle to Arbitrum with verification"
 	@echo "  make deploy-price-oracle-bsc - Deploy price oracle to BSC with verification"
 	@echo "  make deploy-price-oracle-mainnet - Deploy price oracle to mainnet with verification (use with caution!)"
+	@echo "  make deploy-return-temporary-wallet-local - Deploy ReturnTemporaryWallet to local network"
+	@echo "  make deploy-return-temporary-wallet-testnet - Deploy ReturnTemporaryWallet to testnet with verification"
+	@echo "  make deploy-return-temporary-wallet-polygon - Deploy ReturnTemporaryWallet to Polygon with verification"
+	@echo "  make deploy-return-temporary-wallet-holesky - Deploy ReturnTemporaryWallet to Holesky with verification"
+	@echo "  make deploy-return-temporary-wallet-base - Deploy ReturnTemporaryWallet to Base with verification"
+	@echo "  make deploy-return-temporary-wallet-arbitrum - Deploy ReturnTemporaryWallet to Arbitrum with verification"
+	@echo "  make deploy-return-temporary-wallet-bsc - Deploy ReturnTemporaryWallet to BSC with verification"
+	@echo "  make deploy-return-temporary-wallet-mainnet - Deploy ReturnTemporaryWallet to mainnet with verification (use with caution!)"
 	@echo "  make verify         - Manually verify a contract on Etherscan"
 	@echo "  make clean          - Clean build artifacts"
 	@echo "  make swap-tokens    - Execute token swap via InvestmentVault"

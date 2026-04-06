@@ -189,6 +189,12 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @dev Emitted when MeraPriceOracle is updated by main investor
     event MeraPriceOracleSet(address oldOracle, address newOracle);
 
+    /// @dev Emitted when admin proposes a new Factory
+    event ProposedFactoryByAdminSet(address proposedFactory);
+
+    /// @dev Emitted when Factory is updated by main investor
+    event FactorySet(address oldFactory, address newFactory);
+
     /// @dev Emitted when investment vault availability for withdraw is changed
     event InvestmentVaultAvailabilityForWithdrawChanged(uint256 indexed vaultIndex, bool isAvailable);
 
@@ -292,29 +298,13 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     /// @return implementation Current implementation address
     function currentImplementationOfInvestmentVault() external view returns (address);
 
-    /// @dev Get admin approved MainVault implementation
-    /// @return implementation Admin approved implementation address
-    function adminApprovedMainVaultImpl() external view returns (address);
-
-    /// @dev Get admin approved MainVault implementation timestamp
-    /// @return timestamp Admin approval timestamp
-    function adminApprovedMainVaultTimestamp() external view returns (uint256);
-
     /// @dev Get investor approved MainVault implementation
     /// @return implementation Investor approved implementation address
     function investorApprovedMainVaultImpl() external view returns (address);
 
     /// @dev Get investor approved MainVault implementation timestamp
     /// @return timestamp Investor approval timestamp
-    function investorApprovedMainVaultTimestamp() external view returns (uint256);
-
-    /// @dev Get admin approved InvestorVault implementation
-    /// @return implementation Admin approved implementation address
-    function adminApprovedInvestorVaultImpl() external view returns (address);
-
-    /// @dev Get admin approved InvestorVault implementation timestamp
-    /// @return timestamp Admin approval timestamp
-    function adminApprovedInvestorVaultTimestamp() external view returns (uint256);
+    function investorApprovedMainVaultTimestamp() external view returns (uint64);
 
     /// @dev Get investor approved InvestorVault implementation
     /// @return implementation Investor approved implementation address
@@ -322,7 +312,7 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
 
     /// @dev Get investor approved InvestorVault implementation timestamp
     /// @return timestamp Investor approval timestamp
-    function investorApprovedInvestorVaultTimestamp() external view returns (uint256);
+    function investorApprovedInvestorVaultTimestamp() external view returns (uint64);
 
     /// @dev Manually triggers the withdrawal lock renewal check
     /// @dev Can only be called by admin to force check and potentially renew the withdrawal lock
@@ -346,8 +336,8 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
     function setRouterQuoterPairAvailabilityByInvestor(DataTypes.RouterQuoterPair[] calldata pairs) external;
 
     /// @dev Sets availability status for multiple router-quoter pairs by admin
-    /// @param pairs Array of router-quoter pairs to set availability
-    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPair[] calldata pairs) external;
+    /// @param configs Array of router-quoter pair availability configurations
+    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPairAvailability[] calldata configs) external;
 
     /// @dev Sets availability status for multiple lock periods
     /// Only admin can call this function
@@ -573,6 +563,15 @@ interface IMainVault is IMultiAdminSingleHolderAccessControl {
 
     /// @dev Can be called by main investor to confirm proposed MeraPriceOracle
     function setCurrentMeraPriceOracle() external;
+
+    /// @dev Sets the proposed Factory by admin
+    /// Only admin can call this function
+    /// Can only be called when current factory is zero
+    /// @param _proposedFactory The proposed Factory address
+    function setProposedFactoryByAdmin(address _proposedFactory) external;
+
+    /// @dev Can be called by main investor to confirm proposed Factory
+    function setCurrentFactory() external;
 
     /// @dev Get current fixed profit percent
     /// @return percent Current fixed profit percent

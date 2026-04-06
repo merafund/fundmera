@@ -99,10 +99,12 @@ contract MockMainVault {
         }
     }
 
-    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPair[] calldata pairs) external {
-        for (uint256 i = 0; i < pairs.length; i++) {
-            availableRoutersByAdmin[pairs[i].router] = true;
-            availableRouterQuoterPairs[pairs[i].router][pairs[i].quoter] = true;
+    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPairAvailability[] calldata configs)
+        external
+    {
+        for (uint256 i = 0; i < configs.length; i++) {
+            availableRoutersByAdmin[configs[i].router] = configs[i].isAvailable;
+            availableRouterQuoterPairs[configs[i].router][configs[i].quoter] = configs[i].isAvailable;
         }
     }
 

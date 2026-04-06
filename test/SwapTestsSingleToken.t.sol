@@ -48,10 +48,13 @@ contract SwapTestsSingleToken is Test {
 
     // Helper function to set up router-quoter pairs
     function _setupRouterQuoterPairs(address router, address quoter) internal {
-        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
-        pairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
-        mainVault.setRouterQuoterPairAvailabilityByInvestor(pairs);
-        mainVault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+        DataTypes.RouterQuoterPair[] memory investorPairs = new DataTypes.RouterQuoterPair[](1);
+        investorPairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
+        mainVault.setRouterQuoterPairAvailabilityByInvestor(investorPairs);
+
+        DataTypes.RouterQuoterPairAvailability[] memory adminConfigs = new DataTypes.RouterQuoterPairAvailability[](1);
+        adminConfigs[0] = DataTypes.RouterQuoterPairAvailability({router: router, quoter: quoter, isAvailable: true});
+        mainVault.setRouterQuoterPairAvailabilityByAdmin(adminConfigs);
     }
 
     uint256 public constant STEP = 5 * 10 ** 16;

@@ -113,7 +113,6 @@ describe("MainVault Upgrade Tests", function () {
     await mainVault.connect(mainInvestor).approveMainVaultUpgrade(newImplementationAddress);
     
     // Verify approvals are set correctly
-    expect(await mainVault.adminApprovedMainVaultImpl()).to.equal(newImplementationAddress);
     expect(await mainVault.investorApprovedMainVaultImpl()).to.equal(newImplementationAddress);
     
     // Admin performs the upgrade
@@ -125,7 +124,6 @@ describe("MainVault Upgrade Tests", function () {
     expect(newImplAddress.slice(-40).toLowerCase()).to.equal(newImplementationAddress.slice(2).toLowerCase());
     
     // Verify approval state is cleared
-    expect(await mainVault.adminApprovedMainVaultImpl()).to.equal(ethers.ZeroAddress);
     expect(await mainVault.investorApprovedMainVaultImpl()).to.equal(ethers.ZeroAddress);
     
     // Verify roles are preserved after upgrade

@@ -67,6 +67,9 @@ contract MainVault is
     error AccessDenied();
     error InvestmentVaultNotAvailableForWithdraw();
     error WithdrawTimeNotReached();
+    error CurrentFactoryMustBeZero();
+    error MainVaultImplementationMismatch();
+    error InvestmentVaultImplementationMismatch();
     // Role definitions
     // Each role is represented by a unique bytes32 value computed from the role name
 
@@ -89,8 +92,7 @@ contract MainVault is
     mapping(address => bool) public availableRouterByAdmin;
 
     // Router-quoter pairs mappings
-    mapping(address => mapping(address => bool)) public availableRouterQuoterPairByInvestor;
-    mapping(address => mapping(address => bool)) public availableRouterQuoterPairByAdmin;
+
     mapping(uint256 => bool) public availableLock;
 
     mapping(uint256 => address) public investmentVaults;
@@ -107,16 +109,10 @@ contract MainVault is
     address public currentImplementationOfInvestmentVault;
 
     // Upgrade approval storage for MainVault
-    address public adminApprovedMainVaultImpl;
-    uint256 public adminApprovedMainVaultTimestamp;
     address public investorApprovedMainVaultImpl;
-    uint256 public investorApprovedMainVaultTimestamp;
-
-    // Upgrade approval storage for InvestorVault
-    address public adminApprovedInvestorVaultImpl;
-    uint256 public adminApprovedInvestorVaultTimestamp;
+    uint64 public investorApprovedMainVaultTimestamp;
     address public investorApprovedInvestorVaultImpl;
-    uint256 public investorApprovedInvestorVaultTimestamp;
+    uint64 public investorApprovedInvestorVaultTimestamp;
 
     uint64 public withdrawCommitTimestamp;
     uint64 public pauseToTimestamp;
@@ -131,10 +127,14 @@ contract MainVault is
 
     IPauserList public pauserList;
     IMeraPriceOracle public meraPriceOracle;
-    IFactory public factory;
 
     mapping(uint256 => bool) public availableInvestmentVaultForWithdraw;
     mapping(uint256 => uint64) public investmentVaultWithdrawAvailableTimestamp; // Timestamp when vault becomes available for withdrawal
+
+    mapping(address => mapping(address => bool)) public availableRouterQuoterPairByInvestor;
+    mapping(address => mapping(address => bool)) public availableRouterQuoterPairByAdmin;
+    IFactory public factory;
+    IFactory public proposedFactoryByAdmin;
 
     modifier isNotLocked() {
         require(!_isLock(), WithdrawalLocked());
@@ -240,20 +240,20 @@ contract MainVault is
     /// @inheritdoc IMainVault
     function approveMainVaultUpgrade(address newImplementation) external onlyRole(MAIN_INVESTOR_ROLE) {
         require(newImplementation != address(0), InvalidUpgradeAddress());
-        require(newImplementation == factory.mainVaultImplementation(), "Implementation must match factory");
+        require(newImplementation == factory.mainVaultImplementation(), MainVaultImplementationMismatch());
 
         investorApprovedMainVaultImpl = newImplementation;
-        investorApprovedMainVaultTimestamp = block.timestamp;
+        investorApprovedMainVaultTimestamp = uint64(block.timestamp);
         emit MainVaultUpgradeApproved(newImplementation, msg.sender);
     }
 
     /// @inheritdoc IMainVault
     function approveInvestorVaultUpgrade(address newImplementation) external onlyRole(MAIN_INVESTOR_ROLE) {
         require(newImplementation != address(0), InvalidUpgradeAddress());
-        require(newImplementation == factory.investmentVaultImplementation(), "Implementation must match factory");
+        require(newImplementation == factory.investmentVaultImplementation(), InvestmentVaultImplementationMismatch());
 
         investorApprovedInvestorVaultImpl = newImplementation;
-        investorApprovedInvestorVaultTimestamp = block.timestamp;
+        investorApprovedInvestorVaultTimestamp = uint64(block.timestamp);
         emit InvestorVaultUpgradeApproved(newImplementation, msg.sender);
     }
 
@@ -274,6 +274,9 @@ contract MainVault is
 
     /// @inheritdoc IMainVault
     function setTokenAvailabilityByAdmin(TokenAvailability[] calldata configs) external onlyRole(ADMIN_ROLE) {
+        if (_isLock()) {
+            pauseToTimestamp = uint64(block.timestamp + Constants.PAUSE_AFTER_UPDATE_ACCESS);
+        }
         for (uint256 i = 0; i < configs.length; i++) {
             availableTokensByAdmin[configs[i].token] = configs[i].isAvailable;
 
@@ -301,21 +304,23 @@ contract MainVault is
     }
 
     /// @dev Set router-quoter pair availability by admin
-    /// @param pairs Array of router-quoter pairs to set availability
-    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPair[] calldata pairs)
+    /// @param configs Array of router-quoter pair availability configurations
+    function setRouterQuoterPairAvailabilityByAdmin(DataTypes.RouterQuoterPairAvailability[] calldata configs)
         external
         onlyRole(ADMIN_ROLE)
     {
         if (_isLock()) {
             pauseToTimestamp = uint64(block.timestamp + Constants.PAUSE_AFTER_UPDATE_ACCESS_FOR_ADMIN);
         }
-        for (uint256 i = 0; i < pairs.length; i++) {
-            // Set both router and router-quoter pair as available
-            availableRouterByAdmin[pairs[i].router] = true;
-            availableRouterQuoterPairByAdmin[pairs[i].router][pairs[i].quoter] = true;
+        for (uint256 i = 0; i < configs.length; i++) {
+            // Set router and router-quoter pair availability based on config
+            availableRouterByAdmin[configs[i].router] = configs[i].isAvailable;
+            availableRouterQuoterPairByAdmin[configs[i].router][configs[i].quoter] = configs[i].isAvailable;
 
-            emit RouterAvailabilityByAdminChanged(pairs[i].router, true);
-            emit RouterQuoterPairAvailabilityByAdminChanged(pairs[i].router, pairs[i].quoter, true);
+            emit RouterAvailabilityByAdminChanged(configs[i].router, configs[i].isAvailable);
+            emit RouterQuoterPairAvailabilityByAdminChanged(
+                configs[i].router, configs[i].quoter, configs[i].isAvailable
+            );
         }
     }
 
@@ -363,9 +368,27 @@ contract MainVault is
         require(proposedMeraPriceOracleByAdmin != address(0), ZeroAddressNotAllowed());
         address oldOracle = address(meraPriceOracle);
         meraPriceOracle = IMeraPriceOracle(proposedMeraPriceOracleByAdmin);
-        proposedMeraPriceOracleByAdmin = address(0); // Reset proposed oracle after confirmation
+        proposedMeraPriceOracleByAdmin = address(0);
 
         emit MeraPriceOracleSet(oldOracle, address(meraPriceOracle));
+    }
+
+    /// @inheritdoc IMainVault
+    function setProposedFactoryByAdmin(address _proposedFactory) external onlyRole(ADMIN_ROLE) {
+        require(_proposedFactory != address(0), ZeroAddressNotAllowed());
+        require(address(factory) == address(0), CurrentFactoryMustBeZero());
+        proposedFactoryByAdmin = IFactory(_proposedFactory);
+        emit ProposedFactoryByAdminSet(_proposedFactory);
+    }
+
+    /// @inheritdoc IMainVault
+    function setCurrentFactory() external onlyRole(MAIN_INVESTOR_ROLE) {
+        require(address(proposedFactoryByAdmin) != address(0), ZeroAddressNotAllowed());
+        IFactory oldFactory = factory;
+        factory = proposedFactoryByAdmin;
+        proposedFactoryByAdmin = IFactory(address(0));
+
+        emit FactorySet(address(oldFactory), address(factory));
     }
 
     /// @inheritdoc IMainVault
@@ -391,9 +414,6 @@ contract MainVault is
         address oldImplementation = currentImplementationOfInvestmentVault;
         currentImplementationOfInvestmentVault = implementation;
 
-        // Reset approval state
-        adminApprovedInvestorVaultImpl = address(0);
-        adminApprovedInvestorVaultTimestamp = 0;
         investorApprovedInvestorVaultImpl = address(0);
         investorApprovedInvestorVaultTimestamp = 0;
 
@@ -830,9 +850,6 @@ contract MainVault is
         require(newImplementation == investorApprovedMainVaultImpl, ImplementationNotApprovedByInvestor());
         require(block.timestamp - investorApprovedMainVaultTimestamp < UPGRADE_TIME_LIMIT, UpgradeDeadlineExpired());
 
-        // Reset approval state
-        adminApprovedMainVaultImpl = address(0);
-        adminApprovedMainVaultTimestamp = 0;
         investorApprovedMainVaultImpl = address(0);
         investorApprovedMainVaultTimestamp = 0;
     }

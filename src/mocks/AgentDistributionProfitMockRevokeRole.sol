@@ -12,7 +12,7 @@ pragma solidity ^0.8.29;
 import {AgentDistributionProfit} from "../AgentDistributionProfit.sol";
 
 contract AgentDistributionProfitMockRevokeRole is AgentDistributionProfit {
-    function initialize(
+    constructor(
         address _fundWallet,
         address _agentWallet,
         address _adminWallet,
@@ -21,47 +21,18 @@ contract AgentDistributionProfitMockRevokeRole is AgentDistributionProfit {
         address _emergencyAgentWallet,
         address _reserveAgentWallet,
         address _meraCapitalWallet
-    ) external override initializer {
-        require(_fundWallet != address(0), ZeroAddress());
-        require(_agentWallet != address(0), ZeroAddress());
-        require(_adminWallet != address(0), ZeroAddress());
-        require(_emergencyAdminWallet != address(0), ZeroAddress());
-        require(_reserveAdminWallet != address(0), ZeroAddress());
-        require(_emergencyAgentWallet != address(0), ZeroAddress());
-        require(_reserveAgentWallet != address(0), ZeroAddress());
-        require(_meraCapitalWallet != address(0), ZeroAddress());
-
-        __UUPSUpgradeable_init();
-        __AccessControl_init();
-
-        fundWallet = _fundWallet;
-        meraCapitalWallet = _meraCapitalWallet;
-        agentPercentage = MIN_AGENT_PERCENTAGE;
-
-        // Setup roles
-        _grantRole(MAIN_AGENT_ROLE, _agentWallet);
-        _grantRole(BACKUP_AGENT_ROLE, _reserveAgentWallet);
-        _grantRole(EMERGENCY_AGENT_ROLE, _emergencyAgentWallet);
-        _grantRole(ADMIN_ROLE, _adminWallet);
-        _grantRole(BACKUP_ADMIN_ROLE, _reserveAdminWallet);
-        _grantRole(EMERGENCY_ADMIN_ROLE, _emergencyAdminWallet);
-
-        // Setup role hierarchy
-        _setRoleAdmin(MAIN_AGENT_ROLE, MAIN_AGENT_ROLE);
-        _setRoleAdmin(BACKUP_AGENT_ROLE, BACKUP_AGENT_ROLE);
-        _setRoleAdmin(EMERGENCY_AGENT_ROLE, EMERGENCY_AGENT_ROLE);
-        _setRoleAdmin(ADMIN_ROLE, ADMIN_ROLE);
-        _setRoleAdmin(BACKUP_ADMIN_ROLE, BACKUP_ADMIN_ROLE);
-        _setRoleAdmin(EMERGENCY_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE);
-
-        // Emergency agent can manage main and backup agents
-        _setRoleAdmin(MAIN_AGENT_ROLE, EMERGENCY_AGENT_ROLE);
-        _setRoleAdmin(BACKUP_AGENT_ROLE, EMERGENCY_AGENT_ROLE);
-
-        // Emergency admin can manage all admin roles
-        _setRoleAdmin(ADMIN_ROLE, EMERGENCY_ADMIN_ROLE);
-        _setRoleAdmin(BACKUP_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE);
-    }
+    )
+        AgentDistributionProfit(
+            _fundWallet,
+            _agentWallet,
+            _adminWallet,
+            _emergencyAdminWallet,
+            _reserveAdminWallet,
+            _emergencyAgentWallet,
+            _reserveAgentWallet,
+            _meraCapitalWallet
+        )
+    {}
 
     // Override _revokeRole to simulate failed revocation only for MAIN_AGENT_ROLE
     function _revokeRole(bytes32 role, address account) internal virtual override returns (bool) {

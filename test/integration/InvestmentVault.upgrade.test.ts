@@ -208,24 +208,19 @@ describe("InvestmentVault Upgrade Tests", function () {
     // Get current implementation address for comparison
     const currentImplAddress = await ethers.provider.getStorage(await investmentVault.getAddress(), "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc");
     
-    // Admin approves the new InvestorVault implementation
-    await mainVault.connect(admin).approveInvestorVaultUpgrade(newImplAddress);
-    
     // Main investor approves the new InvestorVault implementation
     await mainVault.connect(mainInvestor).approveInvestorVaultUpgrade(newImplAddress);
     
     // Verify approvals are set
-    expect(await mainVault.adminApprovedInvestorVaultImpl()).to.equal(newImplAddress);
     expect(await mainVault.investorApprovedInvestorVaultImpl()).to.equal(newImplAddress);
     
-    // Admin sets the current implementation (requires both approvals)
+    // Admin sets the current implementation (requires investor approval)
     await mainVault.connect(admin).setCurrentImplementationOfInvestmentVault(newImplAddress);
     
     // Verify MainVault has the correct implementation set
     expect(await mainVault.currentImplementationOfInvestmentVault()).to.equal(newImplAddress);
     
     // Verify approval state is cleared
-    expect(await mainVault.adminApprovedInvestorVaultImpl()).to.equal(ethers.ZeroAddress);
     expect(await mainVault.investorApprovedInvestorVaultImpl()).to.equal(ethers.ZeroAddress);
     
     // Verify mainInvestor does not have ADMIN_ROLE

@@ -308,12 +308,12 @@ contract MainVaultTest is Test {
 
         vm.startPrank(admin);
 
-        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](2);
-        pairs[0] = DataTypes.RouterQuoterPair({router: router1, quoter: quoter1});
-        pairs[1] = DataTypes.RouterQuoterPair({router: router2, quoter: quoter2});
+        DataTypes.RouterQuoterPairAvailability[] memory configs = new DataTypes.RouterQuoterPairAvailability[](2);
+        configs[0] = DataTypes.RouterQuoterPairAvailability({router: router1, quoter: quoter1, isAvailable: true});
+        configs[1] = DataTypes.RouterQuoterPairAvailability({router: router2, quoter: quoter2, isAvailable: true});
 
         vm.recordLogs();
-        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+        vault.setRouterQuoterPairAvailabilityByAdmin(configs);
 
         assertTrue(vault.availableRouterByAdmin(router1), "Router1 should be available");
         assertTrue(vault.availableRouterByAdmin(router2), "Router2 should be available");
@@ -329,9 +329,9 @@ contract MainVaultTest is Test {
 
         vm.startPrank(admin);
 
-        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
-        pairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
-        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+        DataTypes.RouterQuoterPairAvailability[] memory configs = new DataTypes.RouterQuoterPairAvailability[](1);
+        configs[0] = DataTypes.RouterQuoterPairAvailability({router: router, quoter: quoter, isAvailable: true});
+        vault.setRouterQuoterPairAvailabilityByAdmin(configs);
 
         assertTrue(vault.availableRouterByAdmin(router), "Router should be initially available");
         assertTrue(
@@ -344,8 +344,8 @@ contract MainVaultTest is Test {
     function testSetRouterQuoterPairAvailabilityByAdmin_EmptyArray() public {
         vm.startPrank(admin);
 
-        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](0);
-        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+        DataTypes.RouterQuoterPairAvailability[] memory configs = new DataTypes.RouterQuoterPairAvailability[](0);
+        vault.setRouterQuoterPairAvailabilityByAdmin(configs);
 
         vm.stopPrank();
     }
@@ -353,21 +353,21 @@ contract MainVaultTest is Test {
     function testSetRouterQuoterPairAvailabilityByAdmin_OnlyAdminCanCall() public {
         address router = address(100);
         address quoter = address(200);
-        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
-        pairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
+        DataTypes.RouterQuoterPairAvailability[] memory configs = new DataTypes.RouterQuoterPairAvailability[](1);
+        configs[0] = DataTypes.RouterQuoterPairAvailability({router: router, quoter: quoter, isAvailable: true});
 
         vm.startPrank(user1);
         vm.expectRevert();
-        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+        vault.setRouterQuoterPairAvailabilityByAdmin(configs);
         vm.stopPrank();
 
         vm.startPrank(mainInvestor);
         vm.expectRevert();
-        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+        vault.setRouterQuoterPairAvailabilityByAdmin(configs);
         vm.stopPrank();
 
         vm.startPrank(admin);
-        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+        vault.setRouterQuoterPairAvailabilityByAdmin(configs);
         assertTrue(vault.availableRouterByAdmin(router), "Router should be available when set by admin");
         assertTrue(
             vault.availableRouterQuoterPairByAdmin(router, quoter),
@@ -379,10 +379,10 @@ contract MainVaultTest is Test {
     function testSetRouterQuoterPairAvailabilityByAdmin_ZeroAddress() public {
         vm.startPrank(admin);
 
-        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
-        pairs[0] = DataTypes.RouterQuoterPair({router: address(0), quoter: address(0)});
+        DataTypes.RouterQuoterPairAvailability[] memory configs = new DataTypes.RouterQuoterPairAvailability[](1);
+        configs[0] = DataTypes.RouterQuoterPairAvailability({router: address(0), quoter: address(0), isAvailable: true});
 
-        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+        vault.setRouterQuoterPairAvailabilityByAdmin(configs);
         assertTrue(vault.availableRouterByAdmin(address(0)), "Zero address router should be settable");
         assertTrue(
             vault.availableRouterQuoterPairByAdmin(address(0), address(0)),
@@ -415,10 +415,10 @@ contract MainVaultTest is Test {
 
         vm.startPrank(admin);
 
-        DataTypes.RouterQuoterPair[] memory pairs = new DataTypes.RouterQuoterPair[](1);
-        pairs[0] = DataTypes.RouterQuoterPair({router: router, quoter: quoter});
+        DataTypes.RouterQuoterPairAvailability[] memory configs = new DataTypes.RouterQuoterPairAvailability[](1);
+        configs[0] = DataTypes.RouterQuoterPairAvailability({router: router, quoter: quoter, isAvailable: true});
 
-        vault.setRouterQuoterPairAvailabilityByAdmin(pairs);
+        vault.setRouterQuoterPairAvailabilityByAdmin(configs);
 
         assertEq(
             vault.pauseToTimestamp(),
@@ -1272,7 +1272,6 @@ contract MainVaultTest is Test {
         );
 
         // Verify approval state is cleared
-        assertEq(vault.adminApprovedInvestorVaultImpl(), address(0), "Admin approval should be cleared");
         assertEq(vault.investorApprovedInvestorVaultImpl(), address(0), "Investor approval should be cleared");
     }
 
@@ -1338,7 +1337,7 @@ contract MainVaultTest is Test {
 
         // Investor cannot approve different implementation
         vm.prank(mainInvestor);
-        vm.expectRevert("Implementation must match factory");
+        vm.expectRevert(MainVault.InvestmentVaultImplementationMismatch.selector);
         vault.approveInvestorVaultUpgrade(implementation2);
     }
 
@@ -1858,7 +1857,6 @@ contract MainVaultTest is Test {
         vault.approveMainVaultUpgrade(newImplementation);
 
         // Verify approval state
-        assertEq(vault.adminApprovedMainVaultImpl(), address(0)); // Admin no longer approves
         assertEq(vault.investorApprovedMainVaultImpl(), newImplementation);
 
         vm.expectEmit(true, true, true, true);
@@ -1869,7 +1867,6 @@ contract MainVaultTest is Test {
         UUPSUpgradeable(address(vault)).upgradeToAndCall(newImplementation, "");
 
         // Verify approval state is cleared
-        assertEq(vault.adminApprovedMainVaultImpl(), address(0));
         assertEq(vault.investorApprovedMainVaultImpl(), address(0));
     }
 
@@ -1914,7 +1911,7 @@ contract MainVaultTest is Test {
 
         // Investor cannot approve different implementation (without first approving)
         vm.prank(mainInvestor);
-        vm.expectRevert("Implementation must match factory");
+        vm.expectRevert(MainVault.MainVaultImplementationMismatch.selector);
         vault.approveMainVaultUpgrade(implementation2);
 
         // Only admin can upgrade to approved implementation
@@ -2248,9 +2245,11 @@ contract MainVaultTest is Test {
         adminTokenConfigs[1] = IMainVault.TokenAvailability({token: address(secondToken), isAvailable: true});
         vault.setTokenAvailabilityByAdmin(adminTokenConfigs);
 
-        DataTypes.RouterQuoterPair[] memory adminRouterPairs = new DataTypes.RouterQuoterPair[](1);
-        adminRouterPairs[0] = DataTypes.RouterQuoterPair({router: routerAddress, quoter: routerAddress});
-        vault.setRouterQuoterPairAvailabilityByAdmin(adminRouterPairs);
+        DataTypes.RouterQuoterPairAvailability[] memory adminRouterConfigs =
+            new DataTypes.RouterQuoterPairAvailability[](1);
+        adminRouterConfigs[0] =
+            DataTypes.RouterQuoterPairAvailability({router: routerAddress, quoter: routerAddress, isAvailable: true});
+        vault.setRouterQuoterPairAvailabilityByAdmin(adminRouterConfigs);
         vm.stopPrank();
 
         vm.startPrank(mainInvestor);

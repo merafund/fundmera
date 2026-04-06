@@ -279,7 +279,7 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
             InvalidMvToTokenPaths()
         );
 
-        require(_validateMvPriceFromEntryPoint(), MvPriceDeclinedTooMuch());
+        SwapLibrary._validateMvPriceFromEntryPoint(tokenData, mainVault);
 
         // Calculate available capital from mvBought
         uint256 availableMvCapital = tokenData.mvBought;
@@ -721,49 +721,6 @@ contract InvestmentVault is Initializable, UUPSUpgradeable, IInvestmentVault {
 
         // Check if deviation is within allowed range (5e18 = 5%)
         return deviation <= Constants.MAX_PRICE_DEVIATION_FROM_ORACLE;
-    }
-
-    /// @dev Validates if MV price has declined too much from entry point
-    /// @return bool Returns true if MV price decline is within acceptable range
-    function _validateMvPriceFromEntryPoint() internal view virtual returns (bool) {
-        // If oracle check is canceled in MainVault, skip validation
-        if (mainVault.isCanceledOracleCheck()) {
-            return true;
-        }
-
-        // Skip validation if no entry point price is set (first time initialization)
-        if (tokenData.lastBuyPrice == 0) {
-            return true;
-        }
-
-        // Get price oracle from MainVault
-        IMeraPriceOracle oracle = mainVault.meraPriceOracle();
-
-        // Prepare array of assets for oracle query [MI, MV]
-        address[] memory assets = new address[](2);
-        assets[0] = address(tokenData.tokenMI);
-        assets[1] = address(tokenData.tokenMV);
-
-        // Get price data from oracle
-        IMeraPriceOracle.AssetPriceData[] memory priceData = oracle.getAssetsPriceData(assets);
-
-        // Calculate current MV price in MI terms (MI per MV) with 18 decimals
-        uint256 currentMvPrice =
-            (priceData[1].price * (10 ** (18 + priceData[0].decimals - priceData[1].decimals))) / priceData[0].price;
-
-        // Calculate price decline percentage (scaled to 1e18)
-        uint256 priceDecline;
-        if (currentMvPrice >= tokenData.lastBuyPrice) {
-            // Price hasn't declined, allow initialization
-            return true;
-        } else {
-            // Calculate decline percentage
-            priceDecline =
-                ((tokenData.lastBuyPrice - currentMvPrice) * Constants.SHARE_DENOMINATOR) / tokenData.lastBuyPrice;
-        }
-
-        // Check if decline is within allowed range (0.5%)
-        return priceDecline <= Constants.MAX_MV_PRICE_DECLINE_FROM_ENTRY;
     }
 
     function _performSwapAndValidate(
