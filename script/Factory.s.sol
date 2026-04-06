@@ -66,12 +66,15 @@ contract FactoryScript is Script {
         PauserList pauserList = new PauserList(admin);
         console.log("PauserList deployed at:", address(pauserList));
 
-        // Get network configuration for current chain
+        // Get network configuration for current chain (may be empty on testnets)
         NetworkConfig.NetworkAssets memory config = NetworkConfig.getNetworkConfig(block.chainid);
-        require(config.assets.length > 0, "No configuration found for current network");
-
-        console.log("Using network configuration for chain ID:", block.chainid);
-        console.log("Number of configured assets:", config.assets.length);
+        if (config.assets.length == 0) {
+            console.log("Empty price feed config for chain ID:", block.chainid);
+            console.log("Deploying MeraPriceOracle with no Chainlink feeds (testnet)");
+        } else {
+            console.log("Using network configuration for chain ID:", block.chainid);
+            console.log("Number of configured assets:", config.assets.length);
+        }
 
         address fallbackOracle = address(0x0);
 

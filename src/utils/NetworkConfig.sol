@@ -202,6 +202,18 @@ library NetworkConfig {
             decimals[11] = 8; // USD1/USD
 
             return NetworkAssets(assets, sources, decimals);
+        } else if (chainId == 11155111) {
+            // Sepolia testnet: empty feeds — populate assets/sources/decimals when needed
+            address[] memory emptyAssets = new address[](0);
+            address[] memory emptySources = new address[](0);
+            uint8[] memory emptyDecimals = new uint8[](0);
+            return NetworkAssets(emptyAssets, emptySources, emptyDecimals);
+        } else if (chainId == 17000) {
+            // Holesky testnet: empty feeds — populate when needed
+            address[] memory emptyAssets = new address[](0);
+            address[] memory emptySources = new address[](0);
+            uint8[] memory emptyDecimals = new uint8[](0);
+            return NetworkAssets(emptyAssets, emptySources, emptyDecimals);
         } else {
             // Default empty configuration for unsupported networks
             address[] memory emptyAssets = new address[](0);
