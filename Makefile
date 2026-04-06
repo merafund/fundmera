@@ -1,4 +1,4 @@
-.PHONY: all build test clean deploy-local-contracts deploy-testnet-contracts deploy-mainnet-contracts deploy-polygon-contracts deploy-libraries deploy-holesky-contracts deploy-factory-testnet deploy-factory-polygon deploy-factory-holesky deploy-factory-mainnet deploy-all-factory-testnet deploy-all-factory-polygon deploy-all-factory-holesky deploy-all-factory-mainnet deploy-all-factory-base deploy-factory-base deploy-libraries-base deploy-base-contracts deploy-all-base deploy-arbitrum-contracts deploy-bsc-contracts deploy-libraries-arbitrum deploy-libraries-bsc deploy-factory-arbitrum deploy-factory-bsc deploy-all-factory-arbitrum deploy-all-factory-bsc deploy-all-arbitrum deploy-all-bsc update-implementations-arbitrum update-implementations-bsc verify help swap-tokens deploy-implementations-local deploy-implementations-testnet deploy-implementations-polygon deploy-implementations-holesky deploy-implementations-base deploy-implementations-arbitrum deploy-implementations-bsc deploy-implementations-mainnet deploy-price-oracle-local deploy-price-oracle-testnet deploy-price-oracle-polygon deploy-price-oracle-holesky deploy-price-oracle-base deploy-price-oracle-arbitrum deploy-price-oracle-bsc deploy-price-oracle-mainnet deploy-return-temporary-wallet-local deploy-return-temporary-wallet-testnet deploy-return-temporary-wallet-polygon deploy-return-temporary-wallet-holesky deploy-return-temporary-wallet-base deploy-return-temporary-wallet-arbitrum deploy-return-temporary-wallet-bsc deploy-return-temporary-wallet-mainnet
+.PHONY: all build test clean deploy-local-contracts deploy-testnet-contracts deploy-mainnet-contracts deploy-polygon-contracts deploy-libraries deploy-holesky-contracts deploy-sepolia-contracts deploy-factory-testnet deploy-factory-polygon deploy-factory-holesky deploy-factory-sepolia deploy-factory-mainnet deploy-all-factory-testnet deploy-all-factory-polygon deploy-all-factory-holesky deploy-all-factory-sepolia deploy-all-factory-mainnet deploy-all-factory-base deploy-factory-base deploy-libraries-base deploy-libraries-sepolia deploy-base-contracts deploy-all-base deploy-all-sepolia deploy-arbitrum-contracts deploy-bsc-contracts deploy-libraries-arbitrum deploy-libraries-bsc deploy-factory-arbitrum deploy-factory-bsc deploy-all-factory-arbitrum deploy-all-factory-bsc deploy-all-arbitrum deploy-all-bsc update-implementations-arbitrum update-implementations-bsc update-implementations-sepolia verify help swap-tokens deploy-implementations-local deploy-implementations-testnet deploy-implementations-polygon deploy-implementations-holesky deploy-implementations-sepolia deploy-implementations-base deploy-implementations-arbitrum deploy-implementations-bsc deploy-implementations-mainnet deploy-price-oracle-local deploy-price-oracle-testnet deploy-price-oracle-polygon deploy-price-oracle-holesky deploy-price-oracle-sepolia deploy-price-oracle-base deploy-price-oracle-arbitrum deploy-price-oracle-bsc deploy-price-oracle-mainnet deploy-return-temporary-wallet-local deploy-return-temporary-wallet-testnet deploy-return-temporary-wallet-polygon deploy-return-temporary-wallet-holesky deploy-return-temporary-wallet-sepolia deploy-return-temporary-wallet-base deploy-return-temporary-wallet-arbitrum deploy-return-temporary-wallet-bsc deploy-return-temporary-wallet-mainnet
 include .env
 
 LOCAL_RPC_URL := http://127.0.0.1:8545
@@ -9,6 +9,7 @@ HOLESKY_RPC := ${RPC_URL_HOLESKY}
 BASE_RPC := ${RPC_URL_BASE}
 ARBITRUM_RPC := ${RPC_URL_ARBITRUM}
 BSC_RPC := ${RPC_URL_BSC}
+SEPOLIA_RPC := ${RPC_URL_SEPOLIA}
 DEPLOY_SCRIPT := script/MainVault.s.sol
 LIBRARIES_SCRIPT := script/DeployLibraries.s.sol
 FACTORY_SCRIPT := script/Factory.s.sol
@@ -108,6 +109,24 @@ deploy-libraries-mainnet:
 		echo "Warning: ./.library_addresses.env file was not created"; \
 	fi
 
+deploy-libraries-sepolia:
+	@echo "Deploying libraries to Sepolia test network..."
+	forge clean
+	forge script ${LIBRARIES_SCRIPT} \
+		--rpc-url ${SEPOLIA_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${ETHERSCAN_API_KEY} \
+		--verifier etherscan \
+		-vvv
+	@if [ -f ./.library_addresses.env ]; then \
+		echo "Library addresses successfully saved. Contents:"; \
+		cat ./.library_addresses.env; \
+	else \
+		echo "Warning: ./.library_addresses.env file was not created"; \
+	fi
+
 deploy-libraries-base:
 	@echo "Deploying libraries to Base network..."
 	forge clean
@@ -181,9 +200,6 @@ deploy-testnet-contracts:
 		--verify \
 		--etherscan-api-key ${POLYGONSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 deploy-polygon-contracts:
@@ -196,9 +212,6 @@ deploy-polygon-contracts:
 		--verify \
 		--etherscan-api-key ${POLYGONSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		--legacy \
 		-vvv
 
@@ -212,9 +225,18 @@ deploy-holesky-contracts:
 		--verify \
 		--etherscan-api-key ${ETHERSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
+		-vvv
+
+deploy-sepolia-contracts:
+	forge clean
+	@echo "Deploying to Sepolia test network..."
+	forge script ${DEPLOY_SCRIPT} \
+		--rpc-url ${SEPOLIA_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${ETHERSCAN_API_KEY} \
+		--verifier etherscan \
 		-vvv
 
 deploy-mainnet-contracts:
@@ -226,9 +248,6 @@ deploy-mainnet-contracts:
 		--verify \
 		--etherscan-api-key ${ETHERSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 # Деплой MainVaultFactory в тестовую сеть
@@ -242,9 +261,6 @@ deploy-factory-testnet:
 		--verify \
 		--etherscan-api-key ${POLYGONSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 # Деплой MainVaultFactory в Polygon
@@ -258,9 +274,6 @@ deploy-factory-polygon:
 		--verify \
 		--etherscan-api-key ${POLYGONSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		--legacy \
 		-vvv
 
@@ -275,9 +288,19 @@ deploy-factory-holesky:
 		--verify \
 		--etherscan-api-key ${ETHERSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
+		-vvv
+
+# Деплой MainVaultFactory в Sepolia
+deploy-factory-sepolia:
+	forge clean
+	@echo "Deploying MainVaultFactory to Sepolia test network..."
+	forge script ${FACTORY_SCRIPT} \
+		--rpc-url ${SEPOLIA_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${ETHERSCAN_API_KEY} \
+		--verifier etherscan \
 		-vvv
 
 # Деплой MainVaultFactory в основную сеть
@@ -289,9 +312,6 @@ deploy-factory-mainnet:
 		--verify \
 		--etherscan-api-key ${ETHERSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 # Деплой MainVaultFactory в Base
@@ -305,9 +325,6 @@ deploy-factory-base:
 		--verify \
 		--etherscan-api-key ${BASESCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 # Деплой MainVaultFactory в Arbitrum
@@ -321,9 +338,6 @@ deploy-factory-arbitrum:
 		--verify \
 		--etherscan-api-key ${ARBISCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 # Деплой MainVaultFactory в BSC
@@ -337,9 +351,6 @@ deploy-factory-bsc:
 		--verify \
 		--etherscan-api-key ${BSCSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		--legacy \
 		-vvv
 
@@ -349,6 +360,8 @@ deploy-all-factory-testnet: deploy-libraries-testnet deploy-factory-testnet
 deploy-all-factory-polygon: deploy-libraries-polygon deploy-factory-polygon
 
 deploy-all-factory-holesky: deploy-libraries-holesky deploy-factory-holesky
+
+deploy-all-factory-sepolia: deploy-libraries-sepolia deploy-factory-sepolia
 
 deploy-all-factory-mainnet: deploy-libraries-mainnet deploy-factory-mainnet
 
@@ -363,6 +376,8 @@ deploy-all-testnet: deploy-libraries-testnet deploy-testnet-contracts
 deploy-all-polygon: deploy-libraries-polygon deploy-polygon-contracts
 
 deploy-all-holesky: deploy-libraries-holesky deploy-holesky-contracts
+
+deploy-all-sepolia: deploy-libraries-sepolia deploy-sepolia-contracts
 
 deploy-all-base: deploy-libraries-base deploy-base-contracts
 
@@ -400,9 +415,6 @@ deploy-base-contracts:
 		--verify \
 		--etherscan-api-key ${BASESCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 deploy-arbitrum-contracts:
@@ -415,9 +427,6 @@ deploy-arbitrum-contracts:
 		--verify \
 		--etherscan-api-key ${ARBISCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 deploy-bsc-contracts:
@@ -430,9 +439,6 @@ deploy-bsc-contracts:
 		--verify \
 		--etherscan-api-key ${BSCSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		--legacy \
 		-vvv
 
@@ -460,9 +466,6 @@ update-implementations-testnet:
 		--verify \
 		--etherscan-api-key ${POLYGONSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 update-implementations-polygon:
@@ -475,9 +478,6 @@ update-implementations-polygon:
 		--verify \
 		--etherscan-api-key ${POLYGONSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		--legacy \
 		-vvv
 
@@ -491,9 +491,18 @@ update-implementations-holesky:
 		--verify \
 		--etherscan-api-key ${ETHERSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
+		-vvv
+
+update-implementations-sepolia:
+	forge clean
+	@echo "Updating implementations in Sepolia test network..."
+	forge script ${UPDATE_IMPLEMENTATIONS_SCRIPT} \
+		--rpc-url ${SEPOLIA_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${ETHERSCAN_API_KEY} \
+		--verifier etherscan \
 		-vvv
 
 update-implementations-base:
@@ -506,9 +515,6 @@ update-implementations-base:
 		--verify \
 		--etherscan-api-key ${BASESCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 update-implementations-arbitrum:
@@ -521,9 +527,6 @@ update-implementations-arbitrum:
 		--verify \
 		--etherscan-api-key ${ARBISCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 update-implementations-bsc:
@@ -536,9 +539,6 @@ update-implementations-bsc:
 		--verify \
 		--etherscan-api-key ${BSCSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		--legacy \
 		-vvv
 
@@ -552,9 +552,6 @@ update-implementations-mainnet:
 		--verify \
 		--etherscan-api-key ${ETHERSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 # Deploy implementations commands
@@ -577,9 +574,6 @@ deploy-implementations-testnet:
 		--verify \
 		--etherscan-api-key ${POLYGONSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 deploy-implementations-polygon:
@@ -592,9 +586,6 @@ deploy-implementations-polygon:
 		--verify \
 		--etherscan-api-key ${POLYGONSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		--legacy \
 		-vvv
 
@@ -608,9 +599,18 @@ deploy-implementations-holesky:
 		--verify \
 		--etherscan-api-key ${ETHERSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
+		-vvv
+
+deploy-implementations-sepolia:
+	forge clean
+	@echo "Deploying implementations to Sepolia test network..."
+	forge script ${DEPLOY_IMPLEMENTATIONS_SCRIPT} \
+		--rpc-url ${SEPOLIA_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${ETHERSCAN_API_KEY} \
+		--verifier etherscan \
 		-vvv
 
 deploy-implementations-base:
@@ -623,9 +623,6 @@ deploy-implementations-base:
 		--verify \
 		--etherscan-api-key ${BASESCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 deploy-implementations-arbitrum:
@@ -638,9 +635,6 @@ deploy-implementations-arbitrum:
 		--verify \
 		--etherscan-api-key ${ARBISCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 deploy-implementations-bsc:
@@ -653,9 +647,6 @@ deploy-implementations-bsc:
 		--verify \
 		--etherscan-api-key ${BSCSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		--legacy \
 		-vvv
 
@@ -669,9 +660,6 @@ deploy-implementations-mainnet:
 		--verify \
 		--etherscan-api-key ${ETHERSCAN_API_KEY} \
 		--verifier etherscan \
-		--libraries src/utils/MainVaultSwapLibrary.sol:MainVaultSwapLibrary:${mainVaultSwapLibrary} \
-		--libraries src/utils/SwapLibrary.sol:SwapLibrary:${swapLibrary} \
-		--libraries src/utils/Constants.sol:Constants:${constantsLibrary} \
 		-vvv
 
 update-implementations-local:
@@ -723,6 +711,18 @@ deploy-price-oracle-holesky:
 	@echo "Deploying price oracle to Holesky test network..."
 	forge script ${PRICE_ORACLE_SCRIPT} \
 		--rpc-url ${HOLESKY_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${ETHERSCAN_API_KEY} \
+		--verifier etherscan \
+		-vvv
+
+deploy-price-oracle-sepolia:
+	forge clean
+	@echo "Deploying price oracle to Sepolia test network..."
+	forge script ${PRICE_ORACLE_SCRIPT} \
+		--rpc-url ${SEPOLIA_RPC} \
 		--private-key ${PRIVATE_KEY} \
 		--broadcast \
 		--verify \
@@ -826,6 +826,18 @@ deploy-return-temporary-wallet-holesky:
 		--verifier etherscan \
 		-vvv
 
+deploy-return-temporary-wallet-sepolia:
+	forge clean
+	@echo "Deploying ReturnTemporaryWallet to Sepolia test network..."
+	forge script ${RETURN_TEMPORARY_WALLET_SCRIPT} \
+		--rpc-url ${SEPOLIA_RPC} \
+		--private-key ${PRIVATE_KEY} \
+		--broadcast \
+		--verify \
+		--etherscan-api-key ${ETHERSCAN_API_KEY} \
+		--verifier etherscan \
+		-vvv
+
 deploy-return-temporary-wallet-base:
 	forge clean
 	@echo "Deploying ReturnTemporaryWallet to Base network..."
@@ -882,6 +894,7 @@ help:
 	@echo "  make deploy-libraries-testnet - Deploy libraries to testnet"
 	@echo "  make deploy-libraries-polygon - Deploy libraries to Polygon"
 	@echo "  make deploy-libraries-holesky - Deploy libraries to Holesky"
+	@echo "  make deploy-libraries-sepolia - Deploy libraries to Sepolia"
 	@echo "  make deploy-libraries-base - Deploy libraries to Base"
 	@echo "  make deploy-libraries-arbitrum - Deploy libraries to Arbitrum"
 	@echo "  make deploy-libraries-bsc - Deploy libraries to BSC"
@@ -891,6 +904,7 @@ help:
 	@echo "  make deploy-testnet-contracts - Deploy to testnet with verification"
 	@echo "  make deploy-polygon-contracts - Deploy to Polygon network with verification"
 	@echo "  make deploy-holesky-contracts - Deploy to Holesky test network with verification"
+	@echo "  make deploy-sepolia-contracts - Deploy to Sepolia test network with verification"
 	@echo "  make deploy-base-contracts - Deploy to Base network with verification"
 	@echo "  make deploy-arbitrum-contracts - Deploy to Arbitrum network with verification"
 	@echo "  make deploy-bsc-contracts - Deploy to BSC network with verification"
@@ -898,6 +912,7 @@ help:
 	@echo "  make deploy-factory-testnet - Deploy MainVaultFactory to testnet with verification"
 	@echo "  make deploy-factory-polygon - Deploy MainVaultFactory to Polygon with verification"
 	@echo "  make deploy-factory-holesky - Deploy MainVaultFactory to Holesky with verification"
+	@echo "  make deploy-factory-sepolia - Deploy MainVaultFactory to Sepolia with verification"
 	@echo "  make deploy-factory-base - Deploy MainVaultFactory to Base with verification"
 	@echo "  make deploy-factory-arbitrum - Deploy MainVaultFactory to Arbitrum with verification"
 	@echo "  make deploy-factory-bsc - Deploy MainVaultFactory to BSC with verification"
@@ -905,12 +920,14 @@ help:
 	@echo "  make deploy-all-testnet - Deploy libraries and contracts to testnet"
 	@echo "  make deploy-all-polygon - Deploy libraries and contracts to Polygon"
 	@echo "  make deploy-all-holesky - Deploy libraries and contracts to Holesky"
+	@echo "  make deploy-all-sepolia - Deploy libraries and contracts to Sepolia"
 	@echo "  make deploy-all-base - Deploy libraries and contracts to Base"
 	@echo "  make deploy-all-arbitrum - Deploy libraries and contracts to Arbitrum"
 	@echo "  make deploy-all-bsc - Deploy libraries and contracts to BSC"
 	@echo "  make deploy-all-factory-testnet - Deploy libraries and factory to testnet"
 	@echo "  make deploy-all-factory-polygon - Deploy libraries and factory to Polygon"
 	@echo "  make deploy-all-factory-holesky - Deploy libraries and factory to Holesky"
+	@echo "  make deploy-all-factory-sepolia - Deploy libraries and factory to Sepolia"
 	@echo "  make deploy-all-factory-base - Deploy libraries and factory to Base"
 	@echo "  make deploy-all-factory-arbitrum - Deploy libraries and factory to Arbitrum"
 	@echo "  make deploy-all-factory-bsc - Deploy libraries and factory to BSC"
@@ -919,6 +936,7 @@ help:
 	@echo "  make deploy-implementations-testnet - Deploy implementations to testnet with verification"
 	@echo "  make deploy-implementations-polygon - Deploy implementations to Polygon with verification"
 	@echo "  make deploy-implementations-holesky - Deploy implementations to Holesky with verification"
+	@echo "  make deploy-implementations-sepolia - Deploy implementations to Sepolia with verification"
 	@echo "  make deploy-implementations-base - Deploy implementations to Base with verification"
 	@echo "  make deploy-implementations-arbitrum - Deploy implementations to Arbitrum with verification"
 	@echo "  make deploy-implementations-bsc - Deploy implementations to BSC with verification"
@@ -927,6 +945,7 @@ help:
 	@echo "  make update-implementations-testnet - Update implementations in testnet with verification"
 	@echo "  make update-implementations-polygon - Update implementations in Polygon with verification"
 	@echo "  make update-implementations-holesky - Update implementations in Holesky with verification"
+	@echo "  make update-implementations-sepolia - Update implementations in Sepolia with verification"
 	@echo "  make update-implementations-base - Update implementations in Base with verification"
 	@echo "  make update-implementations-arbitrum - Update implementations in Arbitrum with verification"
 	@echo "  make update-implementations-bsc - Update implementations in BSC with verification"
@@ -935,6 +954,7 @@ help:
 	@echo "  make deploy-price-oracle-testnet - Deploy price oracle to testnet with verification"
 	@echo "  make deploy-price-oracle-polygon - Deploy price oracle to Polygon with verification"
 	@echo "  make deploy-price-oracle-holesky - Deploy price oracle to Holesky with verification"
+	@echo "  make deploy-price-oracle-sepolia - Deploy price oracle to Sepolia with verification"
 	@echo "  make deploy-price-oracle-base - Deploy price oracle to Base with verification"
 	@echo "  make deploy-price-oracle-arbitrum - Deploy price oracle to Arbitrum with verification"
 	@echo "  make deploy-price-oracle-bsc - Deploy price oracle to BSC with verification"
@@ -943,6 +963,7 @@ help:
 	@echo "  make deploy-return-temporary-wallet-testnet - Deploy ReturnTemporaryWallet to testnet with verification"
 	@echo "  make deploy-return-temporary-wallet-polygon - Deploy ReturnTemporaryWallet to Polygon with verification"
 	@echo "  make deploy-return-temporary-wallet-holesky - Deploy ReturnTemporaryWallet to Holesky with verification"
+	@echo "  make deploy-return-temporary-wallet-sepolia - Deploy ReturnTemporaryWallet to Sepolia with verification"
 	@echo "  make deploy-return-temporary-wallet-base - Deploy ReturnTemporaryWallet to Base with verification"
 	@echo "  make deploy-return-temporary-wallet-arbitrum - Deploy ReturnTemporaryWallet to Arbitrum with verification"
 	@echo "  make deploy-return-temporary-wallet-bsc - Deploy ReturnTemporaryWallet to BSC with verification"
